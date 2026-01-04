@@ -41,7 +41,7 @@ export const SimulationLanding: React.FC = () => {
             {/* Background Image */}
             <div className="absolute inset-0 z-0">
                 <img
-                    src="/makthjulet_landingpage_bakgrunn.png"
+                    src={`${import.meta.env.BASE_URL}makthjulet_landingpage_bakgrunn.png`}
                     alt="Background"
                     className="w-full h-full object-cover"
                 />

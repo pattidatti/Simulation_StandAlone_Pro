@@ -110,7 +110,7 @@ export const TavernDiceGame: React.FC<TavernDiceGameProps> = ({ playerGold, onCl
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-500">
             {/* Background Image Container */}
             <div className="absolute inset-0 z-0 opacity-50">
-                <img src="/poi/tavern_dice_bg.png" alt="Tavern Table" className="w-full h-full object-cover" />
+                <img src={`${import.meta.env.BASE_URL}poi/tavern_dice_bg.png`} alt="Tavern Table" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black" />
             </div>
 
