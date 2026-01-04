@@ -1,6 +1,6 @@
 import React from 'react';
 import { ref, update } from 'firebase/database';
-import { db } from '../../../lib/firebase';
+import { simulationDb as db } from '../simulationFirebase';
 import type { SimulationPlayer, SimulationRoom } from '../simulationTypes';
 import { useSimulation } from '../SimulationContext';
 import { WorldMap } from '../WorldMap';
