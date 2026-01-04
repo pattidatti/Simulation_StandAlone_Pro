@@ -14,10 +14,10 @@ import { SimulationAtmosphereLayer } from './components/SimulationAtmosphereLaye
 import { SimulationProcessHUD } from './components/SimulationProcessHUD';
 import { SimulationMapWindow } from './components/ui/SimulationMapWindow';
 import { ChickenCoopWindow } from './components/ChickenCoopWindow';
-import { BuildingUpgradeWindow } from './components/BuildingUpgradeWindow.tsx';
-import { TavernDialog } from './components/TavernDialog.tsx';
+import { BuildingUpgradeWindow } from './components/BuildingUpgradeWindow';
+import { TavernDialog } from './components/TavernDialog';
 import { WorldMapPOI } from './components/WorldMap/WorldMapPOI';
-import { WorldMapEvents } from './components/WorldMap/WorldMapEvents.tsx';
+import { WorldMapEvents } from './components/WorldMap/WorldMapEvents';
 import { WorldMapKingdomPins } from './components/WorldMap/WorldMapKingdomPins';
 import { SimulationContributionModal } from './components/SimulationContributionModal';
 
