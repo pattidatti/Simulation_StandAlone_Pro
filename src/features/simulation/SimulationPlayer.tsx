@@ -7,7 +7,7 @@ import { useSimulation } from './SimulationContext';
 import { useLayout } from '../../context/LayoutContext';
 import type { SimulationRoom } from './simulationTypes';
 
-import { SimulationHeader } from './components/SimulationProHeader';
+import { SimHeader as SimulationHeader } from './components/SimHeader';
 import { SimulationViewport } from './components/SimulationViewport';
 import { SimulationAnimationLayer } from './components/SimulationAnimationLayer';
 import { MinigameOverlay } from './SimulationMinigames';

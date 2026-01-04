@@ -39,7 +39,7 @@ const useCountUp = (target: number, duration: number = 800) => {
     return count;
 };
 
-export const SimulationHeader: React.FC<SimulationHeaderProps> = ({ room, player, onAction }) => {
+export const SimHeader: React.FC<SimulationHeaderProps> = ({ room, player, onAction }) => {
     const { activeTab, setActiveTab } = useSimulation();
     const { playSfx } = useAudio();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
