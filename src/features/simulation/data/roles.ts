@@ -50,6 +50,7 @@ export const RANK_BENEFITS: Record<string, string[][]> = {
     ]
 };
 
+
 export const ACHIEVEMENT_TITLES: Record<string, string> = {
     'Første korn': 'Den Flittige',
     'Mesterbygger': 'Arkitekten',
@@ -60,3 +61,7 @@ export const ACHIEVEMENT_TITLES: Record<string, string> = {
     'Storbruker': 'Odalbonden',
     'Smed': 'Hammermesteren'
 };
+
+
+
+

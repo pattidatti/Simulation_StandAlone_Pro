@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LayoutProvider } from './context/LayoutContext';
 import { SimulationAuthProvider } from './features/simulation/SimulationAuthContext';
+import { SimulationAudioProvider } from './features/simulation/SimulationAudioContext';
 import { SimulationProvider } from './features/simulation/SimulationContext';
 import { SimulationHost } from './features/simulation/SimulationHost';
 import { SimulationPlayer } from './features/simulation/SimulationPlayer';
@@ -14,23 +15,25 @@ const App: React.FC = () => {
         <BrowserRouter>
             <LayoutProvider>
                 <SimulationAuthProvider>
-                    <div className="min-h-screen bg-slate-950 text-white">
-                        <Routes>
-                            <Route path="/" element={<SimulationLanding />} />
+                    <SimulationAudioProvider>
+                        <div className="min-h-screen bg-slate-950 text-white">
+                            <Routes>
+                                <Route path="/" element={<SimulationLanding />} />
 
-                            <Route path="/sim/host" element={<SimulationHost />} />
+                                <Route path="/sim/host" element={<SimulationHost />} />
 
-                            {/* Player Route needs SimulationProvider */}
-                            <Route path="/sim/play/:pin/*" element={
-                                <SimulationProvider>
-                                    <SimulationPlayer />
-                                </SimulationProvider>
-                            } />
+                                {/* Player Route needs SimulationProvider */}
+                                <Route path="/sim/play/:pin/*" element={
+                                    <SimulationProvider>
+                                        <SimulationPlayer />
+                                    </SimulationProvider>
+                                } />
 
-                            {/* Redirect legacy or unknown routes */}
-                            <Route path="*" element={<Navigate to="/" replace />} />
-                        </Routes>
-                    </div>
+                                {/* Redirect legacy or unknown routes */}
+                                <Route path="*" element={<Navigate to="/" replace />} />
+                            </Routes>
+                        </div>
+                    </SimulationAudioProvider>
                 </SimulationAuthProvider>
             </LayoutProvider>
         </BrowserRouter>

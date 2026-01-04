@@ -154,6 +154,15 @@ export const SimulationPlayer: React.FC = () => {
         );
     }
 
+    if (!world) {
+        return (
+            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4 text-white">
+                <div className="w-12 h-12 border-4 border-indigo-500 border-t-white rounded-full animate-spin" />
+                <p className="text-sm font-bold uppercase tracking-widest text-indigo-400">Laster verden...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="relative min-h-screen bg-slate-900 text-white overflow-hidden flex flex-col">
             <div className="flex-1 flex flex-col relative">

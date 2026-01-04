@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSimulationAuth } from './SimulationAuthContext';
+import { useAudio } from './SimulationAudioContext';
 import { SimulationServerBrowser } from './SimulationServerBrowser';
 import { SimulationAuthModal } from './SimulationAuthModal';
 import { LogIn, Crown, Play, Shield, Terminal } from 'lucide-react';
@@ -12,13 +13,31 @@ export const SimulationLanding: React.FC = () => {
 
     const navigate = useNavigate();
 
+    const { startPlaylist, resume } = useAudio();
+    const [hasInteracted, setHasInteracted] = useState(false);
+
+    useEffect(() => {
+        // Try to start immediately (works if navigating from within app)
+        startPlaylist();
+    }, [startPlaylist]);
+
+    // Global click handler to resume audio context (autoplay policy)
+    const handleInteraction = () => {
+        if (!hasInteracted) {
+            resume();
+            startPlaylist();
+            setHasInteracted(true);
+        }
+    };
+
     const openAuth = (mode: 'LOGIN' | 'REGISTER') => {
+        handleInteraction(); // Ensure audio starts
         setAuthMode(mode);
         setAuthModalOpen(true);
     };
 
     return (
-        <div className="min-h-screen relative font-sans text-slate-200 overflow-x-hidden">
+        <div onClick={handleInteraction} className="min-h-screen relative font-sans text-slate-200 overflow-x-hidden">
             {/* Background Image */}
             <div className="absolute inset-0 z-0">
                 <img

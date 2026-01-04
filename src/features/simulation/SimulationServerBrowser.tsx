@@ -48,66 +48,64 @@ export const SimulationServerBrowser: React.FC = () => {
     );
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4 bg-slate-900/50 p-4 rounded-2xl border border-white/5">
-                <Search className="text-slate-500" size={20} />
+        <div className="space-y-4">
+            <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" size={16} />
                 <input
                     type="text"
-                    placeholder="Søk etter servere eller host..."
+                    placeholder="Søk i riker..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="bg-transparent border-none outline-none text-white w-full font-medium placeholder:text-slate-600"
+                    className="w-full bg-white/5 border border-white/10 focus:border-white/20 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-white/20 outline-none transition-all"
                 />
             </div>
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center p-20 gap-4">
-                    <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-slate-500 font-bold animate-pulse uppercase tracking-widest text-xs">Søker etter verdener...</p>
+                <div className="flex flex-col items-center justify-center p-12 gap-3 opacity-50">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="text-[10px] uppercase tracking-widest text-white/50">Laster verdener...</span>
                 </div>
             ) : filteredServers.length === 0 ? (
-                <div className="p-12 text-center bg-slate-900/40 rounded-3xl border border-white/5 border-dashed">
-                    <Globe className="mx-auto text-slate-700 mb-4" size={48} />
-                    <p className="text-slate-400 font-medium">Ingen åpne verdener funnet akkurat nå.</p>
-                    <p className="text-slate-600 text-sm mt-1">Vurder å hoste din egen eller bruke en PIN-kode.</p>
+                <div className="p-8 text-center border border-white/5 border-dashed rounded-xl">
+                    <p className="text-sm text-white/40 font-medium">Ingen riker funnet.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
                     {filteredServers.map(server => (
                         <button
                             key={server.pin}
                             onClick={() => navigate(`/sim/play/${server.pin}`)}
-                            className="group flex flex-col md:flex-row md:items-center justify-between p-6 bg-slate-900/60 hover:bg-slate-800/80 rounded-3xl border border-white/5 hover:border-indigo-500/30 transition-all text-left shadow-lg hover:shadow-indigo-500/10"
+                            className="group w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-xl transition-all text-left"
                         >
-                            <div className="flex items-center gap-6">
-                                <div className="w-16 h-16 bg-indigo-600/20 rounded-2xl flex items-center justify-center border border-indigo-500/20 group-hover:scale-110 transition-transform">
-                                    <Shield className="text-indigo-400" size={32} />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-3">
-                                        <h3 className="text-xl font-black text-white group-hover:text-indigo-300 transition-colors">{(server as any).name || `Rike #${server.pin}`}</h3>
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${server.status === 'LOBBY' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                            {server.status === 'LOBBY' ? 'Lobby' : 'I Spill'}
-                                        </span>
+                            <div className="flex items-center gap-4">
+                                {/* Compact Status Indicator */}
+                                <div className={`w-1.5 h-10 rounded-full ${server.status === 'LOBBY' ? 'bg-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-amber-500/50'}`} />
+
+                                <div className="flex flex-col">
+                                    <h3 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors">
+                                        {(server as any).name || `Rike #${server.pin}`}
+                                    </h3>
+                                    <div className="flex items-center gap-3 text-[10px] font-medium text-white/40 uppercase tracking-widest">
+                                        <span>{server.hostName}</span>
+                                        <span className="w-1 h-1 bg-white/20 rounded-full" />
+                                        <span>PIN: {server.pin}</span>
                                     </div>
-                                    <p className="text-slate-500 text-sm font-medium mt-1">
-                                        <span className="font-mono text-xs opacity-50 mr-2 bg-black/30 px-2 py-1 rounded">PIN: {server.pin}</span>
-                                        Hostet av <span className="text-slate-300">{server.hostName}</span>
-                                    </p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-6 mt-6 md:mt-0 text-slate-400 font-bold text-sm">
-                                <div className="flex items-center gap-2">
-                                    <Users size={16} className="text-slate-600" />
-                                    <span>{server.playerCount} spillere</span>
+                            <div className="flex items-center gap-6 pr-2">
+                                <div className="flex items-center gap-2 text-white/60">
+                                    <Users size={14} />
+                                    <span className="text-xs font-medium tabular-nums">{server.playerCount}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Clock size={16} className="text-slate-600" />
-                                    <span>År {server.worldYear} ({server.season})</span>
+
+                                <div className="text-right hidden sm:block">
+                                    <div className="text-[10px] text-white/30 uppercase tracking-wider">År {server.worldYear}</div>
+                                    <div className="text-[10px] text-white/50">{server.season}</div>
                                 </div>
-                                <div className="ml-4 h-10 w-10 md:h-12 md:w-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-900/40 group-hover:bg-indigo-500 transition-colors">
-                                    ⚔️
+
+                                <div className="p-2 bg-white/5 rounded-lg text-white/40 group-hover:text-white group-hover:bg-emerald-500/20 transition-all">
+                                    <Shield size={14} />
                                 </div>
                             </div>
                         </button>
