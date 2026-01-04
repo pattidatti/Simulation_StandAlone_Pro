@@ -1,0 +1,80 @@
+import type { ActionRegistry } from './actionTypes';
+import { handleWork, handleChop, handleMiningAction, handleForage, handleHunt, handleGatherWool, handleGatherHoney, handlePlant, handleHarvest, handleFeedChickens, handleCollectEggs, handleMaintainCrop } from './handlers/GatheringHandlers';
+import { handleCraft, handleRefine, handleRepair } from './handlers/CraftingHandlers';
+import { handleEquipItem, handleUnequipItem } from './handlers/InventoryHandlers';
+import { handleTax, handleDraft, handleDecree, handleContribute, handleUpgradeBuilding, handleUpgrade, handleJoinRole, handleReinforceGarrison, handleRepairWalls, handleSetTax } from './handlers/ManagementHandlers';
+import { handleStartSiege, handleJoinSiege, handleSiegeAction } from './handlers/SiegeHandlers';
+import { handleRaid, handlePatrol } from './handlers/CombatHandlers';
+import { handleBuy, handleSell, handleTradeRoute } from './handlers/MarketHandlers';
+import { handleSleep, handleRest, handlePray, handleChat, handleGamble, handleBuyMeal, handleRetire, handleConsume } from './handlers/SocialRestHandlers';
+
+export const ACTION_REGISTRY: ActionRegistry = {
+    // Gathering
+    WORK: handleWork,
+    CHOP: handleChop,
+    MINE: handleMiningAction,
+    QUARRY: handleMiningAction,
+    FORAGE: handleForage,
+    HUNT: handleHunt,
+    GATHER_WOOL: handleGatherWool,
+    GATHER_HONEY: handleGatherHoney,
+    PLANT: handlePlant,
+    HARVEST: handleHarvest,
+    MAINTAIN_CROP: handleMaintainCrop,
+
+    // Crafting & Refining
+    CRAFT: handleCraft,
+    REFINE: handleRefine,
+    BAKE: handleRefine,
+    MILL: handleRefine,
+    SMELT: handleRefine,
+    WEAVE: handleRefine,
+    MIX: handleRefine,
+    REPAIR: handleRepair,
+
+    // Inventory
+    EQUIP_ITEM: handleEquipItem,
+    UNEQUIP_ITEM: handleUnequipItem,
+
+    // Management
+    TAX: handleTax,
+    DRAFT: handleDraft,
+    DECREE: handleDecree,
+    CONSTRUCT: handleContribute,
+    CONTRIBUTE_TO_UPGRADE: handleContribute,
+    UPGRADE_BUILDING: handleUpgradeBuilding,
+    UPGRADE: handleUpgrade,
+    JOIN_ROLE: handleJoinRole,
+    REINFORCE_GARRISON: handleReinforceGarrison,
+    REPAIR_WALLS: handleRepairWalls,
+    SET_TAX: handleSetTax,
+
+    // Siege
+    START_SIEGE: handleStartSiege,
+    JOIN_SIEGE: handleJoinSiege,
+    SIEGE_ACTION: handleSiegeAction,
+
+    // Combat
+    RAID: handleRaid,
+    PATROL: handlePatrol,
+
+    // Social & Rest
+    SLEEP: handleSleep,
+    REST: handleRest,
+    EAT: handleRest,
+    FEAST: handleRest,
+    PRAY: handlePray,
+    CHAT_LOCAL: handleChat,
+    GAMBLE_RESULT: handleGamble,
+    BUY_MEAL: handleBuyMeal,
+    RETIRE: handleRetire,
+    CONSUME: handleConsume,
+    FEED_CHICKENS: handleFeedChickens, // Custom
+    COLLECT_EGGS: handleCollectEggs,   // Custom
+    GATHER_WATER: handleRest,          // Added for Well
+    TRADE_ROUTE: handleTradeRoute,
+
+    // Market
+    BUY: handleBuy,
+    SELL: handleSell
+};

@@ -1,0 +1,51 @@
+{
+    "rules": {
+        "simulation_accounts": {
+            "$uid": {
+                ".read": "$uid === auth.uid",
+                ".write": "$uid === auth.uid"
+            }
+        },
+        "simulation_reserved_names": {
+            ".read": "auth != null",
+            "$name": {
+                ".write": "auth != null && (!data.exists() || data.val() === auth.uid) && newData.val() === auth.uid"
+            }
+        },
+        "simulation_rooms": {
+            ".read": "auth != null",
+            ".write": "auth != null",
+            "$pin": {
+                "channels": {
+                    "$channelId": {
+                        ".read": "auth != null && ($channelId === 'global' || ($channelId.beginsWith('region_') && (root.child('simulation_rooms').child($pin).child('players').child(auth.uid).child('regionId').val() === $channelId || root.child('simulation_rooms').child($pin).child('players').child(auth.uid).child('role').val() === 'KING')) || ($channelId === 'diplomacy' && (root.child('simulation_rooms').child($pin).child('players').child(auth.uid).child('role').val() === 'BARON' || root.child('simulation_rooms').child($pin).child('players').child(auth.uid).child('role').val() === 'KING')) || ($channelId.contains(auth.uid)))",
+                        ".write": "auth != null",
+                        "messages": {
+                            "$msgId": {
+                                ".validate": true
+                            }
+                        }
+                    }
+                },
+                "players": {
+                    "$playerId": {
+                        "resources": {
+                            "$resourceId": {
+                                ".validate": "newData.isNumber() && newData.val() >= 0"
+                            }
+                        },
+                        "status": {
+                            "stamina": {
+                                ".validate": "newData.isNumber() && newData.val() <= 100"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "simulation_server_metadata": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+        }
+    }
+}
