@@ -151,10 +151,11 @@ export const WorldMap: React.FC<WorldMapProps> = React.memo(({ player, room, wor
 
         // Return the tuple of [FullRes, TinyPlaceholder]
         // Note: The script generates .webp and _tiny.webp
+        const baseUrl = import.meta.env.BASE_URL;
         return {
-            src: `/${baseName}.webp`,
-            placeholder: `/${baseName}_tiny.webp`,
-            original: `/${baseName}.png` // Fallback if needed, but we prefer WebP
+            src: `${baseUrl}${baseName}.webp`,
+            placeholder: `${baseUrl}${baseName}_tiny.webp`,
+            original: `${baseUrl}${baseName}.png` // Fallback if needed, but we prefer WebP
         };
     };
 

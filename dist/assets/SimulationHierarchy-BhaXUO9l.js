@@ -1,4 +1,4 @@
-import{c as j,g as v,j as e,N as O,O as R,Q as I,U as M,n as L,o as z,p as A,b as T,u as _,S as $,W as P}from"./index-CFKtl4MT.js";import{PoliticalHubContent as D}from"./PoliticalHub-CWsjA3-R.js";import"./GameButton-BiavmLtB.js";import"./GameCard-ifn_jhmI.js";import"./Badge-BWekYQ3v.js";import"./timer-DdpEg_Ld.js";/**
+import{c as j,g as v,j as e,N as O,O as R,Q as I,U as M,n as L,o as z,p as A,b as T,u as _,S as $,W as P}from"./index-B2rBCrqg.js";import{PoliticalHubContent as D}from"./PoliticalHub-BKsV7yHX.js";import"./GameButton-r0kJ3Fkn.js";import"./GameCard-D58uvOAL.js";import"./Badge-CaHT88Np.js";import"./timer-DzpyOXvR.js";/**
  * @license lucide-react v0.555.0 - ISC
  *
  * This source code is licensed under the ISC license.
