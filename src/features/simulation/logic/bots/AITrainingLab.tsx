@@ -47,9 +47,6 @@ export const AITrainingLab: React.FC<AITrainingLabProps> = ({ roomData, pin }) =
             updates[`simulation_rooms/${pin}/players/${charId}`] = character;
             updates[`simulation_rooms/${pin}/public_profiles/${charId}`] = {
                 id: charId,
-                name: character.name,
-                role: character.role,
-                regionId: character.regionId,
                 stats: { level: 1 },
                 status: character.status,
                 online: true,
@@ -86,7 +83,7 @@ export const AITrainingLab: React.FC<AITrainingLabProps> = ({ roomData, pin }) =
                 // Find bot players in roomData
                 const botPlayers = Object.values(currentRoom.players || {}).filter(p => p.name.includes('BOT'));
 
-                const promises = botPlayers.map(async (p) => {
+                await Promise.all(botPlayers.map(async (p) => {
                     // Find or create bot instance
                     let instance = bots.find(b => b.player.id === p.id);
                     if (!instance) {
@@ -140,7 +137,7 @@ export const AITrainingLab: React.FC<AITrainingLabProps> = ({ roomData, pin }) =
                         BotEvolution.saveTopGenomes([instance.genome]);
                         setFitnessHistory(prev => [...prev.slice(-19), fitness]);
                     }
-                });
+                }));
 
                 // Schedule next tick with a small delay to avoid CPU hogging
                 timerRef.current = window.setTimeout(() => runTick(), 1000);

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSimulationAuth } from './SimulationAuthContext';
 import { useAudio } from './SimulationAudioContext';
 import { SimulationServerBrowser } from './SimulationServerBrowser';
 import { SimulationAuthModal } from './SimulationAuthModal';
-import { LogIn, Crown, Play, Shield, Terminal } from 'lucide-react';
+import { Crown, Play, Terminal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const SimulationLanding: React.FC = () => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ref, update } from 'firebase/database';
 import { MessageSquare } from 'lucide-react';
-import { db } from '../../../lib/firebase';
+import { simulationDb as db } from '../simulationFirebase';
 import type { SimulationPlayer } from '../simulationTypes';
 import { SimulationMapWindow } from './ui/SimulationMapWindow';
 import { useSimulation } from '../SimulationContext';

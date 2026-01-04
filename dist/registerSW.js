@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/Simulation_StandAlone_Pro/sw.js', { scope: '/Simulation_StandAlone_Pro/' })})}

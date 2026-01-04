@@ -1,0 +1,6 @@
+src/features/simulation/components/SimulationDiplomacy.tsx(4,20): error TS2307: Cannot find module '../../../lib/firebase' or its corresponding type declarations.
+src/features/simulation/logic/bots/AITrainingLab.tsx(89,23): error TS6133: 'promises' is declared but its value is never read.
+src/features/simulation/SimulationLanding.tsx(6,10): error TS6133: 'LogIn' is declared but its value is never read.
+src/features/simulation/SimulationLanding.tsx(6,30): error TS6133: 'Shield' is declared but its value is never read.
+src/features/simulation/SimulationLanding.tsx(19,5): error TS2304: Cannot find name 'useEffect'.
+src/features/simulation/SimulationPlayer.tsx(10,34): error TS2307: Cannot find module './components/SimulationHeader' or its corresponding type declarations.

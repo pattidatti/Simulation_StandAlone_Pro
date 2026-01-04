@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ref, update } from 'firebase/database';
 import { simulationDb as db } from './simulationFirebase';
@@ -18,8 +18,7 @@ import {
     Crown,
 } from 'lucide-react';
 import { useLayout } from '../../context/LayoutContext';
-import { NexusProvider, useNexus } from '../nexus/NexusContext';
-import { VesselSelector } from '../nexus/components/VesselSelector';
+
 import type { SimulationPlayer } from './simulationTypes';
 
 interface SimulationProfileProps {
@@ -30,7 +29,7 @@ interface SimulationProfileProps {
 
 const InnerSimulationProfile: React.FC<SimulationProfileProps> = ({ player, allPlayers }) => {
     const { user, account, loading, logout, isAnonymous } = useSimulationAuth();
-    useNexus(); // Ensure context is loaded
+
     const [isEditingName, setIsEditingName] = useState(false);
     const [newName, setNewName] = useState(account?.displayName || '');
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -323,7 +322,7 @@ const InnerSimulationProfile: React.FC<SimulationProfileProps> = ({ player, allP
                     </div>
 
                     {/* The Vessel Selector Component embedded directly */}
-                    <VesselSelector />
+                    {/* VesselSelector removed as nexus feature is missing */}
                 </div>
 
 
@@ -409,12 +408,10 @@ const InnerSimulationProfile: React.FC<SimulationProfileProps> = ({ player, allP
     );
 };
 
-// Wrap with NexusProvider to allow Vessel Selection logic to work
+// Wrap with NexusProvider removed
 export const SimulationProfile: React.FC<SimulationProfileProps> = (props) => {
     return (
-        <NexusProvider>
-            <InnerSimulationProfile {...props} />
-        </NexusProvider>
+        <InnerSimulationProfile {...props} />
     );
 };
 

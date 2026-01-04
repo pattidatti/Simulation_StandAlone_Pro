@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ref, onValue } from 'firebase/database';
 import { simulationDb as db } from './simulationFirebase';
-import { Users, Shield, Clock, Search, Globe } from 'lucide-react';
+import { Users, Shield, Search } from 'lucide-react';
 
 interface ServerMetadata {
     pin: string;

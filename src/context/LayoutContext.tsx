@@ -7,15 +7,15 @@ interface LayoutContextType {
 }
 
 const LayoutContext = createContext<LayoutContextType>({
-    setFullWidth: () => {},
-    setHideHeader: () => {},
+    setFullWidth: () => { },
+    setHideHeader: () => { },
 });
 
 export const useLayout = () => useContext(LayoutContext);
 
 export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [fullWidth, setFullWidth] = useState(false);
-    const [hideHeader, setHideHeader] = useState(false);
+    const [, setFullWidth] = useState(false);
+    const [, setHideHeader] = useState(false);
 
     return (
         <LayoutContext.Provider value={{ setFullWidth, setHideHeader }}>
