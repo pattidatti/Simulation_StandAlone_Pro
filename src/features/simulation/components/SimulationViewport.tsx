@@ -3,7 +3,7 @@ import { ref, update } from 'firebase/database';
 import { simulationDb as db } from '../simulationFirebase';
 import type { SimulationPlayer, SimulationRoom } from '../simulationTypes';
 import { useSimulation } from '../SimulationContext';
-import { WorldMap } from '../WorldMap';
+import { GameMap } from '../GameMap';
 // ULTRATHINK: Lazy Load Heavy Components for Code Splitting
 const SimulationMarket = React.lazy(() => import('./SimulationMarket').then(module => ({ default: module.SimulationMarket })));
 const SimulationVault = React.lazy(() => import('./SimulationVault').then(module => ({ default: module.SimulationVault })));
@@ -63,7 +63,7 @@ export const SimulationViewport: React.FC<SimulationViewportProps> = ({ player, 
                 {/* LAYER 0: Background World Map (Always rendered in simulation modes) */}
                 {isOverlayTab && (
                     <div className="absolute inset-0 z-0">
-                        <WorldMap
+                        <GameMap
                             player={player}
                             room={room}
                             world={room.world}

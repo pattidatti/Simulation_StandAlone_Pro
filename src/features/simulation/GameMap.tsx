@@ -31,7 +31,7 @@ interface WorldMapProps {
     room: any;
 }
 
-export const WorldMap: React.FC<WorldMapProps> = React.memo(({ player, room, world, worldEvents, players, onAction, onOpenMarket }) => {
+export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, world, worldEvents, players, onAction, onOpenMarket }) => {
     // Explicitly destructure season to ensure usage in hooks if needed, 
     // although the main fix is in the React.memo comparison or just passing it safely.
     // The previous implementation relied on 'world' reference change. 
@@ -315,4 +315,4 @@ export const WorldMap: React.FC<WorldMapProps> = React.memo(({ player, room, wor
     return prev.player === next.player && prev.room === next.room && prev.world === next.world && prev.worldEvents === next.worldEvents;
 });
 
-WorldMap.displayName = 'WorldMap';
+GameMap.displayName = 'GameMap';
