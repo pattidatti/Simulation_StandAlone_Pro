@@ -3,7 +3,7 @@ import { useSimulationAuth } from './SimulationAuthContext';
 import { useAudio } from './SimulationAudioContext';
 import { SimulationServerBrowser } from './SimulationServerBrowser';
 import { SimulationAuthModal } from './SimulationAuthModal';
-import { Crown, Play, Terminal } from 'lucide-react';
+import { Crown, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const SimulationLanding: React.FC = () => {
@@ -127,9 +127,9 @@ export const SimulationLanding: React.FC = () => {
                 {/* Footer */}
                 <footer className="w-full p-8 relative flex justify-center text-[10px] uppercase tracking-[0.2em] text-white/30">
                     <span>&copy; 2026 Eiriksbok &bull; Maktens Pris</span>
-                    
+
                     {/* Discrete Admin Link */}
-                    <button 
+                    <button
                         onClick={() => navigate('/sim/host')}
                         className="absolute right-8 bottom-8 text-white/10 hover:text-white/50 transition-colors duration-500 font-bold"
                     >

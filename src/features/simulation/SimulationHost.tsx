@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ref, set, onValue, update, get, remove } from 'firebase/database';
+import { ref, set, onValue, update, get, remove, DataSnapshot } from 'firebase/database';
 import { simulationDb as db } from './simulationFirebase';
 import { useLayout } from '../../context/LayoutContext';
 
@@ -61,7 +61,7 @@ export const SimulationHost: React.FC = () => {
     // Fetch all rooms on mount
     useEffect(() => {
         const roomsRef = ref(db, 'simulation_rooms');
-        const unsubscribe = onValue(roomsRef, (snapshot) => {
+        const unsubscribe = onValue(roomsRef, (snapshot: DataSnapshot) => {
             const data = snapshot.val();
             if (data) {
                 const roomList = Object.entries(data).map(([key, val]: [string, any]) => ({
@@ -84,23 +84,23 @@ export const SimulationHost: React.FC = () => {
         const baseUrl = `simulation_rooms/${pin}`;
 
         // 1. Metadata & Status (Lightweight)
-        const unsubStatus = onValue(ref(db, `${baseUrl}/status`), snap => {
+        const unsubStatus = onValue(ref(db, `${baseUrl}/status`), (snap: DataSnapshot) => {
             setRoomData(prev => prev ? { ...prev, status: snap.val() || 'LOBBY' } : null);
         });
 
         // 2. World State (Medium)
-        const unsubWorld = onValue(ref(db, `${baseUrl}/world`), snap => {
+        const unsubWorld = onValue(ref(db, `${baseUrl}/world`), (snap: DataSnapshot) => {
             setRoomData(prev => prev ? { ...prev, world: snap.val() } : null);
         });
 
         // 3. Markets (Medium)
-        const unsubMarkets = onValue(ref(db, `${baseUrl}/markets`), snap => {
+        const unsubMarkets = onValue(ref(db, `${baseUrl}/markets`), (snap: DataSnapshot) => {
             const val = snap.val() || {};
             setRoomData(prev => prev ? { ...prev, markets: val } : null);
         });
 
         // 4. Regions (Crucial for Hierarchy/Siege)
-        const unsubRegions = onValue(ref(db, `${baseUrl}/regions`), snap => {
+        const unsubRegions = onValue(ref(db, `${baseUrl}/regions`), (snap: DataSnapshot) => {
             setRoomData(prev => prev ? { ...prev, regions: snap.val() || {} } : null);
         });
 
@@ -125,7 +125,7 @@ export const SimulationHost: React.FC = () => {
         if (!pin) return;
         const baseUrl = `simulation_rooms/${pin}`;
 
-        const unsubMessages = onValue(ref(db, `${baseUrl}/messages`), snap => {
+        const unsubMessages = onValue(ref(db, `${baseUrl}/messages`), (snap: DataSnapshot) => {
             setRoomData(prev => prev ? { ...prev, messages: snap.val() || [] } : null);
         });
         return () => unsubMessages();
@@ -141,7 +141,7 @@ export const SimulationHost: React.FC = () => {
         const baseUrl = `simulation_rooms/${pin}`;
 
         // 5. Players (FULL FETCH for Host - required for Bot Brain/God Mode)
-        const unsubPlayers = onValue(ref(db, `${baseUrl}/players`), snap => {
+        const unsubPlayers = onValue(ref(db, `${baseUrl}/players`), (snap: DataSnapshot) => {
             const players = snap.val() || {};
             setRoomData(prev => {
                 if (!prev) return null;
@@ -149,7 +149,7 @@ export const SimulationHost: React.FC = () => {
                 const realCount = Object.keys(players).length;
                 const metadataRef = ref(db, `simulation_server_metadata/${pin}`);
                 setTimeout(() => {
-                    get(metadataRef).then(metaSnap => {
+                    get(metadataRef).then((metaSnap: DataSnapshot) => {
                         if (metaSnap.exists()) {
                             const meta = metaSnap.val();
                             if (meta.playerCount !== realCount) {
@@ -165,22 +165,22 @@ export const SimulationHost: React.FC = () => {
         });
 
         // 6. World Events
-        const unsubEvents = onValue(ref(db, `${baseUrl}/worldEvents`), snap => {
+        const unsubEvents = onValue(ref(db, `${baseUrl}/worldEvents`), (snap: DataSnapshot) => {
             setRoomData(prev => prev ? { ...prev, worldEvents: snap.val() || {} } : null);
         });
 
         // 7. Active Vote
-        const unsubVote = onValue(ref(db, `${baseUrl}/activeVote`), snap => {
+        const unsubVote = onValue(ref(db, `${baseUrl}/activeVote`), (snap: DataSnapshot) => {
             setRoomData(prev => prev ? { ...prev, activeVote: snap.val() } : null);
         });
 
         // 8. Regions (Crucial for Politics)
-        const unsubRegions = onValue(ref(db, `${baseUrl}/regions`), snap => {
+        const unsubRegions = onValue(ref(db, `${baseUrl}/regions`), (snap: DataSnapshot) => {
             setRoomData(prev => prev ? { ...prev, regions: snap.val() || {} } : null);
         });
 
         // Initial Skeleton
-        get(ref(db, baseUrl)).then((snap) => {
+        get(ref(db, baseUrl)).then((snap: DataSnapshot) => {
             if (snap.exists()) {
                 const val = snap.val();
                 setRoomData(prev => ({
