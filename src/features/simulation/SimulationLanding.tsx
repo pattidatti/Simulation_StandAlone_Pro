@@ -101,15 +101,7 @@ export const SimulationLanding: React.FC = () => {
                             Skjebnen er ikke skrevet. Den smis i ilden av ambisjoner.
                         </p>
 
-                        <div className="flex items-center justify-center gap-4 pt-4">
-                            <button
-                                onClick={() => navigate('/sim/host')}
-                                className="group flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full backdrop-blur-md transition-all"
-                            >
-                                <Terminal size={14} className="text-white/70" />
-                                <span className="text-xs font-bold tracking-widest uppercase text-white/90 group-hover:text-white">Start Nytt Rike</span>
-                            </button>
-                        </div>
+
                     </div>
 
                     {/* Server Browser (Minimalist Glass) */}
@@ -133,8 +125,16 @@ export const SimulationLanding: React.FC = () => {
                 </main>
 
                 {/* Footer */}
-                <footer className="w-full p-8 text-center text-[10px] uppercase tracking-[0.2em] text-white/30">
-                    &copy; 2026 Eiriksbok &bull; Maktens Pris
+                <footer className="w-full p-8 relative flex justify-center text-[10px] uppercase tracking-[0.2em] text-white/30">
+                    <span>&copy; 2026 Eiriksbok &bull; Maktens Pris</span>
+                    
+                    {/* Discrete Admin Link */}
+                    <button 
+                        onClick={() => navigate('/sim/host')}
+                        className="absolute right-8 bottom-8 text-white/10 hover:text-white/50 transition-colors duration-500 font-bold"
+                    >
+                        Admin
+                    </button>
                 </footer>
             </div>
 
