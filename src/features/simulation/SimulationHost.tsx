@@ -189,7 +189,7 @@ export const SimulationHost: React.FC = () => {
                     status: val.status,
                     settings: val.settings,
                     hostName: val.hostName,
-                    isPublic: val.isPublic,
+                    isPublic: val.isPublic ?? true, // Default to true if undefined
                     world: val.world,
                     markets: val.markets || {},
                     market: val.market || INITIAL_MARKET,

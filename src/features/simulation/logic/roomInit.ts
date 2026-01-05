@@ -44,10 +44,13 @@ export const generateInitialRoomState = (pin: string, name: string): SimulationR
 export const syncServerMetadata = async (pin: string, data: SimulationRoom | null) => {
     if (!pin || !data) return;
     const metadataRef = ref(db, `simulation_server_metadata/${pin}`);
+
+    // Explicitly check for false, otherwise default to true (Public)
     if (data.isPublic === false) {
         await set(metadataRef, null);
         return;
     }
+
     await set(metadataRef, {
         pin: pin,
         name: (data as any).name || `Rike #${pin}`,
@@ -55,7 +58,7 @@ export const syncServerMetadata = async (pin: string, data: SimulationRoom | nul
         playerCount: Object.keys(data.players || {}).length,
         worldYear: data.world?.year || 1100,
         season: data.world?.season || 'Spring',
-        isPublic: !!data.isPublic,
+        isPublic: data.isPublic ?? true, // Default to true if undefined
         hostName: data.hostName || "Anonym Host",
         lastUpdated: Date.now()
     });
