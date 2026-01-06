@@ -4,10 +4,10 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-    base: '/',
+export default defineConfig(({ mode }) => ({
+    base: mode === 'production' ? '/Simulation_StandAlone_Pro/' : '/',
     plugins: [
         react(),
         // VitePWA({...}) // Disabled: Missing icons caused CI build failure
     ],
-})
+}))
