@@ -20,10 +20,10 @@ const App: React.FC = () => {
                             <Routes>
                                 <Route path="/" element={<SimulationLanding />} />
 
-                                <Route path="/sim/host" element={<SimulationHost />} />
+                                <Route path="/host" element={<SimulationHost />} />
 
                                 {/* Player Route needs SimulationProvider */}
-                                <Route path="/sim/play/:pin/*" element={
+                                <Route path="/play/:pin/*" element={
                                     <SimulationProvider>
                                         <SimulationPlayer />
                                     </SimulationProvider>

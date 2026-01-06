@@ -130,7 +130,7 @@ export const SimulationLanding: React.FC = () => {
 
                     {/* Discrete Admin Link */}
                     <button
-                        onClick={() => navigate('/sim/host')}
+                        onClick={() => navigate('/host')}
                         className="absolute right-8 bottom-8 text-white/10 hover:text-white/50 transition-colors duration-500 font-bold"
                     >
                         Admin

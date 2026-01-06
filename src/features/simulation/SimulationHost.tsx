@@ -747,7 +747,7 @@ export const SimulationHost: React.FC = () => {
     };
 
     const controlPlayer = (playerId: string) => {
-        const url = `${window.location.origin}/sim/play/${pin}?impersonate=${playerId}`;
+        const url = `${window.location.origin}${import.meta.env.BASE_URL}play/${pin}?impersonate=${playerId}`;
         window.open(url, '_blank');
     };
 

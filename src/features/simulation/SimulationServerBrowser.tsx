@@ -74,7 +74,7 @@ export const SimulationServerBrowser: React.FC = () => {
                     {filteredServers.map(server => (
                         <button
                             key={server.pin}
-                            onClick={() => navigate(`/sim/play/${server.pin}`)}
+                            onClick={() => navigate(`/play/${server.pin}`)}
                             className="group w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-xl transition-all text-left"
                         >
                             <div className="flex items-center gap-4">
