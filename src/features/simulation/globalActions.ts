@@ -190,25 +190,48 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
     let leveledUp = false;
     let newLevel = 0;
 
+    // Capture failure reason for UI feedback
+    let failureReason = "Ukjent feil i transaksjon";
+
     await runTransaction(buildingRef, (building) => {
+        // Init building if missing (local object to work on)
         if (!building) {
-            // Init building if missing
-            return { id: buildingId, level: 1, progress: { [resource]: amount }, contributions: { [playerId]: { name: player.name, resources: { [resource]: amount } } } };
+            building = {
+                id: buildingId,
+                level: 1,
+                progress: {},
+                contributions: {}
+            };
         }
 
         const buildingDef = VILLAGE_BUILDINGS[buildingId];
+        if (!buildingDef) {
+            failureReason = `Systemfeil: BuildingDef mangler for ID: ${buildingId}`;
+            return;
+        }
+
         buildingName = buildingDef?.name || buildingId;
-        const currentLevel = (building.level === undefined) ? 0 : building.level;
+        // FIX: Ensure we never treat an existing building as Level 0. Minimum is 1.
+        const rawLevel = building.level ?? 1;
+        const currentLevel = Math.max(1, rawLevel);
+
         const nextLevel = currentLevel + 1;
         const nextLevelDef = buildingDef?.levels?.[nextLevel];
 
-        if (!nextLevelDef) return; // Max Level reached
+        if (!nextLevelDef) {
+            failureReason = `Maksimalt nivå nådd (Level ${currentLevel})`;
+            return;
+        }
 
         const req = nextLevelDef.requirements?.[resource as keyof import('./simulationTypes').Resources] || 0;
         const current = building.progress?.[resource as keyof import('./simulationTypes').Resources] || 0;
         const needed = req - current;
 
-        if (needed <= 0) return; // Already met
+        // Validation: Is this resource actually needed?
+        if (needed <= 0) {
+            failureReason = `Fullt lager for ${resource}. (Krav: ${req}, Har: ${current}, Nivå: ${currentLevel}->${nextLevel})`;
+            return;
+        }
 
         actualContributed = Math.min(amount, needed);
 
@@ -231,7 +254,7 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
             building.level = nextLevel;
             building.progress = {}; // Reset progress
 
-            // Power Vacuum Logic: Award leadership roles (Baron/King)
+            // Power Vacuum Logic
             const rewards = nextLevelDef.unlocks || [];
             if (rewards.includes('BARON_STATUS') || rewards.includes('KING_STATUS')) {
                 const results = finalizeLeadershipProject(building.contributions, buildingId);
@@ -251,7 +274,9 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
         return building;
     });
 
-    if (!contributionSuccess) return { success: false, error: "Kunne ikke bidra (Fullt eller ugyldig)" };
+    if (!contributionSuccess) {
+        return { success: false, error: `${failureReason}` };
+    }
 
     // 2. Post-Completion: Update Roles & Regions (outside transaction)
     if (leveledUp) {
