@@ -32,6 +32,43 @@ export default {
                     glass_light: 'rgba(255, 255, 255, 0.1)' // Light glass overlay
                 }
             },
+            keyframes: {
+                'cloud-drift': {
+                    '0%': { transform: 'translate3d(-100%, 0, 0)' },
+                    '100%': { transform: 'translate3d(100vw, 0, 0)' },
+                },
+                'particle': {
+                    '0%': {
+                        transform: 'translate3d(0, -10px, 0) rotate(0deg)',
+                        opacity: '0'
+                    },
+                    '10%': { opacity: '1' },
+                    '90%': { opacity: '1' },
+                    '100%': {
+                        transform: 'translate3d(var(--wind-drift), 100vh, 0) rotate(var(--wind-rotation))',
+                        opacity: '0'
+                    },
+                },
+                'sunbeam': {
+                    '0%, 100%': { opacity: '0.4', transform: 'rotate(var(--rotation)) scale(1)' },
+                    '50%': { opacity: '0.6', transform: 'rotate(var(--rotation)) scale(1.1)' }, // subtle pulse
+                },
+                'mist': {
+                    '0%': { backgroundPosition: '0% 0%' },
+                    '100%': { backgroundPosition: '100% 0%' },
+                },
+                'dust-float': {
+                    '0%, 100%': { transform: 'translate3d(0, 0, 0)' },
+                    '50%': { transform: 'translate3d(10px, -10px, 0)' },
+                }
+            },
+            animation: {
+                'cloud-drift': 'cloud-drift linear infinite',
+                'particle': 'particle linear forwards',
+                'sunbeam': 'sunbeam 8s ease-in-out infinite',
+                'mist': 'mist 60s linear infinite',
+                'dust-float': 'dust-float ease-in-out infinite',
+            }
         },
     },
     plugins: [],

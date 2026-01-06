@@ -1,2 +1,56 @@
 
 @import "tailwindcss";
+
+/* Manual Animation Overrides for Reliability */
+@keyframes cloud-drift {
+  0% { transform: translate3d(-100%, 0, 0); }
+  100% { transform: translate3d(100vw, 0, 0); }
+}
+
+@keyframes particle {
+  0% { 
+    transform: translate3d(0, -10px, 0) rotate(0deg); 
+    opacity: 0; 
+  }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { 
+    transform: translate3d(var(--wind-drift), 100vh, 0) rotate(var(--wind-rotation)); 
+    opacity: 0; 
+  }
+}
+
+@keyframes sunbeam {
+  0%, 100% { opacity: 0.4; transform: rotate(var(--rotation)) scale(1); }
+  50% { opacity: 0.6; transform: rotate(var(--rotation)) scale(1.1); }
+}
+
+@keyframes mist {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
+}
+
+@keyframes dust-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(10px, -10px, 0); }
+}
+
+.animate-cloud-drift {
+  animation: cloud-drift linear infinite;
+}
+
+.animate-particle {
+  animation: particle linear forwards;
+}
+
+.animate-sunbeam {
+  animation: sunbeam 8s ease-in-out infinite;
+}
+
+.animate-mist {
+  animation: mist 60s linear infinite;
+}
+
+.animate-dust-float {
+  animation: dust-float ease-in-out infinite;
+}
