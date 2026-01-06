@@ -129,12 +129,12 @@ export const ACTION_COSTS: Record<ActionType, ActionCost> = {
     TAX: { stamina: 20 },
     TAX_PEASANTS: { stamina: 25 },
     TAX_ROYAL: { stamina: 30 },
-    MILL: { grain: 10, stamina: 20 },
-    SMELT: { iron_ore: 5, wood: 2, stamina: 15 },
-    SAWMILL: { wood: 5, stamina: 15 },
-    BAKERY: { flour: 5, stamina: 10 },
-    REFINE: { stamina: 15 },
-    CRAFT: { stamina: 30 },
+    MILL: { grain: 10 },        // Stamina removed (handled in handler)
+    SMELT: { iron_ore: 5, wood: 2 },
+    SAWMILL: { wood: 5 },
+    BAKERY: { flour: 5 },
+    REFINE: {},                 // Cost handled in handleRefine
+    CRAFT: {},                  // Cost handled in handleCraft
     QUARRY: { bread: 1, stamina: 20 },
     REPAIR: { stamina: 15 },
     HUNT: { stamina: 30 },
@@ -148,9 +148,9 @@ export const ACTION_COSTS: Record<ActionType, ActionCost> = {
     EAT: { bread: 1, stamina: 0 },
     PLANT: { grain: 5, stamina: 25 },
     HARVEST: { stamina: 15 },
-    BAKE: { stamina: 10 },
-    WEAVE: { stamina: 15 },
-    MIX: { stamina: 15 },
+    BAKE: {},                  // Cost handled in handler
+    WEAVE: {},
+    MIX: {},
     DEFEND: { stamina: 30 },
     EXPLORE: { stamina: 25 },
     PATROL: { stamina: 10 },

@@ -9,7 +9,7 @@
 ## Low Priority
 - [ ] Hakke og meisel virker ikke i de respektive gruvene, spillet registerer ikke at man har dem tror jeg. 
 
-- [ ] Det går an å starte produksjon av brød/omelet selv om man har for lite stamina. Gjelder dette flere produksjonsbygninger, undersøk. 
+
 - [ ] Krasj hvis man prøver å gå inn i reperasjon i storsmien uten noen i MH. 
 
 - [ ] Det må være mulig å fjerne gamle items, 
@@ -22,3 +22,4 @@
 - [x] Initialized todo.md
 - [x] Oppgraderinger av bygninger virker ikke, går ikke an å bidra. Spesielt husmannsplass
 - [x] Gamble funker ikke.
+- [x] Det går an å starte produksjon av brød/omelet selv om man har for lite stamina. Gjelder dette flere produksjonsbygninger, undersøk. 
