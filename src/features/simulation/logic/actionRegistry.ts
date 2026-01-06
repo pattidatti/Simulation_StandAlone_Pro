@@ -66,6 +66,7 @@ export const ACTION_REGISTRY: ActionRegistry = {
     PRAY: handlePray,
     CHAT_LOCAL: handleChat,
     GAMBLE_RESULT: handleGamble,
+    PLAY_DICE: handleGamble,
     BUY_MEAL: handleBuyMeal,
     RETIRE: handleRetire,
     CONSUME: handleConsume,
