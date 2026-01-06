@@ -153,7 +153,7 @@ export const SimulationSettings: React.FC<SimulationSettingsProps> = ({ onClose 
                             <User className="w-4 h-4" /> Konto & Profil
                         </h3>
                         <button
-                            onClick={() => window.location.href = '/sim/profile'}
+                            onClick={() => window.location.href = `${window.location.origin}${import.meta.env.BASE_URL}profile`}
                             className="w-full bg-white/5 hover:bg-white/10 rounded-2xl p-4 border border-white/5 flex items-center gap-4 transition-all duration-300 group hover:border-indigo-500/30 text-left"
                         >
                             <div className="w-12 h-12 bg-slate-800 group-hover:bg-indigo-500/20 rounded-xl flex items-center justify-center text-xl border border-white/10 group-hover:border-indigo-500/50 transition-colors">

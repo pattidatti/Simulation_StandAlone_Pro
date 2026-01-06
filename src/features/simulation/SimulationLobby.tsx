@@ -183,7 +183,7 @@ export const SimulationLobby: React.FC = () => {
             localStorage.setItem('sim_player_id', playerId);
             localStorage.setItem('sim_room_pin', cleanPin);
 
-            navigate(`/sim/play/${cleanPin}`);
+            navigate(`/play/${cleanPin}`);
 
         } catch (err) {
             console.error(err);
@@ -285,7 +285,7 @@ export const SimulationLobby: React.FC = () => {
                                 </div>
 
                                 <button
-                                    onClick={() => navigate('/sim/profile')}
+                                    onClick={() => navigate('/profile')}
                                     className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2"
                                 >
                                     <Edit2 size={12} /> Administrer Profil
@@ -299,7 +299,7 @@ export const SimulationLobby: React.FC = () => {
                             Velkommen til den nye æraen av Feudal Sim. Dine bragder lagres nå på tvers av alle verdener.
                         </p>
                         <button
-                            onClick={() => navigate('/sim/host/setup')}
+                            onClick={() => navigate('/host/setup')}
                             className="flex items-center gap-2 text-indigo-400 hover:text-indigo-300 font-bold text-sm transition-colors group"
                         >
                             Host ditt eget rike <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />

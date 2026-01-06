@@ -74,7 +74,7 @@ export const SimulationProvider: React.FC<{ children: ReactNode }> = ({ children
 
         // Silently update URL without triggering React Router navigation/suspense
         const slug = getUrlFromTab(newTab);
-        const newUrl = `/sim/play/${pin}/${slug}`;
+        const newUrl = `${import.meta.env.BASE_URL}play/${pin}/${slug}`;
         window.history.replaceState({ ...window.history.state, idx: window.history.length }, '', newUrl);
     };
 
