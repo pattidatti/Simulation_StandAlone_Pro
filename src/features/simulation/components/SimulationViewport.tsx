@@ -58,7 +58,7 @@ export const SimulationViewport: React.FC<SimulationViewportProps> = ({ player, 
     return (
         <div className="flex-1 relative flex flex-col overflow-hidden w-full h-full">
             {/* HUD Moved to WorldMap for better layout context */}
-            <div className={`flex-1 relative w-full h-full ${isOverlayTab ? 'p-4 md:p-6 overflow-hidden flex items-center justify-center' : 'p-4 md:p-8 overflow-y-auto overflow-x-hidden custom-scrollbar'}`}>
+            <div className={`flex-1 relative w-full h-full ${isOverlayTab ? 'p-2 md:p-3 overflow-hidden flex items-center justify-center' : 'p-4 md:p-8 overflow-y-auto overflow-x-hidden custom-scrollbar'}`}>
                 {/* Always render WorldMap when in these tabs to keep it as background */}
                 {/* LAYER 0: Background World Map (Always rendered in simulation modes) */}
                 {isOverlayTab && (

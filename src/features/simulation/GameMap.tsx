@@ -175,7 +175,7 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
     const isInterior = !!currentPOI?.isInterior;
 
     return (
-        <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+        <div className="relative w-full h-full flex flex-col items-center justify-center p-0">
             {/* ... (rest of render is fine) ... */}
             <div className={`relative w-full max-w-full max-h-full mx-auto ${aspectRatioClass} rounded-[2rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.5)] border-4 border-white/5 bg-slate-950 transition-all duration-1000`}>
                 <AnimatePresence mode="popLayout" custom={direction}>
