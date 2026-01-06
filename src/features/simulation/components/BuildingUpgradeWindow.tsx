@@ -66,7 +66,7 @@ export const BuildingUpgradeWindow: React.FC<BuildingUpgradeWindowProps> = ({ bu
                                                 canGive ? (
                                                     <button
                                                         onClick={() => onAction({
-                                                            type: 'CONTRIBUTE_TO_UPGRADE',
+                                                            type: isPrivate ? 'CONTRIBUTE_TO_PRIVATE_UPGRADE' : 'CONTRIBUTE_TO_UPGRADE',
                                                             buildingId: buildingId,
                                                             resource: res,
                                                             amount: giveAmount
@@ -117,7 +117,7 @@ export const BuildingUpgradeWindow: React.FC<BuildingUpgradeWindowProps> = ({ bu
                         return (
                             <button
                                 onClick={() => {
-                                    onAction({ type: 'CONTRIBUTE_TO_UPGRADE', buildingId: buildingId, resource: 'dummy', amount: 0 }); // Trigger check
+                                    onAction({ type: isPrivate ? 'CONTRIBUTE_TO_PRIVATE_UPGRADE' : 'CONTRIBUTE_TO_UPGRADE', buildingId: buildingId, resource: 'dummy', amount: 0 }); // Trigger check
                                 }}
                                 className="w-full py-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest rounded-[1.5rem] shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 animate-bounce mt-4 shadow-emerald-600/20"
                             >

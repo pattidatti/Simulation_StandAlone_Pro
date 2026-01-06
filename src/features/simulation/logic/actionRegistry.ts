@@ -42,6 +42,7 @@ export const ACTION_REGISTRY: ActionRegistry = {
     DECREE: handleDecree,
     CONSTRUCT: handleContribute,
     CONTRIBUTE_TO_UPGRADE: handleContribute,
+    CONTRIBUTE_TO_PRIVATE_UPGRADE: handleContribute,
     UPGRADE_BUILDING: handleUpgradeBuilding,
     UPGRADE: handleUpgrade,
     JOIN_ROLE: handleJoinRole,
