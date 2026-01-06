@@ -1,0 +1,32 @@
+﻿
+> gravity-l-rebok@0.0.0 build
+> vite build && node scripts/copy-404.js
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 2218 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                                     [39m[1m[2m    0.54 kB[22m[1m[22m[2m Γöé gzip:   0.34 kB[22m
+[2mdist/[22m[35massets/index-CuafuQUD.css                      [39m[1m[2m  180.40 kB[22m[1m[22m[2m Γöé gzip:  21.96 kB[22m
+[2mdist/[22m[36massets/chevron-right-Ca61hAUi.js               [39m[1m[2m    0.30 kB[22m[1m[22m[2m Γöé gzip:   0.25 kB[22m
+[2mdist/[22m[36massets/timer-fmLOTc-w.js                       [39m[1m[2m    0.41 kB[22m[1m[22m[2m Γöé gzip:   0.29 kB[22m
+[2mdist/[22m[36massets/Badge-CfATmvqP.js                       [39m[1m[2m    0.47 kB[22m[1m[22m[2m Γöé gzip:   0.32 kB[22m
+[2mdist/[22m[36massets/GameButton-Cm5Nd9ln.js                  [39m[1m[2m    0.98 kB[22m[1m[22m[2m Γöé gzip:   0.54 kB[22m
+[2mdist/[22m[36massets/GameCard-BFe9QgJt.js                    [39m[1m[2m    1.12 kB[22m[1m[22m[2m Γöé gzip:   0.65 kB[22m
+[2mdist/[22m[36massets/SimulationActivity-D2QjDWGy.js          [39m[1m[2m    1.53 kB[22m[1m[22m[2m Γöé gzip:   0.79 kB[22m
+[2mdist/[22m[36massets/SimulationDiplomacy-Ay_lbF0w.js         [39m[1m[2m    2.70 kB[22m[1m[22m[2m Γöé gzip:   1.23 kB[22m
+[2mdist/[22m[36massets/SimulationWarRoom-CGpz35wr.js           [39m[1m[2m    7.05 kB[22m[1m[22m[2m Γöé gzip:   2.16 kB[22m
+[2mdist/[22m[36massets/SimulationMarket-LAiHtcZg.js            [39m[1m[2m    8.02 kB[22m[1m[22m[2m Γöé gzip:   2.81 kB[22m
+[2mdist/[22m[36massets/SimulationSkills-CeevzTFT.js            [39m[1m[2m    8.38 kB[22m[1m[22m[2m Γöé gzip:   2.60 kB[22m
+[2mdist/[22m[36massets/SimulationSettings-tgIvSTwB.js          [39m[1m[2m    8.78 kB[22m[1m[22m[2m Γöé gzip:   2.36 kB[22m
+[2mdist/[22m[36massets/SimulationProfile-DTRayv1k.js           [39m[1m[2m   10.72 kB[22m[1m[22m[2m Γöé gzip:   2.82 kB[22m
+[2mdist/[22m[36massets/PoliticalHub-B1Wtoc2c.js                [39m[1m[2m   12.81 kB[22m[1m[22m[2m Γöé gzip:   4.18 kB[22m
+[2mdist/[22m[36massets/SimulationEconomyBlueprint-C7YydFee.js  [39m[1m[2m   12.86 kB[22m[1m[22m[2m Γöé gzip:   3.02 kB[22m
+[2mdist/[22m[36massets/SimulationHierarchy-BWbElPIl.js         [39m[1m[2m   15.29 kB[22m[1m[22m[2m Γöé gzip:   4.35 kB[22m
+[2mdist/[22m[36massets/SimulationVault-DJBuiPzN.js             [39m[1m[2m   18.13 kB[22m[1m[22m[2m Γöé gzip:   5.99 kB[22m
+[2mdist/[22m[36massets/SiegeEngine-CBf489Z1.js                 [39m[1m[2m   21.63 kB[22m[1m[22m[2m Γöé gzip:   6.09 kB[22m
+[2mdist/[22m[36massets/SimulationProduction-T7BVKc-o.js        [39m[1m[2m   28.87 kB[22m[1m[22m[2m Γöé gzip:   7.74 kB[22m
+[2mdist/[22m[36massets/index-C8k3ceT0.js                       [39m[1m[33m1,128.59 kB[39m[22m[2m Γöé gzip: 306.51 kB[22m
+[32mΓ£ô built in 4.38s[39m
+Γ£à Copied index.html to 404.html for GitHub Pages SPA support
