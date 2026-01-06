@@ -349,7 +349,8 @@ export const SimulationProduction: React.FC<SimulationProductionProps> = React.m
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {REPAIR_CONFIG[buildingId]?.slots.map((slot) => {
-                                        const item = player.equipment[slot as EquipmentSlot];
+                                        const equipment = player.equipment || {};
+                                        const item = equipment[slot as EquipmentSlot];
                                         if (!item) return null;
 
                                         return (
@@ -363,7 +364,7 @@ export const SimulationProduction: React.FC<SimulationProductionProps> = React.m
                                         );
                                     })}
 
-                                    {REPAIR_CONFIG[buildingId]?.slots.every(slot => !player.equipment[slot as EquipmentSlot]) && (
+                                    {REPAIR_CONFIG[buildingId]?.slots.every(slot => !(player.equipment || {})[slot as EquipmentSlot]) && (
                                         <div className="col-span-full py-12 text-center bg-slate-900/40 rounded-[2rem] border border-dashed border-white/5">
                                             <p className="text-slate-500 italic">Ingen relevante gjenstander utstyrt for reparasjon her.</p>
                                         </div>
