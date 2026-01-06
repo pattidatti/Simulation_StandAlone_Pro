@@ -35,9 +35,25 @@ export const SimulationPlayer: React.FC = () => {
     React.useEffect(() => {
         setHideHeader(true);
         setFullWidth(true);
+
+        // ULTRATHINK: AudioContext Auto-Resume Logic
+        const handleInteraction = () => {
+            // We use the singleton directly to ensure it catches the global context state
+            import('./logic/AudioManager').then(({ audioManager }) => {
+                audioManager.resume();
+            });
+            window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('keydown', handleInteraction);
+        };
+
+        window.addEventListener('click', handleInteraction);
+        window.addEventListener('keydown', handleInteraction);
+
         return () => {
             setHideHeader(false);
             setFullWidth(false);
+            window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('keydown', handleInteraction);
         };
     }, [setHideHeader, setFullWidth]);
 

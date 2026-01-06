@@ -122,7 +122,8 @@ class AudioManager {
         if (this.sfxVolume === 0) return;
 
         const filename = key.includes('.') ? key : `${key}.mp3`;
-        const path = `/sounds/sfx/${filename}`;
+        const baseUrl = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL;
+        const path = `${baseUrl}/sounds/sfx/${filename}`.replace('//', '/');
 
         const audio = new Audio(path);
         audio.volume = this.sfxVolume;
@@ -213,7 +214,10 @@ class AudioManager {
         }
 
         const filename = key.includes('.') ? key : `${key}.mp3`;
-        const path = `/sounds/music/${filename}`;
+        // Use BASE_URL to support subpath deployments (like GitHub Pages)
+        const baseUrl = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL;
+        // Clean up double slashes just in case
+        const path = `${baseUrl}/sounds/music/${filename}`.replace('//', '/');
 
         const newMusic = new Audio(path);
         // ULTRATHINK: Removing anonymous crossOrigin for local public files to avoid potential CORS issues on dev servers
