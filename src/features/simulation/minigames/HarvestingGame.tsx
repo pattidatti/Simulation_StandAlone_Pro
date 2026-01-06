@@ -4,15 +4,7 @@ import { ITEM_TEMPLATES } from '../constants';
 
 import { animationManager } from '../logic/AnimationManager';
 
-const getBestToolForAction = (type: string, equipment: (EquipmentItem | undefined | null)[]) => {
-    if (!equipment) return undefined;
-    return equipment.find(item => {
-        if (!item) return false;
-        const tid = Object.keys(ITEM_TEMPLATES).find(k => item.id === k || item.id.startsWith(k + '_'));
-        const template = tid ? ITEM_TEMPLATES[tid] : null;
-        return (template as any)?.relevantActions?.includes(type);
-    });
-};
+import { getBestToolForAction, getTemplateIdFromItem } from '../utils/simulationUtils';
 
 export const HarvestingGame: React.FC<{
     onComplete: (score: number) => void,
@@ -85,8 +77,12 @@ export const HarvestingGame: React.FC<{
 
         // Calculate yield for this hit
         const actionType = isMining ? 'MINE' : isQuarrying ? 'QUARRY' : isForaging ? 'FORAGE' : 'WORK';
-        const bestTool = getBestToolForAction(actionType, equipment);
-        const toolYieldBonus = bestTool?.stats?.yieldBonus || 0;
+        const bestTool = getBestToolForAction(actionType, equipment || []);
+
+        console.log(`[HarvestingGame] Init. Action: ${actionType}. Equipment Count: ${equipment?.length}. Best Tool:`, bestTool);
+
+        const toolYieldBonus = bestTool?.stats?.yieldBonus ||
+            (bestTool && getTemplateIdFromItem(bestTool) ? ITEM_TEMPLATES[getTemplateIdFromItem(bestTool)!]?.stats?.yieldBonus : 0) || 0;
 
         const baseHitYield = Math.ceil((possibleYield / 5) * (0.5 + score));
         const toolHitBonus = Math.ceil((toolYieldBonus / 5) * (0.5 + score));

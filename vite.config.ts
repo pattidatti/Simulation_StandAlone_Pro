@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-    base: '/Simulation_StandAlone_Pro/',
+    base: '/',
     plugins: [
         react(),
         // VitePWA({...}) // Disabled: Missing icons caused CI build failure

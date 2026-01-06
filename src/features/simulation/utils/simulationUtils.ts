@@ -1,14 +1,72 @@
 import { ref, runTransaction } from 'firebase/database';
 import { simulationDb as db } from '../simulationFirebase';
 import { GAME_BALANCE, SEASONS, WEATHER } from '../constants';
-import { ITEM_TEMPLATES } from '../data/items';
+import { ITEM_TEMPLATES } from '../data/equipment';
 import { getDayPart } from './timeUtils';
-import type { SkillType, Buff, SimulationMessage } from '../simulationTypes';
+import type { EquipmentItem, SimulationMessage, SkillType, Buff } from '../simulationTypes';
 
 /**
  * Logs a message to the simulation room, ensuring the message list is capped at 50 items.
  * Uses a transaction to prevent race conditions.
  */
+
+/**
+ * ROBUST TOOL DETECTION
+ * 
+ * Helper to identify the template ID of a potentially instanced item.
+ * accounts for "stone_pickaxe_12345" matching "stone_pickaxe" template.
+ * Sorts candidates by length descending to ensure specific overrides match before generic base types.
+ */
+export const getTemplateIdFromItem = (item: EquipmentItem | null | undefined): string | null => {
+    if (!item || !item.id) return null;
+
+    // 1. Direct match (fastest)
+    if (ITEM_TEMPLATES[item.id]) return item.id;
+
+    // 2. Prefix match (Sort by length desc to match "super_axe" before "axe")
+    const templates = Object.keys(ITEM_TEMPLATES).sort((a, b) => b.length - a.length);
+    const match = templates.find(tplId => item.id.startsWith(tplId + '_'));
+
+    return match || null;
+};
+
+/**
+ * Finds the BEST equipped tool for a specific action type.
+ * Uses the robust template matching logic.
+ */
+export const getBestToolForAction = (type: string, equipment: (EquipmentItem | undefined | null)[] | Record<string, EquipmentItem>): EquipmentItem | undefined => {
+    if (!equipment) return undefined;
+
+    const equipmentList = Array.isArray(equipment) ? equipment : Object.values(equipment);
+
+    // Filter for items that are RELEVANT to the action
+    const candidates = equipmentList.filter(item => {
+        if (!item) return false;
+        const tid = getTemplateIdFromItem(item);
+        const template = tid ? ITEM_TEMPLATES[tid] : null;
+
+        // Check relevance in template OR instance
+        const relevantActions = item.relevantActions || template?.relevantActions;
+        return relevantActions?.includes(type);
+    }).filter((item): item is EquipmentItem => !!item);
+
+    if (candidates.length === 0) return undefined;
+
+    // Sort valid candidates by stats (e.g. yieldBonus) to pick the 'best' one
+    return candidates.sort((a, b) => {
+        // Resolve stats (instance priority > template fallback)
+        const tIdA = getTemplateIdFromItem(a);
+        const tIdB = getTemplateIdFromItem(b);
+        const statsA = a.stats || (tIdA ? ITEM_TEMPLATES[tIdA]?.stats : {});
+        const statsB = b.stats || (tIdB ? ITEM_TEMPLATES[tIdB]?.stats : {});
+
+        const yieldA = statsA?.yieldBonus || 0;
+        const yieldB = statsB?.yieldBonus || 0;
+
+        return yieldB - yieldA; // Descending
+    })[0];
+};
+
 export const logSimulationMessage = async (pin: string, message: string) => {
     const messagesRef = ref(db, `simulation_rooms/${pin}/messages`);
 
@@ -73,16 +131,16 @@ export const calculateYield = (
 
             let relevantActions = item.relevantActions;
             if (!relevantActions && item.id) {
-                const tid = Object.keys(ITEM_TEMPLATES).find(k => item.id === k || item.id.startsWith(k + '_') || item.id.startsWith(k + '-'));
+                const tid = getTemplateIdFromItem(item);
                 if (tid) {
-                    relevantActions = (ITEM_TEMPLATES as any)[tid]?.relevantActions;
+                    relevantActions = ITEM_TEMPLATES[tid]?.relevantActions;
                 }
             }
 
             const isRelevant = !modifiers.actionType || relevantActions?.includes(modifiers.actionType);
 
             if (isRelevant) {
-                const stats = item.stats || (ITEM_TEMPLATES as any)[item.id]?.stats;
+                const stats = item.stats || (getTemplateIdFromItem(item) ? ITEM_TEMPLATES[getTemplateIdFromItem(item)!]?.stats : undefined);
                 if (stats?.yieldBonus) equipBonus += stats.yieldBonus;
 
                 if (slot === 'AXE' || slot === 'PICKAXE' || slot === 'SCYTHE' || slot === 'MAIN_HAND' || slot === 'OFF_HAND' || slot === 'BOW' || slot === 'TRAP' || slot === 'CHISEL') {

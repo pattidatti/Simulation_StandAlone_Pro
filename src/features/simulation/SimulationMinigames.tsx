@@ -105,15 +105,7 @@ const MinigameToolBadge: React.FC<{ item: EquipmentItem }> = ({ item }) => {
     );
 };
 
-const getBestToolForAction = (type: string, equipment: (EquipmentItem | undefined | null)[]) => {
-    if (!equipment) return undefined;
-    return equipment.find(item => {
-        if (!item) return false;
-        const tid = Object.keys(ITEM_TEMPLATES).find(k => item.id === k || item.id.startsWith(k + '_'));
-        const template = tid ? ITEM_TEMPLATES[tid] : null;
-        return (template as any)?.relevantActions?.includes(type);
-    });
-};
+import { getBestToolForAction } from './utils/simulationUtils';
 
 /* --- MAIN OVERLAY COMPONENT --- */
 export const MinigameOverlay: React.FC<MinigameProps> = ({ type, onComplete, onCancel, equipment, skills, playerUpgrades, currentSeason = 'Spring', currentWeather = 'Clear', totalTicks = 0, selectedMethod: initialMethod, action }) => {
@@ -196,6 +188,7 @@ export const MinigameOverlay: React.FC<MinigameProps> = ({ type, onComplete, onC
         // Calculate without performance to get the "standard" expected yield
         try {
             const result = calculateYield(mockActor as any, base, skillType as any, modifiers);
+            console.log(`[MinigameOverlay] Yield Calc. Type: ${type}, Base: ${base}. Result: ${result}. Equipment:`, mockActor.equipment);
             return isNaN(result) ? 1.5 : result; // Safety check
         } catch (e) {
             console.error("Yield Calc Error:", e);
