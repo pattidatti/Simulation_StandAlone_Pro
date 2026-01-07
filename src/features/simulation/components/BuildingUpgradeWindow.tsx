@@ -16,9 +16,9 @@ export const BuildingUpgradeWindow: React.FC<BuildingUpgradeWindowProps> = ({ bu
     const isPrivate = buildingId === 'farm_house';
     const buildingState = isPrivate
         ? ((player as any).buildings?.[buildingId] || { level: 1, progress: {} })
-        : ((room.world as any)?.settlement?.buildings?.[buildingId] || { id: buildingId, level: 1, progress: {}, contributions: {} });
+        : ((room.world as any)?.settlement?.buildings?.[buildingId] || { id: buildingId, level: 0, progress: {}, contributions: {} });
 
-    const currentLevel = (buildingState.level as number) || 1;
+    const currentLevel = (buildingState.level as number) ?? 0;
     const nextLevel = currentLevel + 1;
     const nextLevelDef = buildingDef.levels[nextLevel];
 

@@ -3,7 +3,7 @@ import { simulationDb as db } from './simulationFirebase';
 import { calculateStaminaCost, logSimulationMessage } from './utils/simulationUtils';
 import { ACTION_COSTS, GAME_BALANCE, INITIAL_RESOURCES, INITIAL_SKILLS } from './constants';
 import { ACTION_REGISTRY } from './logic/actionRegistry';
-import { handleGlobalTrade, handleGlobalTax, handleGlobalContribution } from './globalActions';
+import { handleGlobalContribution, handleGlobalTax, handleGlobalTrade, handleReinforceGarrison, handleRepairWalls, handleSetTax } from './globalActions';
 import { logSystemicStat } from './utils/statsUtils';
 import type { SkillType, EquipmentSlot, ActionType, Resources } from './simulationTypes';
 
@@ -11,14 +11,14 @@ import { addXp, recordCharacterLife } from './logic/playerLogic';
 import { performSiegeTransaction } from './logic/handlers/SiegeActions';
 
 /* --- ACTIONS CLASSIFICATION --- */
-const GLOBAL_ACTIONS = ['RAID', 'TAX', 'TAX_PEASANTS', 'TAX_ROYAL', 'TRADE', 'TRADE_ROUTE', 'CONTRIBUTE_TO_UPGRADE', 'BUY', 'SELL', 'CONTRIBUTE', 'CONSTRUCT', 'UPGRADE_BUILDING', 'START_SIEGE', 'JOIN_SIEGE', 'SIEGE_ACTION'];
+const GLOBAL_ACTIONS = ['RAID', 'TAX', 'TAX_PEASANTS', 'TAX_ROYAL', 'TRADE', 'TRADE_ROUTE', 'CONTRIBUTE_TO_UPGRADE', 'BUY', 'SELL', 'CONTRIBUTE', 'CONSTRUCT', 'UPGRADE_BUILDING', 'START_SIEGE', 'JOIN_SIEGE', 'SIEGE_ACTION', 'REINFORCE_GARRISON', 'REPAIR_WALLS', 'SET_TAX'];
 
 export const performAction = async (pin: string, playerId: string, action: any): Promise<{ success: boolean, data?: { success: boolean, timestamp: number, message: string, utbytte: any[], xp: any[], durability: any[] }, error?: any }> => {
     const actionType = typeof action === 'string' ? action : action.type;
     const isGlobalAction = GLOBAL_ACTIONS.includes(actionType);
 
     if (isGlobalAction) {
-        return performGlobalAction(pin, playerId, action);
+        return await performGlobalAction(pin, playerId, action) as any;
     }
 
     return performSoloAction(pin, playerId, action);
@@ -246,6 +246,18 @@ async function performGlobalAction(pin: string, playerId: string, action: any) {
 
         if (actionType === 'START_SIEGE' || actionType === 'JOIN_SIEGE' || actionType === 'SIEGE_ACTION') {
             return await performSiegeTransaction(pin, playerId, action);
+        }
+
+        if (actionType === 'REINFORCE_GARRISON') {
+            return await handleReinforceGarrison(pin, playerId, action);
+        }
+
+        if (actionType === 'REPAIR_WALLS') {
+            return await handleRepairWalls(pin, playerId, action);
+        }
+
+        if (actionType === 'SET_TAX') {
+            return await handleSetTax(pin, playerId, action);
         }
 
         return { success: false, error: "Global handling not available." };

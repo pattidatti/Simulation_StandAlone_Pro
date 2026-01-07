@@ -198,7 +198,7 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
         if (!building) {
             building = {
                 id: buildingId,
-                level: 1,
+                level: 0,
                 progress: {},
                 contributions: {}
             };
@@ -211,9 +211,9 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
         }
 
         buildingName = buildingDef?.name || buildingId;
-        // FIX: Ensure we never treat an existing building as Level 0. Minimum is 1.
-        const rawLevel = building.level ?? 1;
-        const currentLevel = Math.max(1, rawLevel);
+        // FIX: Ensure we correctly handle level 0 for initial construction (like Throne Room)
+        const rawLevel = building.level ?? 0;
+        const currentLevel = rawLevel;
 
         const nextLevel = currentLevel + 1;
         const nextLevelDef = buildingDef?.levels?.[nextLevel];
@@ -290,28 +290,24 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
             const winnerSnap = await get(winnerRef);
             const winner = winnerSnap.val();
 
-            const updates: any = {};
-            updates[`${winnerId}/role`] = newRole;
-            // If Baron, update regionId (if they were capital/somewhere else)
+            const rootRef = ref(db, `simulation_rooms/${pin}`);
+            const globalUpdates: any = {};
+            globalUpdates[`players/${winnerId}/role`] = newRole;
+            globalUpdates[`public_profiles/${winnerId}/role`] = newRole;
+
             if (newRole === 'BARON') {
                 const regId = buildingId === 'manor_ost' ? 'region_ost' : 'region_vest';
-                updates[`${winnerId}/regionId`] = regId;
-
-                // Update Region Meta
-                const regionalMetaRef = ref(db, `simulation_rooms/${pin}/regions/${regId}`);
-                await update(regionalMetaRef, {
-                    rulerId: winnerId,
-                    rulerName: winner.name
-                });
+                globalUpdates[`players/${winnerId}/regionId`] = regId;
+                globalUpdates[`public_profiles/${winnerId}/regionId`] = regId;
+                globalUpdates[`regions/${regId}/rulerId`] = winnerId;
+                globalUpdates[`regions/${regId}/rulerName`] = winner.name;
             } else if (newRole === 'KING') {
-                updates[`${winnerId}/regionId`] = 'capital';
-
-                // Update global world state if needed
-                // (e.g. log the new king)
+                globalUpdates[`players/${winnerId}/regionId`] = 'capital';
+                globalUpdates[`public_profiles/${winnerId}/regionId`] = 'capital';
             }
 
-            await update(ref(db, `simulation_rooms/${pin}/players`), updates);
-            await update(ref(db, `simulation_rooms/${pin}/public_profiles`), updates);
+            // Atomic update for roll, profile, and region meta
+            await update(rootRef, globalUpdates);
 
             const coronationMsg = `📢 ${winner.name} har fullført ${buildingName} og er nå utnevnt til ${newRole === 'BARON' ? 'Baron' : 'Konge'}!`;
             logSimulationMessage(pin, coronationMsg);
@@ -812,6 +808,127 @@ export const handleCastVote = async (pin: string, playerId: string, action: { re
     return { success };
 };
 
+/* --- WAR ROOM HANDLERS (PERSISTENT) --- */
+
+export const handleReinforceGarrison = async (pin: string, playerId: string, action: any) => {
+    const { amount, resource } = action;
+    const playerRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
+
+    const playerSnap = await get(playerRef);
+    if (!playerSnap.exists()) return { success: false, error: "Spiller mangler" };
+    const player = playerSnap.val();
+
+    const regionId = player.regionId || 'capital';
+    const regionRef = ref(db, `simulation_rooms/${pin}/regions/${regionId}`);
+
+    const itemTemplateId = resource === 'swords' ? 'iron_sword' : 'leather_armor';
+    const inventory = player.inventory || [];
+    const matchingItems = inventory.filter((i: any) => i.id === itemTemplateId);
+
+    if (matchingItems.length < amount) {
+        return { success: false, error: `Mangler ${amount} ${resource === 'swords' ? 'sverd' : 'rustninger'} i inventory.` };
+    }
+
+    let success = false;
+    await runTransaction(regionRef, (region) => {
+        if (!region) {
+            region = { id: regionId, name: regionId, defenseLevel: 1, taxRate: 10, rulerName: player.name };
+        }
+        if (!region.garrison) region.garrison = { swords: 0, armor: 0, morale: 100 };
+
+        region.garrison[resource as 'swords' | 'armor'] += amount;
+        success = true;
+        return region;
+    });
+
+    if (success) {
+        let removed = 0;
+        const newInventory = inventory.filter((item: any) => {
+            if (removed < amount && item.id === itemTemplateId) {
+                removed++;
+                return false;
+            }
+            return true;
+        });
+
+        await update(playerRef, { inventory: newInventory });
+        const msg = `Forsterket garnisonen i ${regionId} med ${amount} ${resource === 'swords' ? 'sverd' : 'rustninger'}.`;
+        logSimulationMessage(pin, `[${new Date().toLocaleTimeString()}] ${player.name}: ${msg}`);
+        return { success: true, data: { message: msg } };
+    }
+
+    return { success: false, error: "Kunne ikke oppdatere garnisonen." };
+};
+
+export const handleRepairWalls = async (pin: string, playerId: string, _action: any) => {
+    const playerRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
+    const playerSnap = await get(playerRef);
+    if (!playerSnap.exists()) return { success: false, error: "Spiller mangler" };
+    const player = playerSnap.val();
+
+    const costStone = 10;
+    const costWood = 10;
+    const repairAmount = 50;
+
+    if ((player.resources.stone || 0) < costStone || (player.resources.wood || 0) < costWood) {
+        return { success: false, error: "Mangler stein eller ved for reparasjon." };
+    }
+
+    const regionId = player.regionId || 'capital';
+    const regionRef = ref(db, `simulation_rooms/${pin}/regions/${regionId}`);
+
+    let success = false;
+    let failureReason = "";
+
+    await runTransaction(regionRef, (region) => {
+        if (!region) return;
+        if (!region.fortification) region.fortification = { hp: 1000, maxHp: 1000, level: 1 };
+
+        if (region.fortification.hp >= region.fortification.maxHp) {
+            failureReason = "Murene er allerede feilfrie.";
+            return;
+        }
+
+        region.fortification.hp = Math.min(region.fortification.maxHp, region.fortification.hp + repairAmount);
+        success = true;
+        return region;
+    });
+
+    if (success) {
+        await runTransaction(playerRef, (p) => {
+            if (!p) return;
+            p.resources.stone -= costStone;
+            p.resources.wood -= costWood;
+            return p;
+        });
+        const msg = `Reparerte murer i ${regionId} (+${repairAmount} HP).`;
+        logSimulationMessage(pin, `[${new Date().toLocaleTimeString()}] ${player.name}: ${msg}`);
+        return { success: true, data: { message: msg } };
+    }
+
+    return { success: false, error: failureReason || "Kunne ikke reparere murene." };
+};
+
+export const handleSetTax = async (pin: string, playerId: string, action: any) => {
+    const { newRate } = action;
+    const playerRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
+    const playerSnap = await get(playerRef);
+    if (!playerSnap.exists()) return { success: false, error: "Spiller mangler" };
+    const player = playerSnap.val();
+
+    const regionId = player.regionId || 'capital';
+    const regionRef = ref(db, `simulation_rooms/${pin}/regions/${regionId}`);
+
+    const safeRate = Math.max(0, Math.min(20, newRate));
+
+    await update(regionRef, { taxRate: safeRate });
+    const msg = `Skattenivå i ${regionId} satt til ${safeRate}%.`;
+    logSimulationMessage(pin, `[${new Date().toLocaleTimeString()}] ${player.name}: ${msg}`);
+    return { success: true, data: { message: msg } };
+};
+
+
+
 export const handleFinalizeElection = async (pin: string, regionId: string) => {
     const regionRef = ref(db, `simulation_rooms/${pin}/regions/${regionId}`);
     const regionSnap = await get(regionRef);
@@ -854,12 +971,14 @@ export const handleFinalizeElection = async (pin: string, regionId: string) => {
         const winnerSnap = await get(winnerRef);
         const winner = winnerSnap.val();
 
-        const updates: any = {};
-        updates[`${winnerId}/role`] = 'BARON';
-        updates[`${winnerId}/regionId`] = regionId;
+        const rootRef = ref(db, `simulation_rooms/${pin}`);
+        const globalUpdates: any = {};
+        globalUpdates[`players/${winnerId}/role`] = 'BARON';
+        globalUpdates[`players/${winnerId}/regionId`] = regionId;
+        globalUpdates[`public_profiles/${winnerId}/role`] = 'BARON';
+        globalUpdates[`public_profiles/${winnerId}/regionId`] = regionId;
 
-        await update(ref(db, `simulation_rooms/${pin}/players`), updates);
-        await update(ref(db, `simulation_rooms/${pin}/public_profiles`), updates);
+        await update(rootRef, globalUpdates);
 
         logSimulationMessage(pin, `👑 KRONING: ${winner.name} har vunnet valget og er nå Baron av ${regionName}!`);
         return { success: true };
