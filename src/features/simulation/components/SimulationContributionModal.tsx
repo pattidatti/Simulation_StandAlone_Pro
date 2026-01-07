@@ -100,7 +100,11 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                 {/* Header Feature */}
                 <div className="relative h-48 rounded-3xl overflow-hidden mb-8 group border border-white/5">
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent z-10" />
-                    <div className={`absolute inset-0 bg-cover bg-center opacity-40 group-hover:scale-105 transition-transform duration-1000 bg-[url('https://images.unsplash.com/photo-1599619351208-3e6c839d6828?q=80&w=2672&auto=format&fit=crop')]`} />
+                    <img
+                        src="/src/features/simulation/assets/castle_construction_epic.webp"
+                        alt="Project"
+                        className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-1000"
+                    />
 
                     <div className="absolute bottom-6 left-8 z-20">
                         <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase">{projectDef.name}</h3>

@@ -109,6 +109,10 @@ export const POINTS_OF_INTEREST: POI[] = [
         id: 'castle_construction', label: 'Byggeplass', icon: '🏗️', top: '75%', left: '80%', roles: ['PEASANT', 'BARON', 'KING', 'SOLDIER'], parentId: 'castle',
         actions: [{ id: 'OPEN_CONSTRUCTION', label: 'Bidra til bygging', cost: 'Ressurser' }]
     },
+    {
+        id: 'war_room', label: 'Krigsrommet', icon: '⚔️', top: '25%', left: '35%', roles: ['BARON', 'KING', 'SOLDIER'], parentId: 'castle',
+        actions: [{ id: 'OPEN_WAR_ROOM', label: 'Åpne Krigsrommet', cost: 'Gratis' }]
+    },
 
     // --- VILLAGE LOCAL HUB (CITY) ---
     {
