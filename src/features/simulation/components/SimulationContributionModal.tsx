@@ -101,7 +101,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                 <div className="relative h-48 rounded-3xl overflow-hidden mb-8 group border border-white/5">
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent z-10" />
                     <img
-                        src={activeProjectId === 'throne_room' ? "/images/simulation/throne_room_epic.png" : "/images/simulation/castle_construction_epic.png"}
+                        src={`${import.meta.env.BASE_URL}images/simulation/${activeProjectId === 'throne_room' ? 'throne_room_epic.png' : 'castle_construction_epic.png'}`}
                         alt={projectDef.name}
                         className="w-full h-48 object-cover rounded-2xl mb-6 shadow-2xl border border-white/10"
                     />
@@ -111,8 +111,14 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                         <p className="text-slate-300 font-medium text-xs max-w-md">{projectDef.description}</p>
                     </div>
 
-                    <div className="absolute top-6 right-8 z-20 bg-emerald-500/20 backdrop-blur-md px-4 py-2 rounded-full border border-emerald-500/30">
-                        <span className="text-emerald-400 font-black text-xs tabular-nums">{overallProgress.toFixed(0)}% FULLFØRT</span>
+                    <div className="absolute top-6 right-8 z-20 flex flex-col items-end gap-2">
+                        <div className="bg-emerald-500/20 backdrop-blur-md px-4 py-2 rounded-full border border-emerald-500/30">
+                            <span className="text-emerald-400 font-black text-xs tabular-nums">{overallProgress.toFixed(0)}% FULLFØRT</span>
+                        </div>
+                        {/* Diagnostic Badge */}
+                        <div className="bg-white/5 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 opacity-40">
+                            <span className="text-white/60 font-bold text-[8px] uppercase tracking-tighter">DB Nivå: {project.level || 0} / Max: {Object.keys(projectDef.levels || {}).length}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -136,7 +142,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                                                     <span className="text-xl">{(RESOURCE_DETAILS as any)[res]?.icon || '📦'}</span>
                                                     <div>
                                                         <span className="text-sm font-bold text-white tracking-tight italic">{(RESOURCE_DETAILS as any)[res]?.label || res}</span>
-                                                        <p className="text-[10px] text-slate-500 font-medium">Beholdning: <span className="text-slate-300">{playerHas}</span></p>
+                                                        <p className="text-[10px] text-slate-500 font-medium">Beholdning: <span className="text-slate-300">{typeof playerHas === 'number' ? playerHas.toLocaleString() : playerHas}</span></p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
@@ -154,20 +160,29 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                                                 />
                                             </div>
 
-                                            {!isDone && playerHas > 0 && (
+                                            {(playerHas > 0 || isDone) && (
                                                 <div className="flex gap-2">
                                                     <button
-                                                        onClick={() => handleContribute(res, Math.min(10, playerHas))}
-                                                        className="flex-1 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-white transition-all uppercase"
+                                                        onClick={() => handleContribute(res, Math.min(10, playerHas || 1))}
+                                                        className={`flex-1 py-2 rounded-xl text-[10px] font-black text-white transition-all uppercase border
+                                                            ${isDone ? 'bg-white/5 border-white/10 opacity-50' : 'bg-white/5 hover:bg-white/10 border-white/10'}
+                                                        `}
                                                     >
-                                                        Gi 10
+                                                        {isDone ? 'Lager Fullt' : 'Gi 10'}
                                                     </button>
                                                     <button
-                                                        onClick={() => handleContribute(res, Math.min(50, playerHas))}
-                                                        className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-[10px] font-black text-white transition-all uppercase"
+                                                        onClick={() => handleContribute(res, Math.min(50, playerHas || 1))}
+                                                        className={`flex-1 py-2 rounded-xl text-[10px] font-black text-white transition-all uppercase
+                                                            ${isDone ? 'bg-indigo-600/20 text-indigo-300/50 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500'}
+                                                        `}
                                                     >
-                                                        Gi 50
+                                                        {isDone ? 'Fullført' : 'Gi 50'}
                                                     </button>
+                                                </div>
+                                            )}
+                                            {playerHas <= 0 && !isDone && (
+                                                <div className="py-2 text-center bg-black/20 rounded-xl border border-white/5">
+                                                    <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Du mangler {(RESOURCE_DETAILS as any)[res]?.label || res}</span>
                                                 </div>
                                             )}
                                         </div>

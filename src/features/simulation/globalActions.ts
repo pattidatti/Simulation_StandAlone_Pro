@@ -212,27 +212,30 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
 
         buildingName = buildingDef?.name || buildingId;
 
-        // ULTRATHINK: Auto-Repair Logic for stuck buildings
-        // If the building is at Level 1, but Level 1 is the completion level (no Level 2 defined),
-        // and it has progress/contributions, it was likely initialized incorrectly at Level 1.
-        // We downgrade it to Level 0 to allow the contribution flow to function and finish it properly.
-        const rawLevel = building.level ?? 0;
-        const buildingHasProgress = Object.keys(building.progress || {}).length > 0;
-        const buildingHasContributions = Object.keys(building.contributions || {}).length > 0;
+        const rawLevel = Number(building.level ?? 0);
+        const hasProgress = building.progress && Object.keys(building.progress).length > 0;
+        const hasContr = building.contributions && Object.keys(building.contributions).length > 0;
 
-        if (rawLevel === 1 && !buildingDef.levels?.[2] && (buildingHasProgress || buildingHasContributions)) {
-            console.log(`[Auto-Repair] Downgrading ${buildingId} from 1 to 0 to fix completion lock.`);
+        // ULTRATHINK: Aggressive Auto-Repair
+        // If the building is at its current max level (or Level 1) but still has progress or contributions,
+        // it signifies a desync where the building was "finished" without actually being completed.
+        // We force it back to Level 0 if it's a single-level building like the Manors.
+        const isStuckAtMax = !buildingDef.levels?.[rawLevel + 1];
+        let repaired = false;
+        if (isStuckAtMax && (hasProgress || hasContr)) {
+            console.log(`[Auto-Repair] Building ${buildingId} is stuck at Level ${rawLevel}. Resetting to 0 to enable completion.`);
             building.level = 0;
+            repaired = true;
         }
 
-        const currentLevel = building.level ?? 0;
-
+        const currentLevel = Number(building.level ?? 0);
         const nextLevel = currentLevel + 1;
         const nextLevelDef = buildingDef?.levels?.[nextLevel];
 
         if (!nextLevelDef) {
-            failureReason = `Maksimalt nivå nådd (Level ${currentLevel})`;
-            return;
+            failureReason = `Bygget er ferdig (Level ${currentLevel}). Ingen flere oppgraderinger tilgjengelig.`;
+            // Even if no next level, if we just repaired it, we must return to save the level change
+            return repaired ? building : undefined;
         }
 
         const req = nextLevelDef.requirements?.[resource as keyof import('./simulationTypes').Resources] || 0;
@@ -242,7 +245,7 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
         // Validation: Is this resource actually needed?
         if (needed <= 0) {
             failureReason = `Fullt lager for ${resource}. (Krav: ${req}, Har: ${current}, Nivå: ${currentLevel}->${nextLevel})`;
-            return;
+            return repaired ? building : undefined;
         }
 
         actualContributed = Math.min(amount, needed);

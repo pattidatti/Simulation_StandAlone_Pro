@@ -147,15 +147,13 @@ export const SimulationVault: React.FC<SimulationVaultProps> = React.memo(({ pla
             const isTrashArea = targets.some(t => t.closest('[data-trash-zone]'));
             if (isTrashArea && item.type === 'equipment' && item.data) {
                 setConfirmDiscard(item.data);
-                setDraggedItem(null);
-                return;
-            }
+            } else {
+                // Check for inventory area (for unequipping)
+                const isInventoryArea = targets.some(t => t.closest('[data-inventory-grid]') || t.closest('.inventory-container'));
 
-            // Check for inventory area (for unequipping)
-            const isInventoryArea = targets.some(t => t.closest('[data-inventory-grid]') || t.closest('.inventory-container'));
-
-            if (isInventoryArea && item.type === 'equipment' && item.slot) {
-                onAction({ type: 'UNEQUIP_ITEM', slot: item.slot });
+                if (isInventoryArea && item.type === 'equipment' && item.slot) {
+                    onAction({ type: 'UNEQUIP_ITEM', slot: item.slot });
+                }
             }
         }
 
@@ -176,7 +174,8 @@ export const SimulationVault: React.FC<SimulationVaultProps> = React.memo(({ pla
         onMouseMove: handleSlotMove,
         onDragStart: handleDragStart,
         onDragEnd: handleDragEnd,
-        draggedItem
+        draggedItem,
+        isTrashMode
     };
 
     return (
@@ -434,12 +433,13 @@ interface RagdollSlotProps {
     onMouseMove: (e: React.MouseEvent, content: any) => void;
     onDragStart?: (item: any) => void;
     onDragEnd?: (event: any, item: any, info: any) => void;
+    isTrashMode?: boolean;
 }
 
 const RagdollSlot: React.FC<RagdollSlotProps> = ({
     slot, label, item, compact, draggedItem,
     onClick, onMouseEnter, onMouseLeave, onMouseMove,
-    onDragStart, onDragEnd
+    onDragStart, onDragEnd, isTrashMode
 }) => {
     const isSpecializedTool = ['AXE', 'PICKAXE', 'SCYTHE', 'HAMMER', 'BOW', 'TRAP', 'CHISEL'].includes(draggedItem?.data?.type);
 
@@ -481,6 +481,7 @@ const RagdollSlot: React.FC<RagdollSlotProps> = ({
                         onDragStart={() => onDragStart?.({ type: 'equipment', data: item, slot })}
                         onDragEnd={(e, info) => onDragEnd?.(e, { type: 'equipment', data: item, slot }, info)}
                         layoutId={item?.id || `ragdoll-${slot}`}
+                        isTrashMode={isTrashMode}
                     />
                 </div>
             </div>

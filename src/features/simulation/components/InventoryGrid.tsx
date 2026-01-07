@@ -98,6 +98,7 @@ export const InventoryGrid: React.FC<InventoryGridProps> = ({
                             onClick={() => onSlotClick(i, item)}
                             onMouseEnter={(e) => onSlotHover(e, item)}
                             onMouseLeave={onSlotLeave}
+                            isTrashMode={isTrashMode}
                         />
                     );
                 }

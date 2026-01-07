@@ -128,6 +128,8 @@ export const InventorySlot: React.FC<InventorySlotProps> = ({
             layoutId={layoutId}
             drag={isDraggable && !!getContent() ? true : false}
             dragSnapToOrigin
+            dragElastic={0.1}
+            dragMomentum={false}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
             whileHover={{ scale: 1.05, zIndex: 50 }}
