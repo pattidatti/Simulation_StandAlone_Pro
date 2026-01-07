@@ -8,6 +8,7 @@ import { UPGRADES_LIST, ITEM_TEMPLATES } from '../constants';
 import { calculateStaminaCost } from '../utils/simulationUtils';
 import { ArrowRight, Zap } from 'lucide-react';
 import type { EquipmentItem } from '../simulationTypes';
+import { SimulationRoleWarningModal } from './SimulationRoleWarningModal';
 
 interface FloatingActionTooltipProps {
     poi: any; // Type accurately if possible
@@ -33,6 +34,7 @@ export const FloatingActionTooltip: React.FC<FloatingActionTooltipProps> = ({ po
 
     const [adjustedTransform, setAdjustedTransform] = useState({ x: '3rem', y: '-50%' });
     const [isReady, setIsReady] = useState(false);
+    const [warningState, setWarningState] = useState<{ isOpen: boolean; action: any | null }>({ isOpen: false, action: null });
 
     const currentSeason = (room.world?.season || 'Spring') as any;
     const currentWeather = (room.world?.weather || 'Clear') as any;
@@ -240,7 +242,7 @@ export const FloatingActionTooltip: React.FC<FloatingActionTooltipProps> = ({ po
     };
 
     // --- Render ---
-    return (
+    const tooltipContent = (
         <>
             <div className="absolute inset-0 z-[90]" onClick={onClose} />
             <div
@@ -391,7 +393,13 @@ export const FloatingActionTooltip: React.FC<FloatingActionTooltipProps> = ({ po
 
                                             {!variants ? (
                                                 <button
-                                                    onClick={() => onAction({ ...action, type: action.id, locationId: poi.id })}
+                                                    onClick={() => {
+                                                        if (action.id === 'JOIN_ROLE') {
+                                                            setWarningState({ isOpen: true, action: { ...action, locationId: poi.id } });
+                                                        } else {
+                                                            onAction({ ...action, type: action.id, locationId: poi.id });
+                                                        }
+                                                    }}
                                                     disabled={!canAfford}
                                                     className={`w-full group relative overflow-hidden p-5 rounded-3xl border transition-all duration-300 ${canAfford
                                                         ? 'bg-white/5 border-white/10 hover:border-indigo-500/50 hover:bg-indigo-500/5 active:scale-[0.98]'
@@ -596,6 +604,23 @@ export const FloatingActionTooltip: React.FC<FloatingActionTooltipProps> = ({ po
                     </div>
                 </div>
             </div>
+        </>
+    );
+
+    return (
+        <>
+            {tooltipContent}
+            <SimulationRoleWarningModal
+                isOpen={warningState.isOpen}
+                onClose={() => setWarningState({ isOpen: false, action: null })}
+                onConfirm={() => {
+                    if (warningState.action) {
+                        onAction(warningState.action);
+                    }
+                    setWarningState({ isOpen: false, action: null });
+                }}
+                roleName={warningState.action?.targetRole === 'SOLDIER' ? 'Soldat' : (warningState.action?.targetRole || 'Ukjent')}
+            />
         </>
     );
 };

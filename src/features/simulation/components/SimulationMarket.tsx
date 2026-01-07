@@ -21,9 +21,12 @@ import { SimulationMapWindow } from './ui/SimulationMapWindow';
 import { handleCareerChange } from '../globalActions';
 import { GAME_BALANCE } from '../data/gameBalance';
 
+import { SimulationRoleWarningModal } from './SimulationRoleWarningModal';
+
 export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ player, market, regions, allMarkets, onAction, pin }) => {
 
     const { actionLoading, setActiveTab } = useSimulation();
+    const [isWarningOpen, setIsWarningOpen] = React.useState(false);
 
     return (
         <SimulationMapWindow
@@ -45,55 +48,63 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                 {/* CAREER: BECOME MERCHANT */}
                 {
                     player.role === 'PEASANT' && (
-                        <div className="bg-gradient-to-r from-emerald-900/40 to-indigo-900/40 border border-emerald-500/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <Ship size={120} />
-                            </div>
-                            <div className="relative z-10 flex items-center gap-4">
-                                <div className="w-16 h-16 bg-emerald-900/80 rounded-2xl flex items-center justify-center border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-                                    <span className="text-3xl">📜</span>
+                        <>
+                            <div className="bg-gradient-to-r from-emerald-900/40 to-indigo-900/40 border border-emerald-500/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <Ship size={120} />
                                 </div>
-                                <div>
-                                    <h3 className="text-xl font-black text-white uppercase tracking-wide">
-                                        Handelsbrev
-                                        {(player.stats.level || 1) < GAME_BALANCE.CAREERS.MERCHANT.LEVEL_REQ && (
-                                            <Badge variant="outline" className="ml-2 text-rose-400 border-rose-400">
-                                                Krever Lvl {GAME_BALANCE.CAREERS.MERCHANT.LEVEL_REQ}
-                                            </Badge>
-                                        )}
-                                    </h3>
-                                    <p className="text-emerald-200 text-sm max-w-sm">
-                                        Kjøp lisens til å drive internasjonal handel. Låser opp handelsruter og profittmuligheter.
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="relative z-10 flex flex-col items-end gap-2">
-                                <div className="flex items-center gap-3">
-                                    <div className={`text-xs font-bold uppercase tracking-wider ${player.resources?.gold >= GAME_BALANCE.CAREERS.MERCHANT.COST ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                        Pris: {GAME_BALANCE.CAREERS.MERCHANT.COST} Gull
+                                <div className="relative z-10 flex items-center gap-4">
+                                    <div className="w-16 h-16 bg-emerald-900/80 rounded-2xl flex items-center justify-center border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                                        <span className="text-3xl">📜</span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-white uppercase tracking-wide">
+                                            Handelsbrev
+                                            {(player.stats.level || 1) < GAME_BALANCE.CAREERS.MERCHANT.LEVEL_REQ && (
+                                                <Badge variant="outline" className="ml-2 text-rose-400 border-rose-400">
+                                                    Krever Lvl {GAME_BALANCE.CAREERS.MERCHANT.LEVEL_REQ}
+                                                </Badge>
+                                            )}
+                                        </h3>
+                                        <p className="text-emerald-200 text-sm max-w-sm">
+                                            Kjøp lisens til å drive internasjonal handel. Låser opp handelsruter og profittmuligheter.
+                                        </p>
                                     </div>
                                 </div>
-                                <GameButton
-                                    variant="primary"
-                                    onClick={() => {
-                                        if (window.confirm('Kjøpe Handelsbrev og bli Kjøpmann?')) {
-                                            handleCareerChange(pin, player.id, 'MERCHANT');
+                                <div className="relative z-10 flex flex-col items-end gap-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`text-xs font-bold uppercase tracking-wider ${player.resources?.gold >= GAME_BALANCE.CAREERS.MERCHANT.COST ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            Pris: {GAME_BALANCE.CAREERS.MERCHANT.COST} Gull
+                                        </div>
+                                    </div>
+                                    <GameButton
+                                        variant="primary"
+                                        onClick={() => setIsWarningOpen(true)}
+                                        disabled={
+                                            player.resources?.gold < GAME_BALANCE.CAREERS.MERCHANT.COST ||
+                                            (player.stats.level || 1) < GAME_BALANCE.CAREERS.MERCHANT.LEVEL_REQ ||
+                                            !!actionLoading
                                         }
-                                    }}
-                                    disabled={
-                                        player.resources?.gold < GAME_BALANCE.CAREERS.MERCHANT.COST ||
-                                        (player.stats.level || 1) < GAME_BALANCE.CAREERS.MERCHANT.LEVEL_REQ ||
-                                        !!actionLoading
-                                    }
-                                    className="bg-emerald-600 hover:bg-emerald-500 border-emerald-400/50 min-w-[200px]"
-                                >
-                                    {(player.stats.level || 1) < GAME_BALANCE.CAREERS.MERCHANT.LEVEL_REQ
-                                        ? `Krever Level ${GAME_BALANCE.CAREERS.MERCHANT.LEVEL_REQ}`
-                                        : 'BLI KJØPMANN'
-                                    }
-                                </GameButton>
+                                        className="bg-emerald-600 hover:bg-emerald-500 border-emerald-400/50 min-w-[200px]"
+                                    >
+                                        {(player.stats.level || 1) < GAME_BALANCE.CAREERS.MERCHANT.LEVEL_REQ
+                                            ? `Krever Level ${GAME_BALANCE.CAREERS.MERCHANT.LEVEL_REQ}`
+                                            : 'BLI KJØPMANN'
+                                        }
+                                    </GameButton>
+                                </div>
                             </div>
-                        </div>
+
+                            <SimulationRoleWarningModal
+                                isOpen={isWarningOpen}
+                                onClose={() => setIsWarningOpen(false)}
+                                onConfirm={() => {
+                                    handleCareerChange(pin, player.id, 'MERCHANT');
+                                    setIsWarningOpen(false);
+                                }}
+                                roleName="Kjøpmann"
+                            />
+                        </>
                     )
                 }
 

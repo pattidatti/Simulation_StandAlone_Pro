@@ -10,7 +10,8 @@
 
 
 
-
+- [ ] Krigsrommet må ha eget POI inne i slottet. 
+- [ ] Vinduet som å bygge/oppgradere slottet og tronsalen trenger episke realistiske bilder, ikke placeholder av en sofa. 
 - [ ] Det må være mulig å fjerne gamle items, 
 
 - [ ] PUblic leaderboard. 
