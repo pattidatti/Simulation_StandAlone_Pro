@@ -6,9 +6,11 @@ import { ITEM_TEMPLATES } from '../data/items';
 interface ItemTooltipProps {
     content: any;
     position: { x: number, y: number };
+    isTrashMode?: boolean;
+    isDiscardable?: boolean;
 }
 
-export const ItemTooltip: React.FC<ItemTooltipProps> = ({ content, position }) => {
+export const ItemTooltip: React.FC<ItemTooltipProps> = ({ content, position, isTrashMode, isDiscardable }) => {
     if (!content) return null;
 
     const { type, data } = content;
@@ -106,10 +108,19 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ content, position }) =
                 )}
 
                 {/* Consumable Hint */}
-                {(displayData.type === 'CONSUMABLE') && (
+                {(displayData.type === 'CONSUMABLE' && !isTrashMode) && (
                     <div className="mt-4 text-center">
                         <span className="inline-block text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 animate-pulse shadow-lg shadow-emerald-500/10">
                             Trykk for å spise
+                        </span>
+                    </div>
+                )}
+
+                {/* Trash Mode Hint */}
+                {isTrashMode && isDiscardable && (
+                    <div className="mt-4 text-center">
+                        <span className="inline-block text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/20 animate-pulse shadow-lg shadow-red-500/10">
+                            Trykk for å slette permanent
                         </span>
                     </div>
                 )}

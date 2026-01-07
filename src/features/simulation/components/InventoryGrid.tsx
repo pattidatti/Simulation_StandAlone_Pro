@@ -11,11 +11,12 @@ interface InventoryGridProps {
     onSlotLeave: () => void;
     onDragStart?: (item: any) => void;
     onDragEnd?: (event: any, item: any, info: any) => void;
+    isTrashMode?: boolean;
 }
 
 
 export const InventoryGrid: React.FC<InventoryGridProps> = ({
-    player, onSlotClick, onSlotHover, onSlotLeave, onDragStart, onDragEnd
+    player, onSlotClick, onSlotHover, onSlotLeave, onDragStart, onDragEnd, isTrashMode
 }) => {
 
     // 1. Convert resources to grid items
@@ -113,6 +114,7 @@ export const InventoryGrid: React.FC<InventoryGridProps> = ({
                         onMouseEnter={(e) => onSlotHover(e, item)}
                         onMouseLeave={onSlotLeave}
                         onMouseMove={(e) => onSlotHover(e, item)} // Ensure tooltip follows
+                        isTrashMode={isTrashMode}
                     />
                 );
             })}

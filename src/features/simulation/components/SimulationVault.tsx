@@ -5,7 +5,7 @@ import type { SimulationPlayer, EquipmentSlot as EquipmentSlotType } from '../si
 import { InventoryGrid } from './InventoryGrid';
 import { InventorySlot } from './InventorySlot';
 import { ItemTooltip } from './ItemTooltip';
-import { Shield, Package } from 'lucide-react';
+import { Shield, Package, Trash2, AlertTriangle, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ITEM_TEMPLATES } from '../constants';
 
@@ -39,10 +39,24 @@ export const SimulationVault: React.FC<SimulationVaultProps> = React.memo(({ pla
     const [tooltipContent, setTooltipContent] = useState<any>(null);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [draggedItem, setDraggedItem] = useState<any>(null);
+    const [isTrashMode, setIsTrashMode] = useState(false);
+    const [confirmDiscard, setConfirmDiscard] = useState<any>(null);
 
     // ... handlers ...
     const handleSlotClick = (_index: number, content: any) => {
         if (!content) return;
+
+        // HANDLE TRASH MODE
+        if (isTrashMode) {
+            if (content.type === 'equipment' && content.data) {
+                setConfirmDiscard(content.data);
+                return;
+            }
+            if (content.type === 'resource') {
+                // Resources can't be trashed for now (logic requirement)
+                return;
+            }
+        }
 
         // HANDLE RESOURCE CLICKS (For consumables like bread)
         if (content.type === 'resource') {
@@ -129,6 +143,14 @@ export const SimulationVault: React.FC<SimulationVaultProps> = React.memo(({ pla
                 }
             }
         } else {
+            // Check for TRASH area
+            const isTrashArea = targets.some(t => t.closest('[data-trash-zone]'));
+            if (isTrashArea && item.type === 'equipment' && item.data) {
+                setConfirmDiscard(item.data);
+                setDraggedItem(null);
+                return;
+            }
+
             // Check for inventory area (for unequipping)
             const isInventoryArea = targets.some(t => t.closest('[data-inventory-grid]') || t.closest('.inventory-container'));
 
@@ -163,13 +185,38 @@ export const SimulationVault: React.FC<SimulationVaultProps> = React.memo(({ pla
             icon={<Package className="w-8 h-8" />}
             onClose={() => setActiveTab('MAP')}
             headerRight={
-                <div className="text-slate-500 text-xs font-bold uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
-                    {inventoryCount} / 25 plasser brukt
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => setIsTrashMode(!isTrashMode)}
+                        className={`group relative flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-500 overflow-hidden
+                            ${isTrashMode ? 'bg-red-500/20 border-red-500/50 text-red-200' : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/20 hover:bg-white/10'}
+                        `}
+                    >
+                        <Trash2 className={`w-4 h-4 transition-transform duration-500 ${isTrashMode ? 'scale-110' : 'group-hover:rotate-12'}`} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                            {isTrashMode ? 'Avslutt Sletting' : 'Slett Gjenstander'}
+                        </span>
+                        {isTrashMode && (
+                            <motion.div
+                                layoutId="trash-glow"
+                                className="absolute inset-0 bg-red-500/20 blur-xl scale-150 animate-pulse pointer-events-none"
+                            />
+                        )}
+                    </button>
+
+                    <div className="text-slate-500 text-xs font-bold uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                        {inventoryCount} / 25 plasser brukt
+                    </div>
                 </div>
             }
         >
             <div className="space-y-4 relative min-h-[600px] pt-4">
-                <ItemTooltip content={tooltipContent} position={mousePos} />
+                <ItemTooltip
+                    content={tooltipContent}
+                    position={mousePos}
+                    isTrashMode={isTrashMode}
+                    isDiscardable={tooltipContent?.type === 'equipment'}
+                />
 
                 <AnimatePresence>
                     {draggedItem && (
@@ -277,7 +324,7 @@ export const SimulationVault: React.FC<SimulationVaultProps> = React.memo(({ pla
 
                     {/* Inventory Grid */}
                     <div className={`flex-1 w-full space-y-6 ${draggedItem && !isDraggingFromRagdoll ? 'z-50 relative' : 'z-10'}`}>
-                        <div className="bg-slate-950/70 p-6 rounded-[2rem] border border-white/5 backdrop-blur-xl shadow-2xl min-h-[600px] inventory-container">
+                        <div className="bg-slate-950/70 p-6 rounded-[2rem] border border-white/5 backdrop-blur-xl shadow-2xl min-h-[600px] inventory-container relative overflow-hidden">
                             <InventoryGrid
                                 player={player}
                                 onSlotClick={handleSlotClick}
@@ -285,10 +332,91 @@ export const SimulationVault: React.FC<SimulationVaultProps> = React.memo(({ pla
                                 onSlotLeave={handleSlotLeave}
                                 onDragStart={handleDragStart}
                                 onDragEnd={handleDragEnd}
+                                isTrashMode={isTrashMode}
                             />
+
+                            {/* Trash Drop Zone */}
+                            <AnimatePresence>
+                                {(draggedItem && draggedItem.type === 'equipment') && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                                        data-trash-zone
+                                        className="absolute bottom-6 left-6 right-6 h-24 bg-red-500/10 backdrop-blur-md border-2 border-red-500/30 border-dashed rounded-3xl flex items-center justify-center gap-4 group/trashzone z-[110]"
+                                    >
+                                        <Trash2 className="w-8 h-8 text-red-400 group-hover/trashzone:scale-125 transition-transform" />
+                                        <span className="text-red-300 font-black uppercase tracking-widest text-sm">
+                                            Slipp her for å slette gjenstanden
+                                        </span>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </div>
+
+                {/* CONFIRMATION MODAL */}
+                <AnimatePresence>
+                    {confirmDiscard && (
+                        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 sm:p-12 pointer-events-none">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setConfirmDiscard(null)}
+                                className="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto"
+                            />
+
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                className="relative w-full max-w-md bg-slate-900 border-2 border-red-500/30 rounded-[2.5rem] shadow-2xl overflow-hidden pointer-events-auto"
+                            >
+                                <div className="p-8 space-y-6">
+                                    <div className="flex justify-center">
+                                        <div className="w-20 h-20 bg-red-500/10 rounded-3xl border border-red-500/20 flex items-center justify-center relative group">
+                                            <Trash2 className="w-10 h-10 text-red-500 group-hover:scale-110 transition-transform duration-500" />
+                                            <div className="absolute inset-0 bg-red-500/20 blur-xl animate-pulse rounded-full" />
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center space-y-2">
+                                        <h3 className="text-2xl font-black text-white uppercase tracking-tight">Er du helt sikker?</h3>
+                                        <div className="flex items-center justify-center gap-2 py-3 px-4 bg-white/5 rounded-2xl border border-white/5">
+                                            <span className="text-3xl">{confirmDiscard.icon || '📦'}</span>
+                                            <span className="text-lg font-bold text-indigo-300">{confirmDiscard.name}</span>
+                                        </div>
+                                        <p className="text-slate-400 text-sm leading-relaxed px-4 pt-2 font-medium italic">
+                                            Denne handlingen kan ikke angres. Gjenstanden vil bli borte for alltid og du får ingenting tilbake.
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <button
+                                            onClick={() => setConfirmDiscard(null)}
+                                            className="flex-1 px-8 py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 group"
+                                        >
+                                            <X className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            Avbryt
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                onAction({ type: 'DISCARD_ITEM', itemId: confirmDiscard.id });
+                                                setConfirmDiscard(null);
+                                            }}
+                                            className="flex-1 px-8 py-4 rounded-2xl bg-red-600 hover:bg-red-500 shadow-lg shadow-red-900/20 text-white font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 group border border-red-400/30"
+                                        >
+                                            <AlertTriangle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            Slett for alltid
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
             </div>
         </SimulationMapWindow>
     );

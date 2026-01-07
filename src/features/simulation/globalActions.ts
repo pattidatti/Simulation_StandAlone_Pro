@@ -211,9 +211,21 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
         }
 
         buildingName = buildingDef?.name || buildingId;
-        // FIX: Ensure we correctly handle level 0 for initial construction (like Throne Room)
+
+        // ULTRATHINK: Auto-Repair Logic for stuck buildings
+        // If the building is at Level 1, but Level 1 is the completion level (no Level 2 defined),
+        // and it has progress/contributions, it was likely initialized incorrectly at Level 1.
+        // We downgrade it to Level 0 to allow the contribution flow to function and finish it properly.
         const rawLevel = building.level ?? 0;
-        const currentLevel = rawLevel;
+        const buildingHasProgress = Object.keys(building.progress || {}).length > 0;
+        const buildingHasContributions = Object.keys(building.contributions || {}).length > 0;
+
+        if (rawLevel === 1 && !buildingDef.levels?.[2] && (buildingHasProgress || buildingHasContributions)) {
+            console.log(`[Auto-Repair] Downgrading ${buildingId} from 1 to 0 to fix completion lock.`);
+            building.level = 0;
+        }
+
+        const currentLevel = building.level ?? 0;
 
         const nextLevel = currentLevel + 1;
         const nextLevelDef = buildingDef?.levels?.[nextLevel];
@@ -764,6 +776,48 @@ export const handleRestoreOrder = async (pin: string, playerId: string, regionId
     }
 
     return { success: false, error: "Kunne ikke gjenopprette ro." };
+};
+
+export const handleGlobalDiscardItem = async (pin: string, playerId: string, action: { itemId: string }) => {
+    const { itemId } = action;
+    const playerRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
+
+    const playerSnap = await get(playerRef);
+    if (!playerSnap.exists()) return { success: false, error: "Spiller mangler" };
+
+    let success = false;
+    let itemName = "";
+
+    await runTransaction(playerRef, (p) => {
+        if (!p) return;
+        if (!p.inventory) p.inventory = [];
+        if (!Array.isArray(p.inventory)) p.inventory = Object.values(p.inventory);
+
+        const idx = p.inventory.findIndex((i: any) => i.id === itemId);
+        if (idx === -1) return;
+
+        itemName = p.inventory[idx].name;
+        p.inventory.splice(idx, 1);
+        success = true;
+        return p;
+    });
+
+    if (success) {
+        logSimulationMessage(pin, `[${new Date().toLocaleTimeString()}] Spiller slettet gjenstand: ${itemName}`);
+        return {
+            success: true,
+            data: {
+                success: true,
+                timestamp: Date.now(),
+                message: `Slettet ${itemName}`,
+                utbytte: [],
+                xp: [],
+                durability: []
+            }
+        };
+    }
+
+    return { success: false, error: "Kunne ikke slette gjenstanden." };
 };
 
 export const handleCastVote = async (pin: string, playerId: string, action: { regionId: string, candidateId: string }) => {

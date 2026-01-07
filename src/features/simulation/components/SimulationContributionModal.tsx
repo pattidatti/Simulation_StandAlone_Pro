@@ -101,8 +101,8 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                 <div className="relative h-48 rounded-3xl overflow-hidden mb-8 group border border-white/5">
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent z-10" />
                     <img
-                        src="/images/simulation/castle_construction_epic.webp"
-                        alt="Castle Construction"
+                        src={activeProjectId === 'throne_room' ? "/images/simulation/throne_room_epic.png" : "/images/simulation/castle_construction_epic.png"}
+                        alt={projectDef.name}
                         className="w-full h-48 object-cover rounded-2xl mb-6 shadow-2xl border border-white/10"
                     />
 

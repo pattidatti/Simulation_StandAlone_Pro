@@ -22,6 +22,7 @@ interface InventorySlotProps {
     onDragStart?: (e: any) => void;
     onDragEnd?: (e: any, info: any) => void;
     layoutId?: string;
+    isTrashMode?: boolean;
 }
 
 
@@ -39,7 +40,8 @@ export const InventorySlot: React.FC<InventorySlotProps> = ({
     isDraggable,
     onDragStart,
     onDragEnd,
-    layoutId
+    layoutId,
+    isTrashMode
 }) => {
 
     const getContent = () => {
@@ -143,14 +145,15 @@ export const InventorySlot: React.FC<InventorySlotProps> = ({
                 relative aspect-square w-full rounded-2xl border-2 transition-all duration-300
                 ${isEmpty || !getContent() ? 'bg-white/5 border-white/5 border-dashed' : 'bg-white/10 border-white/10 hover:bg-slate-800/80 hover:border-indigo-500/30'}
                 ${isEquipped ? 'ring-2 ring-indigo-500 border-indigo-500/50 bg-indigo-500/20 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : ''}
-                group overflow-hidden cursor-grab active:cursor-grabbing will-change-transform
+                ${isTrashMode && !isEmpty && getContent() ? 'hover:border-red-500/50 hover:bg-red-500/10 cursor-alias' : 'cursor-grab active:cursor-grabbing'}
+                group overflow-hidden will-change-transform
             `}
         >
             {getContent()}
 
             {/* Tooltip Peek (handled by parent or flyout) */}
             {(item || resource) && (
-                <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${isTrashMode ? 'bg-red-500/10' : 'bg-indigo-500/5'}`} />
             )}
         </motion.button>
     );

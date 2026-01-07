@@ -51,3 +51,26 @@ export const handleUnequipItem = (ctx: ActionContext) => {
     }
     return true;
 };
+
+export const handleDiscardItem = (ctx: ActionContext) => {
+    const { actor, action, localResult } = ctx;
+    const { itemId } = action;
+
+    // Normalize inventory
+    if (actor.inventory && !Array.isArray(actor.inventory)) {
+        actor.inventory = Object.values(actor.inventory);
+    }
+    if (!actor.inventory) actor.inventory = [];
+
+    const invIndex = actor.inventory.findIndex((i: any) => i.id === itemId);
+
+    if (invIndex !== -1) {
+        const itemToRemove = actor.inventory[invIndex];
+        actor.inventory.splice(invIndex, 1);
+        localResult.message = `Slettet ${itemToRemove.name}`;
+        return true;
+    }
+
+    localResult.message = "Fant ikke gjenstanden som skulle slettes.";
+    return false;
+};

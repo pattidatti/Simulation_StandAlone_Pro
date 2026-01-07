@@ -13,7 +13,13 @@
 - [ ] BIlder på minigames laster ikke. 
 - [ ] Krigsrommet må ha eget POI inne i slottet. 
 - [ ] Vinduet som å bygge/oppgradere slottet og tronsalen trenger episke realistiske bilder, ikke placeholder av en sofa. 
-- [ ] Det må være mulig å fjerne/slette items man ikke vil ha i eiendeler, 
+- [x] Implement deletion logic <!-- id: 8 -->
+    - [x] Add action to `globalActions.ts` (or relevant file) <!-- id: 9 -->
+    - [x] Update state reducers/handlers <!-- id: 10 -->
+- [x] Implement UI changes <!-- id: 11 -->
+    - [x] Add "Trash" or "Remove" icon/button to inventory items <!-- id: 12 -->
+    - [x] Implement confirmation modal/overlay <!-- id: 13 -->
+- [x] Verify functionality <!-- id: 14 -->
 - [] Mangler minigames på jakt og felle. 
 - [] Handling feilet på bidra på slottet.  ,maksimalt nivå oppnådd på slottet. Er dette en bug, fordi det ene baroni har laget slottet, men ikke den andre?
 
