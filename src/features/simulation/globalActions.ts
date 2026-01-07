@@ -34,7 +34,7 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
     };
 
     // TRANSACTION 1: MARKET
-    await runTransaction(marketItemRef, (item) => {
+    await runTransaction(marketItemRef, (item: any) => {
         if (!item) {
             // Lazy init item helper if null? Difficult inside transaction.
             // Assumption: Market exists. If not, we abort or handle gracefully.
@@ -78,7 +78,7 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
     let playerSuccess = false;
     let finalMessage = "";
 
-    await runTransaction(playerRef, (actor) => {
+    await runTransaction(playerRef, (actor: any) => {
         if (!actor) return;
         if (!actor.resources) actor.resources = {};
         if (!actor.inventory) actor.inventory = []; // Ensure inventory exists
@@ -193,7 +193,7 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
     // Capture failure reason for UI feedback
     let failureReason = "Ukjent feil i transaksjon";
 
-    await runTransaction(buildingRef, (building) => {
+    await runTransaction(buildingRef, (building: any) => {
         // Init building if missing (local object to work on)
         if (!building) {
             building = {
@@ -321,7 +321,7 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
     let finalMessage = `Bidro med ${actualContributed} ${resource} til ${buildingName}`;
     if (leveledUp) finalMessage += ` 🎉 ${buildingName} nådde nivå ${newLevel}!`;
 
-    await runTransaction(playerRef, (actor) => {
+    await runTransaction(playerRef, (actor: any) => {
         if (!actor) return;
         if (actor.resources?.[resource] >= actualContributed) {
             actor.resources[resource] -= actualContributed;
@@ -378,7 +378,7 @@ export const handleGlobalTax = async (pin: string, playerId: string, _action: an
         const targetRef = ref(db, `simulation_rooms/${pin}/players/${targetId}`);
         let taxesFromThisPlayer = { gold: 0, grain: 0 };
 
-        await runTransaction(targetRef, (p) => {
+        await runTransaction(targetRef, (p: any) => {
             if (!p || p.role !== 'PEASANT' || p.regionId !== playerId) return; // Only tax own peasants (if ID matches region)
 
             // Logic match ManagementHandlers:
@@ -408,7 +408,7 @@ export const handleGlobalTax = async (pin: string, playerId: string, _action: an
 
     // Give to Baron
     const baronRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
-    await runTransaction(baronRef, (actor) => {
+    await runTransaction(baronRef, (actor: any) => {
         if (!actor) return;
         actor.resources.gold = (actor.resources.gold || 0) + taxCollectedGold;
         actor.resources.grain = (actor.resources.grain || 0) + taxCollectedGrain;
@@ -449,7 +449,7 @@ export const handleCareerChange = async (pin: string, playerId: string, newRole:
     if ((player.resources.gold || 0) < reqs.COST) return { success: false, error: `Du mangler ${(reqs.COST - (player.resources.gold || 0))} gull.` };
 
     let success = false;
-    await runTransaction(playerRef, (p) => {
+    await runTransaction(playerRef, (p: any) => {
         if (!p) return;
         if (p.resources.gold < reqs.COST) return; // Re-check inside transaction lock
 
@@ -484,7 +484,7 @@ export const triggerRevolution = async (pin: string, regionId: string) => {
 
     if (oldRulerId) {
         const oldRulerRef = ref(db, `simulation_rooms/${pin}/players/${oldRulerId}`);
-        await runTransaction(oldRulerRef, (p) => {
+        await runTransaction(oldRulerRef, (p: any) => {
             if (!p) return;
             p.role = 'PEASANT';
             p.status.legitimacy = 0;
@@ -627,7 +627,7 @@ export const handleGlobalBribe = async (pin: string, playerId: string, action: {
     if (!bribeSuccess) return { success: false, error: "Transaksjon feilet (Region oppdatert)." };
 
     // 2. Deduct Gold
-    await runTransaction(playerRef, (p) => {
+    await runTransaction(playerRef, (p: any) => {
         if (!p) return;
         p.resources.gold = (p.resources.gold || 0) - amount;
         return p;
@@ -665,7 +665,7 @@ export const handleGlobalBribe = async (pin: string, playerId: string, action: {
         const legLoss = Math.floor(amount / 100);
 
         // Decrease Ruler Legitimacy
-        await runTransaction(rulerRef, (p) => {
+        await runTransaction(rulerRef, (p: any) => {
             if (!p) return;
             if (p.status) {
                 p.status.legitimacy = Math.max(0, (p.status.legitimacy || 0) - legLoss);
@@ -714,7 +714,7 @@ export const handleShadowPledge = async (pin: string, playerId: string, regionId
     // Validate player exists? (Optional, but good practice)
 
     let success = false;
-    await runTransaction(regionRef, (r) => {
+    await runTransaction(regionRef, (r: any) => {
         if (!r) return;
         if (!r.coup) r.coup = { bribeProgress: 0, contributions: {}, preVotes: {} };
         if (!r.coup.preVotes) r.coup.preVotes = {};
@@ -744,7 +744,7 @@ export const handleRestoreOrder = async (pin: string, playerId: string, regionId
     if (player.resources.gold < cost) return { success: false, error: `Trenger ${cost}g for å gjenopprette ro.` };
 
     let success = false;
-    await runTransaction(regionRef, (r) => {
+    await runTransaction(regionRef, (r: any) => {
         if (!r || r.rulerId !== playerId) return;
         if (!r.coup) return;
         r.coup.bribeProgress = Math.max(0, (r.coup.bribeProgress || 0) - 25);
@@ -753,7 +753,7 @@ export const handleRestoreOrder = async (pin: string, playerId: string, regionId
     });
 
     if (success) {
-        await runTransaction(playerRef, (p) => {
+        await runTransaction(playerRef, (p: any) => {
             if (!p) return;
             p.resources.gold -= cost;
             p.status.legitimacy = Math.min(100, (p.status.legitimacy || 0) + 10);
@@ -779,7 +779,7 @@ export const handleCastVote = async (pin: string, playerId: string, action: { re
     if (player.role === 'KING') weight = GAME_BALANCE.COUP.KING_VOTE_WEIGHT || 15;
 
     let success = false;
-    await runTransaction(regionRef, (r) => {
+    await runTransaction(regionRef, (r: any) => {
         if (!r || !r.activeElection) return;
         if (Date.now() > r.activeElection.expiresAt) return;
 
@@ -830,7 +830,7 @@ export const handleReinforceGarrison = async (pin: string, playerId: string, act
     }
 
     let success = false;
-    await runTransaction(regionRef, (region) => {
+    await runTransaction(regionRef, (region: any) => {
         if (!region) {
             region = { id: regionId, name: regionId, defenseLevel: 1, taxRate: 10, rulerName: player.name };
         }
@@ -880,7 +880,7 @@ export const handleRepairWalls = async (pin: string, playerId: string, _action: 
     let success = false;
     let failureReason = "";
 
-    await runTransaction(regionRef, (region) => {
+    await runTransaction(regionRef, (region: any) => {
         if (!region) return;
         if (!region.fortification) region.fortification = { hp: 1000, maxHp: 1000, level: 1 };
 
@@ -895,7 +895,7 @@ export const handleRepairWalls = async (pin: string, playerId: string, _action: 
     });
 
     if (success) {
-        await runTransaction(playerRef, (p) => {
+        await runTransaction(playerRef, (p: any) => {
             if (!p) return;
             p.resources.stone -= costStone;
             p.resources.wood -= costWood;
@@ -937,7 +937,7 @@ export const handleFinalizeElection = async (pin: string, regionId: string) => {
 
     let electionResult: { winnerId: string, winnerName: string } | null = null;
 
-    await runTransaction(regionRef, (r) => {
+    await runTransaction(regionRef, (r: any) => {
         if (!r || !r.activeElection) return;
         if (Date.now() < r.activeElection.expiresAt) return;
 
@@ -991,7 +991,7 @@ export const handleAdminGiveGold = async (pin: string, targetId: string, amount:
     const playerRef = ref(db, `simulation_rooms/${pin}/players/${targetId}`);
 
     let success = false;
-    await runTransaction(playerRef, (p) => {
+    await runTransaction(playerRef, (p: any) => {
         if (!p) return;
         if (!p.resources) p.resources = {};
         p.resources.gold = (p.resources.gold || 0) + amount;
@@ -1016,7 +1016,7 @@ export const handleAdminGiveItem = async (pin: string, targetId: string, itemId:
     }
 
     let success = false;
-    await runTransaction(playerRef, (p) => {
+    await runTransaction(playerRef, (p: any) => {
         if (!p) return;
         if (!p.inventory) p.inventory = [];
 
@@ -1043,7 +1043,7 @@ export const handleAdminGiveResource = async (pin: string, targetId: string, res
     const playerRef = ref(db, `simulation_rooms/${pin}/players/${targetId}`);
 
     let success = false;
-    await runTransaction(playerRef, (p) => {
+    await runTransaction(playerRef, (p: any) => {
         if (!p) return;
         if (!p.resources) p.resources = {};
         p.resources[resourceId] = (p.resources[resourceId] || 0) + amount;
@@ -1076,7 +1076,7 @@ export const handleAbdicate = async (pin: string, playerId: string) => {
     let success = false;
 
     // 1. Demote Player
-    await runTransaction(playerRef, (p) => {
+    await runTransaction(playerRef, (p: any) => {
         if (!p) return;
         p.role = 'PEASANT';
         p.status.legitimacy = 0; // Reset legitimacy
@@ -1147,7 +1147,7 @@ export const handleSendMessage = async (pin: string, playerId: string, content: 
 
     // 1. Deduct Gold (if any)
     if (cost > 0) {
-        await runTransaction(playerRef, (p) => {
+        await runTransaction(playerRef, (p: any) => {
             if (!p) return;
             if ((p.resources.gold || 0) < cost) return; // Re-check
             p.resources.gold -= cost;
@@ -1193,7 +1193,7 @@ export const handleClaimEmptyThrone = async (pin: string, playerId: string, regi
     if (region.rulerId && region.rulerId !== 'Ingen') return { success: false, error: "Tronen er ikke tom!" };
 
     let success = false;
-    await runTransaction(playerRef, (p) => {
+    await runTransaction(playerRef, (p: any) => {
         if (!p) return;
         if ((p.resources.gold || 0) < cost) return;
         p.resources.gold -= cost;
