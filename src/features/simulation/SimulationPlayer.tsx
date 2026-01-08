@@ -13,6 +13,7 @@ import { SimulationAnimationLayer } from './components/SimulationAnimationLayer'
 import { MinigameOverlay } from './SimulationMinigames';
 import { LevelUpOverlay } from './components/LevelUpOverlay';
 import { SimulationOnboarding } from './components/SimulationOnboarding';
+import { StablesWindow } from './components/StablesWindow';
 import { SimulationDestinySplash } from './components/SimulationDestinySplash';
 import { ChatSystem } from './components/ChatSystem';
 import { PlayerProfileModal } from './components/PlayerProfileModal';
@@ -68,6 +69,16 @@ export const SimulationPlayer: React.FC = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [levelUpData, setLevelUpData] = useState<{ level: number, title: string } | null>(null);
     const [inspectingPlayer, setInspectingPlayer] = useState<SimPlayer | null>(null);
+    const [isStablesOpen, setIsStablesOpen] = useState(false);
+
+    const handleSimulationAction = (action: any) => {
+        const actionType = typeof action === 'string' ? action : action.type;
+        if (actionType === 'MOUNT_HORSE' && !action.method) {
+            setIsStablesOpen(true);
+            return;
+        }
+        handleAction(action);
+    };
 
     const onCreatePlayer = async (name: string, role: Role) => {
         if (!pin || !user) return;
@@ -216,16 +227,24 @@ export const SimulationPlayer: React.FC = () => {
                         />
                     )}
 
+                    {isStablesOpen && (
+                        <StablesWindow
+                            player={player}
+                            onAction={handleAction}
+                            onClose={() => setIsStablesOpen(false)}
+                        />
+                    )}
+
                     <SimulationAnimationLayer />
 
                     <div className="flex flex-col h-full w-full overflow-hidden">
-                        <SimulationHeader room={room} player={player} pin={pin} onAction={handleAction} />
+                        <SimulationHeader room={room} player={player} pin={pin} onAction={handleSimulationAction} />
                         <main className="flex-1 relative overflow-hidden bg-slate-950/50">
                             <SimulationViewport
                                 player={player}
                                 room={room}
                                 pin={pin}
-                                onAction={handleAction}
+                                onAction={handleSimulationAction}
                                 actionResult={actionResult}
                                 onClearActionResult={handleClearActionResult}
                             />

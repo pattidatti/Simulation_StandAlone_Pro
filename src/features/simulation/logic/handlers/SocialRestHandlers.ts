@@ -345,3 +345,42 @@ export const handleConsume = (ctx: ActionContext) => {
     localResult.message = "Kan ikke spises.";
     return false;
 };
+export const handleMountHorse = (ctx: ActionContext) => {
+    const { actor, action, localResult, trackXp } = ctx;
+    const performance = action.performance || 0.5;
+    const method = action.method || 'ride_easy';
+    const level = action.level || 1;
+
+    let diffMult = 1.0 + (level - 1) * 0.2;
+    let diffLabel = 'lav';
+
+    if (method === 'ride_medium') {
+        diffMult *= 1.6;
+        diffLabel = 'middels';
+    } else if (method === 'ride_hard') {
+        diffMult *= 2.5;
+        diffLabel = 'høy';
+    }
+
+    // Small HP/Stamina bonus for a refreshing ride
+    actor.status.stamina = Math.min(100, (actor.status.stamina || 0) + 5);
+
+    const xpAmount = Math.ceil(20 * (1 + performance) * diffMult);
+    trackXp('STEWARDSHIP', xpAmount);
+
+    // Progression Unlock Logic
+    if (performance >= 0.8) {
+        if (!actor.minigameProgress) actor.minigameProgress = {};
+        const currentMax = actor.minigameProgress[method] || 1;
+        if (level === currentMax && currentMax < 5) {
+            actor.minigameProgress[method] = currentMax + 1;
+            localResult.message = `Glimrende ridning! Du har låst opp nivå ${currentMax + 1} for ${method === 'ride_easy' ? 'Engelskogen' : method === 'ride_medium' ? 'Fjellpasset' : 'Ulvestien'}!`;
+        } else {
+            localResult.message = `Du red en tur i ${diffLabel} vanskelighetsgrad (Lvl ${level}). Føler deg forfrisket!`;
+        }
+    } else {
+        localResult.message = `Du red en tur i ${diffLabel} vanskelighetsgrad (Lvl ${level}). (Ytelse: ${Math.round(performance * 100)}%)`;
+    }
+
+    return true;
+};

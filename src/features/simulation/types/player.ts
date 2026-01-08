@@ -86,6 +86,7 @@ export interface SimulationPlayer {
         level: number;
         progress: Partial<Resources>;
     }>;
+    minigameProgress?: Record<string, number>; // e.g., { ride_easy: 3, ride_medium: 1 }
     roleStats?: Partial<Record<Role, RoleStats>>;
     online?: boolean;
     hasSeenIntro?: boolean;

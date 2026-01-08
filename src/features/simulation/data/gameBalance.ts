@@ -154,7 +154,8 @@ export const ACTION_COSTS: Record<ActionType, ActionCost> = {
     DEFEND: { stamina: 30 },
     EXPLORE: { stamina: 25 },
     PATROL: { stamina: 10 },
-    MAINTAIN_CROP: { stamina: 5 }
+    MAINTAIN_CROP: { stamina: 5 },
+    MOUNT_HORSE: { stamina: 5 }
 };
 
 export const REPAIR_CONFIG: Record<string, { material: ResourceType, goldCost: number, staminaCost: number, slots: EquipmentSlot[] }> = {

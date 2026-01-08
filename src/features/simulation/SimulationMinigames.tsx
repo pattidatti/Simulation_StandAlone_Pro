@@ -17,6 +17,7 @@ import { WeavingGame } from './minigames/WeavingGame';
 import { ApothecaryGame } from './minigames/ApothecaryGame';
 import { SawingGame } from './minigames/SawingGame';
 import { SmeltingGame } from './minigames/SmeltingGame';
+import { HorseRidingGame } from './minigames/HorseRidingGame';
 
 interface MinigameProps {
     type: ActionType;
@@ -377,6 +378,14 @@ export const MinigameOverlay: React.FC<MinigameProps> = ({ type, onComplete, onC
 
                         case 'GATHER_WOOL':
                             return <ScytheSweepGame onComplete={onComplete} equipment={equipment} speedMultiplier={environmentMods.speedMultiplier} />;
+
+                        case 'MOUNT_HORSE':
+                            return <HorseRidingGame
+                                onComplete={onComplete}
+                                speedMultiplier={environmentMods.speedMultiplier}
+                                levelId={selectedMethod || 'ride_easy'}
+                                level={action?.level || 1}
+                            />;
 
                         default:
                             return (

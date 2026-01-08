@@ -201,7 +201,7 @@ export const POINTS_OF_INTEREST: POI[] = [
     {
         id: 'stables', label: 'Stall', icon: '🐴', top: '80%', left: '80%',
         village: { top: '45%', left: '90%' },
-        roles: ['BARON', 'SOLDIER', 'KING'], parentId: 'village',
+        roles: ['PEASANT', 'BARON', 'SOLDIER', 'KING', 'MERCHANT'], parentId: 'village',
         actions: [],
         isHub: true, isInterior: true
     },
@@ -289,13 +289,13 @@ export const POINTS_OF_INTEREST: POI[] = [
     },
     // --- STABLES INTERIOR ---
     {
-        id: 'stables_stall', label: 'Stallplass', icon: '🐴', top: '50%', left: '40%', roles: ['BARON', 'SOLDIER', 'KING'], parentId: 'stables',
+        id: 'stables_stall', label: 'Stallplass', icon: '🐴', top: '50%', left: '40%', roles: ['PEASANT', 'BARON', 'SOLDIER', 'KING', 'MERCHANT'], parentId: 'stables',
         actions: [
             { id: 'MOUNT_HORSE', label: 'Ri ut', cost: '-5⚡' }
         ]
     },
     {
-        id: 'stables_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '80%', roles: ['BARON', 'KING'], parentId: 'stables',
+        id: 'stables_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '80%', roles: ['PEASANT', 'BARON', 'KING', 'MERCHANT'], parentId: 'stables',
         actions: [{ id: 'BUILDING_UPGRADE_stables', label: 'Oppgrader Stallen', cost: 'Varierer' }]
     },
     // --- WATCHTOWER INTERIOR ---
