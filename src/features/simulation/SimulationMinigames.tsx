@@ -18,6 +18,7 @@ import { ApothecaryGame } from './minigames/ApothecaryGame';
 import { SawingGame } from './minigames/SawingGame';
 import { SmeltingGame } from './minigames/SmeltingGame';
 import { HorseRidingGame } from './minigames/HorseRidingGame';
+import { ArcheryGame } from './minigames/ArcheryGame';
 
 interface MinigameProps {
     type: ActionType;
@@ -350,7 +351,7 @@ export const MinigameOverlay: React.FC<MinigameProps> = ({ type, onComplete, onC
                             return <SawingGame onComplete={onComplete} speedMultiplier={environmentMods.speedMultiplier} />;
 
                         case 'FORAGE':
-                            if (selectedMethod === 'traps') return <TrappingGame onComplete={onComplete} speedMultiplier={environmentMods.speedMultiplier} />;
+                            if (selectedMethod === 'traps') return <TrappingGame onComplete={onComplete} speedMultiplier={environmentMods.speedMultiplier} variant="land" />; // Foraging traps usually land (small game? berries?) actually foraging might mean "Gathering". Let's assume traps in forage is "land" variant.
                             return <HarvestingGame isForaging onComplete={onComplete} equipment={equipment} speedMultiplier={environmentMods.speedMultiplier} resourceName="Mat/Urter" possibleYield={projectedYield} />;
 
                         case 'MINE':
@@ -386,8 +387,18 @@ export const MinigameOverlay: React.FC<MinigameProps> = ({ type, onComplete, onC
                                 speedMultiplier={environmentMods.speedMultiplier}
                                 levelId={selectedMethod || 'ride_easy'}
                                 level={action?.level || 1}
-                                horse={player.horseCustomization}
+                                horse={player?.horseCustomization}
                             />;
+
+                        case 'HUNT':
+                            if (selectedMethod === 'bow') {
+                                return <ArcheryGame onComplete={onComplete} speedMultiplier={environmentMods.speedMultiplier} />;
+                            }
+                            if (selectedMethod === 'trap') {
+                                return <TrappingGame onComplete={onComplete} speedMultiplier={environmentMods.speedMultiplier} variant="land" />;
+                            }
+                            // Default Fallback (maybe spear?)
+                            return <ArcheryGame onComplete={onComplete} speedMultiplier={environmentMods.speedMultiplier} />;
 
                         default:
                             return (

@@ -14,6 +14,7 @@ import { MinigameOverlay } from './SimulationMinigames';
 import { LevelUpOverlay } from './components/LevelUpOverlay';
 import { SimulationOnboarding } from './components/SimulationOnboarding';
 import { StablesWindow } from './components/StablesWindow';
+import { TavernWindow } from './components/TavernWindow';
 import { SimulationDestinySplash } from './components/SimulationDestinySplash';
 import { ChatSystem } from './components/ChatSystem';
 import { PlayerProfileModal } from './components/PlayerProfileModal';
@@ -70,11 +71,16 @@ export const SimulationPlayer: React.FC = () => {
     const [levelUpData, setLevelUpData] = useState<{ level: number, title: string } | null>(null);
     const [inspectingPlayer, setInspectingPlayer] = useState<SimPlayer | null>(null);
     const [isStablesOpen, setIsStablesOpen] = useState(false);
+    const [isTavernOpen, setIsTavernOpen] = useState(false);
 
     const handleSimulationAction = (action: any) => {
         const actionType = typeof action === 'string' ? action : action.type;
         if (actionType === 'MOUNT_HORSE' && !action.method) {
             setIsStablesOpen(true);
+            return;
+        }
+        if (actionType === 'OPEN_TAVERN_MENU') {
+            setIsTavernOpen(true);
             return;
         }
         handleAction(action);
@@ -233,6 +239,15 @@ export const SimulationPlayer: React.FC = () => {
                             player={player}
                             onAction={handleAction}
                             onClose={() => setIsStablesOpen(false)}
+                        />
+                    )}
+
+                    {isTavernOpen && (
+                        <TavernWindow
+                            player={player}
+                            room={room}
+                            onAction={handleAction}
+                            onClose={() => setIsTavernOpen(false)}
                         />
                     )}
 

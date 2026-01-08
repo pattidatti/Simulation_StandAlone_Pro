@@ -340,10 +340,7 @@ export const POINTS_OF_INTEREST: POI[] = [
     {
         id: 'tavern_bar', label: 'Baren', icon: '🍗', top: '30%', left: '30%', roles: ['PEASANT', 'BARON', 'KING', 'SOLDIER', 'MERCHANT'], parentId: 'tavern',
         actions: [
-            { id: 'BUY_MEAL', label: 'Kjøp Måltid', cost: '-5g +10⚡' },
-            { id: 'REST_BASIC', label: 'Hvile i Salen', cost: 'Gratis' },
-            { id: 'REST_COMFY', label: 'Bestille Kammer', cost: '-5g' },
-            { id: 'REST_ROYAL', label: 'Kongelig Suite', cost: '-20g' }
+            { id: 'OPEN_TAVERN_MENU', label: 'Se Menykart', cost: 'Gratis' }
         ]
     },
     {
