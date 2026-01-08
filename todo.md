@@ -11,6 +11,8 @@
 
 - [ ] Bidra til tronerommet fungerer ikke?
 - [ ] BIlder på minigames laster ikke. 
+- [] Rød prikk på chat nede i venstre skal bare være synlig når man har uleste meldinger. 
+- [] Opprette ny kanal i chat kalt Feedback (Tilgjengelig for alle). 
 - [ ] Krigsrommet må ha eget POI inne i slottet. 
 - [ ] Vinduet som å bygge/oppgradere slottet og tronsalen trenger episke realistiske bilder, ikke placeholder av en sofa. 
 - [x] Implement deletion logic <!-- id: 8 -->
