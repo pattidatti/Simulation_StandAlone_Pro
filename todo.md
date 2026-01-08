@@ -7,9 +7,11 @@
 - [ ] 
 
 ## Low Priority
+- [ ] Sjekke produksjonsbygningenes oppgraderinger. Har alt ekstra funksjoner, er den nye større fordeler av å oppgradere på alle bygningene?
+- [ ] Må kunne legge til beleiringssverd og rustning i forsvarsverket som baron og konge. Sjekke at funksjonene fungerer. 
 - [ ] Kan bør kunne bestemme hvor mye man vil bidra med på oppgraderinger. 
 - [ ] Sjekke at produksjonsbygningene er individuelle per ragion. 
-- [ ] Bidra til tronerommet fungerer ikke?
+- [x] Bidra til tronerommet fungerer ikke?
 - [ ] BIlder på minigames laster ikke. 
 - [x] Start produksjonsknappen i møllen må være mer smart. Etter man har startet, må den bytte til timeren, slik at brukeren får skikkelig feedback på at produksjonen er i gang. 
 - [x] Må fjerne Iron fra marked og ellers, dette brukes såvidt jeg vet til ingenting. 

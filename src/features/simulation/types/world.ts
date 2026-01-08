@@ -19,14 +19,10 @@ export interface SimulationMarket {
     iron_ore: MarketItem;
     iron_ingot: MarketItem;
     stone: MarketItem;
-    swords: MarketItem;
-    armor: MarketItem;
     wool: MarketItem;
     cloth: MarketItem;
     honey: MarketItem;
     meat: MarketItem;
-    glass: MarketItem;
-    iron?: MarketItem;
 }
 
 export interface SimulationRegion {

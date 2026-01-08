@@ -25,11 +25,7 @@ export const handleBuy = (ctx: ActionContext) => {
         return false;
     }
 
-    // Lazy Patch
-    if (!(market as any)[resource] && (INITIAL_MARKET as any)[resource]) {
-        (market as any)[resource] = { ...(INITIAL_MARKET as any)[resource] };
-    }
-
+    // Validation: Resource MUST exist in market
     if (!(market as any)[resource]) {
         localResult.success = false;
         localResult.message = "Markedet tilbyr ikke denne varen her.";
@@ -93,10 +89,11 @@ export const handleSell = (ctx: ActionContext) => {
         return false;
     }
 
-    // Lazy Patch: If resource is missing in market but exists in schema, add it dynamically
-    if (!(market as any)[resource] && (INITIAL_MARKET as any)[resource]) {
-        console.log(`Lazy patching market: Adding missing ${resource}`);
-        (market as any)[resource] = { ...(INITIAL_MARKET as any)[resource] };
+    // Validation: Resource MUST exist in market. No lazy patching.
+    if (!(market as any)[resource]) {
+        localResult.success = false;
+        localResult.message = "Markedet tar ikke imot denne varen her.";
+        return false;
     }
 
     if (!(market as any)[resource]) {
@@ -105,7 +102,9 @@ export const handleSell = (ctx: ActionContext) => {
         return false;
     }
 
-    if (((actor.resources as any)[resource] || 0) < 1) {
+    // Security: Strict inventory check
+    const currentStock = (actor.resources as any)[resource] || 0;
+    if (typeof currentStock !== 'number' || currentStock < 1) {
         localResult.success = false;
         localResult.message = `Du har ingen ${resource} å selge.`;
         return false;
