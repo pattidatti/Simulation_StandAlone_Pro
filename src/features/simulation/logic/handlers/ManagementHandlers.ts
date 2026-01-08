@@ -3,43 +3,218 @@ import type { ActionContext } from '../actionTypes';
 import type { Resources, Role } from '../../simulationTypes';
 
 export const handleTax = (ctx: ActionContext) => {
-    const { actor, room, localResult } = ctx;
-    if (actor.role !== 'BARON' && actor.role !== 'KING') {
+    const { actor, room, action, localResult } = ctx;
+    if (actor.role !== 'BARON') {
+        localResult.success = false;
+        localResult.message = "Kun Baroner kan kreve inn lokal skatt.";
+        return false;
+    }
+
+    // 1. Validate Season Lock
+    const regionId = actor.regionId;
+    const region = room.regions[regionId];
+    if (!region) return false;
+
+    const currentSeason = room.world.season;
+    const currentYear = room.world.year;
+
+    // Safety check for existing data
+    if (!region.taxHistory) region.taxHistory = [];
+
+    if (region.lastTaxCollection) {
+        if (region.lastTaxCollection.year === currentYear && region.lastTaxCollection.season === currentSeason) {
+            localResult.success = false;
+            localResult.message = `Du har allerede krevd inn skatt for ${currentSeason} ${currentYear}.`;
+            return false;
+        }
+    }
+
+    // 2. Determine Rate
+    // If taxRate is passed in action (from Slider), use it. Otherwise default to stored or 10.
+    const taxRate = action.taxRate !== undefined ? action.taxRate : (region.taxRate || 10);
+    const peasantRate = taxRate / 100;
+
+    let taxTotalGold = 0;
+    let taxTotalGrain = 0;
+    let taxPayers = 0;
+
+    // 3. Collect from Peasants in Region
+    let totalGoldFloat = 0;
+    let totalGrainFloat = 0;
+    const actorRegionId = (actor.regionId || '').trim().toLowerCase();
+
+    Object.values(room.players).forEach((p: any) => {
+        if (!p || p.id === actor.id) return;
+        const pReg = (p.regionId || '').trim().toLowerCase();
+
+        // Robust Match (mirroring UI)
+        const isMatch = p.role === 'PEASANT' && (pReg === actorRegionId || pReg.includes(actorRegionId) || actorRegionId.includes(pReg));
+
+        if (isMatch) {
+            if (!p.resources) p.resources = { gold: 0, grain: 0 };
+
+            // Robust Gold Detection (mirroring UI)
+            const gold = Number(
+                p.resources.gold ??
+                p.gold ??
+                p.wealth ??
+                p.stats?.gold ??
+                (p.inventory?.find((i: any) => i.id === 'gold')?.amount) ??
+                0
+            );
+            const grain = Number(p.resources.grain ?? 0);
+
+            const goldContr = gold * peasantRate;
+            const grainContr = grain * peasantRate;
+
+            if (goldContr > 0) {
+                const roundedGold = Math.floor(goldContr);
+                // Deduct from where it was found (preferring resources.gold)
+                if (p.resources.gold !== undefined) p.resources.gold -= roundedGold;
+                else if (p.gold !== undefined) p.gold -= roundedGold;
+
+                totalGoldFloat += goldContr;
+            }
+            if (grainContr > 0) {
+                const roundedGrain = Math.floor(grainContr);
+                p.resources.grain -= roundedGrain;
+                totalGrainFloat += grainContr;
+            }
+            if (goldContr > 0 || grainContr > 0) taxPayers++;
+        }
+    });
+
+    taxTotalGold = Math.floor(totalGoldFloat);
+    taxTotalGrain = Math.floor(totalGrainFloat);
+
+    // 4. Distribute to Baron
+    if (!actor.resources) actor.resources = { gold: 0, grain: 0 } as any;
+    actor.resources.gold = (actor.resources.gold || 0) + taxTotalGold;
+    actor.resources.grain = (actor.resources.grain || 0) + taxTotalGrain;
+
+    // 5. Update Region State
+    region.taxRate = taxRate; // Update stored rate preference
+    region.lastTaxCollection = { year: currentYear, season: currentSeason };
+
+    const historyEntry = {
+        year: currentYear,
+        season: currentSeason,
+        amountGold: taxTotalGold,
+        amountGrain: taxTotalGrain,
+        rate: taxRate,
+        timestamp: Date.now()
+    };
+
+    region.taxHistory.push(historyEntry);
+    if (region.taxHistory.length > 10) region.taxHistory.shift(); // Keep last 10
+
+    // 6. Legitimacy Penalty
+    // Base 5, +1 for every 5% above 10%
+    const penalty = Math.max(0, 5 + Math.floor((taxRate - 10) / 2));
+    actor.status.legitimacy = Math.max(0, (actor.status.legitimacy || 100) - penalty);
+
+    // 7. Result
+    if (taxTotalGold > 0 || taxTotalGrain > 0) {
+        localResult.utbytte.push({ resource: 'gold', amount: taxTotalGold });
+        localResult.utbytte.push({ resource: 'grain', amount: taxTotalGrain });
+        localResult.message = `Skatteinnkreving (${taxRate}%): ${taxTotalGold}g og ${taxTotalGrain} korn fra ${taxPayers} bønder. (-${penalty} Legitimet)`;
+    } else {
+        localResult.message = `Ingen skatt å hente (sats: ${taxRate}%). (-${penalty} Legitimet)`;
+    }
+
+    return true;
+};
+
+export const handleRoyalTax = (ctx: ActionContext) => {
+    const { actor, room, action, localResult } = ctx;
+    if (actor.role !== 'KING') {
         localResult.success = false;
         return false;
     }
 
-    let taxTotal = 0;
-    let taxGrain = 0;
+    const world = room.world;
+    const currentSeason = world.season;
+    const currentYear = world.year;
 
+    // 1. Season Lock
+    if (world.lastRoyalTaxCollection) {
+        if (world.lastRoyalTaxCollection.year === currentYear && world.lastRoyalTaxCollection.season === currentSeason) {
+            localResult.success = false;
+            localResult.message = `Kongelig skatt er allerede krevd inn for ${currentSeason} ${currentYear}.`;
+            return false;
+        }
+    }
+
+    // 2. Rate & Logic
+    const taxRate = action.taxRate !== undefined ? action.taxRate : (world.taxRateDetails?.kingTax || 20);
+    const baronRate = taxRate / 100;
+
+    let taxTotalGold = 0;
+    let taxTotalGrain = 0;
+    let taxPayers = 0;
+    let totalGoldFloat = 0;
+    let totalGrainFloat = 0;
+
+    // 3. Tax Barons
     Object.values(room.players).forEach((p: any) => {
-        if (p.role === 'PEASANT' && p.id !== actor.id) {
-            const goldTax = Math.floor((p.resources.gold || 0) * GAME_BALANCE.TAX.PEASANT_RATE_DEFAULT);
-            const grainTax = Math.floor((p.resources.grain || 0) * GAME_BALANCE.TAX.PEASANT_RATE_DEFAULT);
+        if (p.role === 'BARON' && p.id !== actor.id) {
+            if (!p.resources) p.resources = { gold: 0, grain: 0 };
 
-            if (goldTax > 0) {
-                p.resources.gold -= goldTax;
-                taxTotal += goldTax;
+            // Robust Gold/Grain Detection for Barons too
+            const gold = Number(p.resources.gold ?? p.gold ?? p.wealth ?? 0);
+            const grain = Number(p.resources.grain ?? 0);
+
+            const goldTaxFloat = gold * baronRate;
+            const grainTaxFloat = grain * baronRate;
+
+            if (goldTaxFloat > 0) {
+                const roundedGold = Math.floor(goldTaxFloat);
+                if (p.resources.gold !== undefined) p.resources.gold -= roundedGold;
+                else p.gold = (p.gold || 0) - roundedGold;
+                totalGoldFloat += goldTaxFloat;
             }
-            if (grainTax > 0) {
-                p.resources.grain -= grainTax;
-                taxGrain += grainTax;
+            if (grainTaxFloat > 0) {
+                const roundedGrain = Math.floor(grainTaxFloat);
+                p.resources.grain -= roundedGrain;
+                totalGrainFloat += grainTaxFloat;
             }
+            if (goldTaxFloat > 0 || grainTaxFloat > 0) taxPayers++;
         }
     });
 
-    actor.resources.gold = (actor.resources.gold || 0) + taxTotal;
-    actor.resources.grain = (actor.resources.grain || 0) + taxGrain;
+    taxTotalGold = Math.floor(totalGoldFloat);
+    taxTotalGrain = Math.floor(totalGrainFloat);
 
-    if (taxTotal > 0 || taxGrain > 0) {
-        localResult.utbytte.push({ resource: 'gold', amount: taxTotal });
-        localResult.utbytte.push({ resource: 'grain', amount: taxGrain });
-        localResult.message = `Krevde inn skatt: ${taxTotal}g og ${taxGrain} korn fra bøndene.`;
-    } else {
-        localResult.message = "Ingen skatt å kreve inn (bøndene er blakke).";
-    }
+    // 4. Payout
+    if (!actor.resources) actor.resources = { gold: 0, grain: 0 } as any;
+    actor.resources.gold = (actor.resources.gold || 0) + taxTotalGold;
+    actor.resources.grain = (actor.resources.grain || 0) + taxTotalGrain;
 
-    actor.status.legitimacy = Math.max(0, (actor.status.legitimacy || 100) - 5);
+    // 5. Update World State
+    if (!world.taxRateDetails) world.taxRateDetails = { kingTax: 20 };
+    world.taxRateDetails.kingTax = taxRate;
+
+    world.lastRoyalTaxCollection = { year: currentYear, season: currentSeason };
+
+    if (!world.royalTaxHistory) world.royalTaxHistory = [];
+    world.royalTaxHistory.push({
+        year: currentYear,
+        season: currentSeason,
+        amountGold: taxTotalGold,
+        amountGrain: taxTotalGrain,
+        rate: taxRate,
+        timestamp: Date.now()
+    });
+    if (world.royalTaxHistory.length > 10) world.royalTaxHistory.shift();
+
+    // 6. Penalty
+    const penalty = Math.max(0, 5 + Math.floor((taxRate - 10) / 2));
+    actor.status.legitimacy = Math.max(0, (actor.status.legitimacy || 100) - penalty);
+
+    localResult.utbytte.push({ resource: 'gold', amount: taxTotalGold });
+    localResult.utbytte.push({ resource: 'grain', amount: taxTotalGrain });
+    localResult.message = `Kongelig Skatt (${taxRate}%): ${taxTotalGold}g og ${taxTotalGrain} korn fra ${taxPayers} baroner. (-${penalty} Legitimet)`;
+
     return true;
 };
 
@@ -109,14 +284,19 @@ export const handleContribute = (ctx: ActionContext) => {
         if (!room.world.settlement.buildings) room.world.settlement.buildings = {};
 
         if (!room.world.settlement.buildings[buildingId]) {
-            room.world.settlement.buildings[buildingId] = { id: buildingId, level: 1, progress: {}, contributions: {} };
+            const isCastle = ['manor_ost', 'manor_vest', 'throne_room'].includes(buildingId);
+            const defaultLevel = isCastle ? 0 : 1;
+            room.world.settlement.buildings[buildingId] = { id: buildingId, level: defaultLevel, progress: {}, contributions: {} };
         }
         buildingState = room.world.settlement.buildings[buildingId] as any;
     }
 
     if (!buildingState.progress) buildingState.progress = {};
     if (!actor.resources) actor.resources = JSON.parse(JSON.stringify(INITIAL_RESOURCES.PEASANT));
-    if (!buildingState.level || buildingState.level < 1) buildingState.level = 1;
+    if (!buildingState.level && buildingState.level !== 0) {
+        const isCastle = ['manor_ost', 'manor_vest', 'throne_room'].includes(buildingId);
+        buildingState.level = isCastle ? 0 : 1;
+    }
 
     const nextLevel = buildingState.level + 1;
     const nextLevelDef = buildingDef.levels[nextLevel];
@@ -131,7 +311,12 @@ export const handleContribute = (ctx: ActionContext) => {
     const currentProg = (buildingState.progress as any)[resource] || 0;
     const needed = reqAmount - currentProg;
 
-    if (needed <= 0) {
+    let finishedCheck = true;
+    Object.entries(nextLevelDef.requirements).forEach(([res, amt]) => {
+        if (((buildingState.progress as any)[res] || 0) < (amt as number)) finishedCheck = false;
+    });
+
+    if (needed <= 0 && !finishedCheck) {
         localResult.success = false;
         localResult.message = "Ressurskravet er allerede oppfylt.";
         return false;

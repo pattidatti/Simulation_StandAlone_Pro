@@ -114,8 +114,8 @@ export function useSimulationData(pin: string | undefined, impersonateId: string
             setTrades(snap.val() || {});
         });
 
-        const profilesRef = ref(db, `${baseUrl}/public_profiles`);
-        const unsubPlayers = onValue(profilesRef, (snap) => {
+        const playersRef = ref(db, `${baseUrl}/players`);
+        const unsubPlayers = onValue(playersRef, (snap) => {
             const data = snap.val() || {};
             setPlayers(data);
         });

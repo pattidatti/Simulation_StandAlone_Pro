@@ -74,7 +74,7 @@ const getGrainCost = (trackId: string, level: number) => {
 // --- SOPHISTICATED HORSE SVG COMPONENT ---
 const NobleHorse = ({ skinColor, maneColor, hatId }: { skinColor: string; maneColor: string; hatId: string }) => {
     const isRainbow = maneColor === 'rainbow';
-    
+
     return (
         <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-2xl">
             {/* Defs for gradients */}
@@ -88,10 +88,10 @@ const NobleHorse = ({ skinColor, maneColor, hatId }: { skinColor: string; maneCo
                     <stop offset="100%" stopColor="#ff00ff" />
                 </linearGradient>
                 <filter id="glow">
-                    <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                    <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
                     <feMerge>
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
                     </feMerge>
                 </filter>
             </defs>
@@ -101,36 +101,36 @@ const NobleHorse = ({ skinColor, maneColor, hatId }: { skinColor: string; maneCo
             <path d="M140,160 L140,190 L155,190 L155,150 Z" fill={skinColor} filter="brightness(0.7)" />
 
             {/* Body */}
-            <path 
-                d="M50,100 Q40,60 90,60 L140,60 Q180,60 170,110 Q160,160 120,150 L80,150 Q50,150 50,100 Z" 
-                fill={skinColor} 
+            <path
+                d="M50,100 Q40,60 90,60 L140,60 Q180,60 170,110 Q160,160 120,150 L80,150 Q50,150 50,100 Z"
+                fill={skinColor}
             />
 
             {/* Front Legs */}
             <path d="M60,150 L60,195 L75,195 L75,150 Z" fill={skinColor} />
             <path d="M130,150 L130,195 L145,195 L145,150 Z" fill={skinColor} />
-            
+
             {/* Neck & Head */}
-            <path 
-                d="M130,65 Q130,30 160,20 L165,25 Q185,25 185,50 L175,70 Q160,85 145,65 Z" 
-                fill={skinColor} 
+            <path
+                d="M130,65 Q130,30 160,20 L165,25 Q185,25 185,50 L175,70 Q160,85 145,65 Z"
+                fill={skinColor}
             />
             {/* Snout */}
             <path d="M185,50 L195,55 L190,65 L175,70 Z" fill={skinColor} filter="brightness(0.9)" />
-            
+
             {/* Mane */}
-            <path 
-                d="M160,20 Q120,20 120,80 L130,90 Q140,30 165,25 Z" 
-                fill={isRainbow ? "url(#rainbowGradient)" : maneColor} 
+            <path
+                d="M160,20 Q120,20 120,80 L130,90 Q140,30 165,25 Z"
+                fill={isRainbow ? "url(#rainbowGradient)" : maneColor}
                 className={isRainbow ? "animate-pulse" : ""}
             />
-            
+
             {/* Tail */}
-            <path 
-                d="M50,80 Q20,80 20,140" 
-                fill="none" 
-                stroke={isRainbow ? "url(#rainbowGradient)" : maneColor} 
-                strokeWidth="8" 
+            <path
+                d="M50,80 Q20,80 20,140"
+                fill="none"
+                stroke={isRainbow ? "url(#rainbowGradient)" : maneColor}
+                strokeWidth="8"
                 strokeLinecap="round"
             />
 
@@ -162,7 +162,9 @@ const NobleHorse = ({ skinColor, maneColor, hatId }: { skinColor: string; maneCo
 export const StablesWindow: React.FC<StablesWindowProps> = ({ player, onAction, onClose }) => {
     const [activeTab, setActiveTab] = React.useState<'ride' | 'horse'>('ride');
     const [cosmeticTab, setCosmeticTab] = React.useState<'skin' | 'mane' | 'hat'>('skin');
-    
+
+    const [confirmData, setConfirmData] = React.useState<{ id: string, type: 'skin' | 'mane' | 'hat', price: number } | null>(null);
+
     // Derived state
     const progress = player.minigameProgress || {};
     const hc = (player.horseCustomization || {}) as any;
@@ -186,7 +188,13 @@ export const StablesWindow: React.FC<StablesWindowProps> = ({ player, onAction, 
     };
 
     const handleBuyCosmetic = (cosmeticId: string, cosmeticType: 'skin' | 'mane' | 'hat', price: number) => {
-        onAction({ type: 'BUY_HORSE_COSMETIC', cosmeticId, cosmeticType, price });
+        setConfirmData({ id: cosmeticId, type: cosmeticType, price });
+    };
+
+    const handleConfirmPurchase = () => {
+        if (!confirmData) return;
+        onAction({ type: 'BUY_HORSE_COSMETIC', cosmeticId: confirmData.id, cosmeticType: confirmData.type, price: confirmData.price });
+        setConfirmData(null);
     };
 
     const handleSelectCosmetic = (cosmeticId: string, cosmeticType: 'skin' | 'mane' | 'hat') => {
@@ -200,34 +208,61 @@ export const StablesWindow: React.FC<StablesWindowProps> = ({ player, onAction, 
             icon={<Trophy className="text-amber-500" size={24} />}
             onClose={onClose}
         >
+            {confirmData && (
+                <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-8 animate-in fade-in duration-200">
+                    <div className="bg-slate-900 border border-amber-500/30 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl space-y-6">
+                        <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto text-amber-500 border border-amber-500/20">
+                            <Sparkles size={32} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-white uppercase mb-2">Bekreft Kjøp</h3>
+                            <p className="text-slate-400 text-sm">
+                                Er du sikker på at du vil kjøpe dette for <span className="text-amber-400 font-bold">{confirmData.price}g</span>?
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setConfirmData(null)}
+                                className="flex-1 py-3 rounded-xl bg-slate-800 text-slate-400 font-bold text-xs uppercase hover:bg-slate-700 transition-colors"
+                            >
+                                Avbryt
+                            </button>
+                            <button
+                                onClick={handleConfirmPurchase}
+                                className="flex-1 py-3 rounded-xl bg-amber-600 text-white font-bold text-xs uppercase hover:bg-amber-500 shadow-lg shadow-amber-900/20 transition-all"
+                            >
+                                Kjøp
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col h-[650px] select-none text-slate-200">
                 {/* --- NAVIGATION BAR --- */}
                 <div className="flex items-center gap-4 p-6 pb-2">
                     <div className="flex bg-slate-900/50 p-1 rounded-2xl border border-white/5">
                         <button
                             onClick={() => setActiveTab('ride')}
-                            className={`px-8 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 ${
-                                activeTab === 'ride' 
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' 
+                            className={`px-8 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'ride'
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
-                            }`}
+                                }`}
                         >
                             <Navigation size={14} /> Turer
                         </button>
                         <button
                             onClick={() => setActiveTab('horse')}
-                            className={`px-8 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 ${
-                                activeTab === 'horse' 
-                                ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20' 
+                            className={`px-8 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'horse'
+                                ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
-                            }`}
+                                }`}
                         >
                             <Sparkles size={14} /> Min Hest
                         </button>
                     </div>
-                    
+
                     <div className="flex-1" />
-                    
+
                     <div className="flex items-center gap-3 px-5 py-2 bg-slate-950/50 rounded-2xl border border-amber-500/20 shadow-inner">
                         <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Saldo</span>
                         <span className="text-base font-black text-amber-400 font-mono tracking-tight">
@@ -249,7 +284,7 @@ export const StablesWindow: React.FC<StablesWindowProps> = ({ player, onAction, 
                                             className="group relative bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800/50 border border-white/5 rounded-[2rem] p-1 overflow-hidden hover:border-white/10 transition-all"
                                         >
                                             <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${track.color}`} />
-                                            
+
                                             <div className="flex flex-col md:flex-row items-stretch gap-6 pl-6 p-5">
                                                 {/* Header & Icon */}
                                                 <div className="flex items-center gap-5 min-w-[200px]">
@@ -283,11 +318,11 @@ export const StablesWindow: React.FC<StablesWindowProps> = ({ player, onAction, 
                                                                 onClick={() => handleStartLevel(track.id, level)}
                                                                 className={`
                                                                     relative h-12 flex-1 min-w-[60px] max-w-[80px] rounded-xl flex flex-col items-center justify-center gap-0.5 border transition-all duration-300
-                                                                    ${isFinished 
-                                                                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                                                                    ${isFinished
+                                                                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                                                                         : isUnlocked
-                                                                            ? hasGrain 
-                                                                                ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20 hover:-translate-y-1' 
+                                                                            ? hasGrain
+                                                                                ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20 hover:-translate-y-1'
                                                                                 : 'bg-slate-800 border-slate-700 text-slate-500 saturate-0'
                                                                             : 'bg-transparent border-slate-800/50 text-slate-800'
                                                                     }
@@ -329,11 +364,11 @@ export const StablesWindow: React.FC<StablesWindowProps> = ({ player, onAction, 
                                     {/* Ambient Background */}
                                     <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent" />
                                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-indigo-500/10 blur-[100px] rounded-full" />
-                                    
+
                                     <div className="relative z-10 w-full h-full p-8 transition-all hover:scale-105 duration-700 ease-out">
-                                        <NobleHorse 
-                                            skinColor={currentSkin.color} 
-                                            maneColor={currentMane.id} 
+                                        <NobleHorse
+                                            skinColor={currentSkin.color}
+                                            maneColor={currentMane.id}
                                             hatId={horse.hatId}
                                         />
                                     </div>
@@ -357,11 +392,10 @@ export const StablesWindow: React.FC<StablesWindowProps> = ({ player, onAction, 
                                         <button
                                             key={tab}
                                             onClick={() => setCosmeticTab(tab)}
-                                            className={`px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                                                cosmeticTab === tab 
-                                                ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/20' 
+                                            className={`px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${cosmeticTab === tab
+                                                ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/20'
                                                 : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                                            }`}
+                                                }`}
                                         >
                                             {tab === 'skin' ? 'Pels' : tab === 'mane' ? 'Manke' : 'Hodeplagg'}
                                         </button>
@@ -380,10 +414,10 @@ export const StablesWindow: React.FC<StablesWindowProps> = ({ player, onAction, 
                                                     onClick={() => isUnlocked ? handleSelectCosmetic(s.id, 'skin') : handleBuyCosmetic(s.id, 'skin', s.price)}
                                                     className={`
                                                         aspect-square rounded-2xl border flex flex-col items-center justify-center gap-2 transition-all group
-                                                        ${isSelected 
-                                                            ? 'bg-indigo-600 border-indigo-400 ring-2 ring-indigo-500/30' 
-                                                            : isUnlocked 
-                                                                ? 'bg-slate-800 border-white/5 hover:bg-slate-700 hover:border-white/20' 
+                                                        ${isSelected
+                                                            ? 'bg-indigo-600 border-indigo-400 ring-2 ring-indigo-500/30'
+                                                            : isUnlocked
+                                                                ? 'bg-slate-800 border-white/5 hover:bg-slate-700 hover:border-white/20'
                                                                 : 'bg-slate-900/50 border-white/5 opacity-70 hover:opacity-100 hover:border-amber-500/50'
                                                         }
                                                     `}
@@ -409,14 +443,14 @@ export const StablesWindow: React.FC<StablesWindowProps> = ({ player, onAction, 
                                                         ${isSelected ? 'bg-indigo-600 border-indigo-400' : 'bg-slate-800 border-white/5 hover:bg-slate-700'}
                                                     `}
                                                 >
-                                                    <div 
-                                                        className="w-12 h-4 rounded-full border border-white/10 shadow-sm" 
-                                                        style={{ background: m.id === 'rainbow' ? 'linear-gradient(90deg, #f43f5e, #fbbf24, #10b981, #6366f1)' : m.id }} 
+                                                    <div
+                                                        className="w-12 h-4 rounded-full border border-white/10 shadow-sm"
+                                                        style={{ background: m.id === 'rainbow' ? 'linear-gradient(90deg, #f43f5e, #fbbf24, #10b981, #6366f1)' : m.id }}
                                                     />
                                                     {!isUnlocked ? (
                                                         <span className="text-xs font-bold text-amber-500">{m.price}g</span>
                                                     ) : (
-                                                        <span className={`text-[10px] font-black uppercase tracking-widest ${isSelected?'text-white':'text-slate-400'}`}>{m.label}</span>
+                                                        <span className={`text-[10px] font-black uppercase tracking-widest ${isSelected ? 'text-white' : 'text-slate-400'}`}>{m.label}</span>
                                                     )}
                                                 </button>
                                             );

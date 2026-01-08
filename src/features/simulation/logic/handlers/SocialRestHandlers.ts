@@ -123,7 +123,6 @@ export const handleRest = (ctx: ActionContext) => {
             // 1. Calculate Decay
             const now = Date.now();
             const lastRest = metadata.lastTavernRest || now;
-            const diffHours = (now - lastRest) / (1000 * 60 * 60); // Real-time hours for now
             // To make it feel responsive in short sessions, let's say it decays 10% every 5 minutes (in game scale)
             // Let's us ms directly: 5 mins = 300,000 ms
             const intervalsPassed = (now - lastRest) / 300000;
@@ -278,6 +277,43 @@ export const handleGamble = (ctx: ActionContext) => {
         actor.resources.gold = Math.max(0, (actor.resources.gold || 0) - amount);
         localResult.message = `Tapte ${amount}g på terninger. (${playerRoll} mot ${houseRoll})`;
     }
+    return true;
+};
+
+export const handleResourceGamble = (ctx: ActionContext) => {
+    const { actor, action, localResult } = ctx;
+    const { resource, amount, multiplier, isWin } = action;
+
+    const resourceKey = resource as keyof typeof actor.resources;
+    const currentVal = (actor.resources as any)[resourceKey] || 0;
+
+    if (currentVal < amount) {
+        localResult.success = false;
+        localResult.message = `Du har ikke nok ${resource}!`;
+        return false;
+    }
+
+    // Deduct initial bet
+    (actor.resources as any)[resourceKey] = Math.max(0, currentVal - amount);
+
+    if (isWin) {
+        // Remove Math.floor to allow decimals (e.g. 1.5x on bet of 1 = 1.5 return, 0.5 gain)
+        const gain = amount * multiplier;
+        (actor.resources as any)[resourceKey] += gain;
+
+        // Calculate net gain for the toast/log
+        const netGain = gain - amount;
+        localResult.utbytte.push({ resource: resourceKey, amount: netGain });
+        localResult.message = `Soga-hjulet vider seg til din fordel! Vant ${gain} ${resource}.`;
+
+        if (multiplier >= 2.5) {
+            actor.status.morale = Math.min(100, (actor.status.morale || 50) + 5);
+        }
+    } else {
+        localResult.message = `Skjebnen var hard. Du mistet ${amount} ${resource} til soga-hjulet.`;
+        localResult.utbytte.push({ resource: resourceKey, amount: -amount });
+    }
+
     return true;
 };
 

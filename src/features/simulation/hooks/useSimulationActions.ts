@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { performAction } from '../actions';
 import { checkActionRequirements } from '../utils/actionUtils';
 import type { SimulationPlayer, SimulationRoom, ActionType } from '../simulationTypes';
@@ -15,12 +15,25 @@ export function useSimulationActions(
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [actionResult, setActionResult] = useState<any | null>(null);
 
+    // Self-Healing: Reset stuck loading state after 5 seconds
+    useEffect(() => {
+        if (actionLoading) {
+            const timer = setTimeout(() => {
+                console.warn("[useSimulationActions] Self-Healing: Resetting stuck loading state:", actionLoading);
+                setActionLoading(null);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [actionLoading]);
+
     const handleClearActionResult = useCallback(() => {
         setActionResult(null);
     }, []);
 
     const handleAction = useCallback(async (action: any) => {
-        if (!pin || !player || actionLoading) return;
+        if (!pin || !player || actionLoading) {
+            return;
+        }
 
         const actionType = typeof action === 'string' ? action : action.type;
         const actionMethod = typeof action === 'object' ? action.method : null;
@@ -31,6 +44,7 @@ export function useSimulationActions(
             'SMELT', 'BAKE', 'WEAVE', 'MIX', 'PLANT', 'HARVEST',
             'GATHER_WOOL', 'HUNT', 'SAWMILL', 'MOUNT_HORSE'
         ];
+
 
         if (minigameTypes.includes(actionType as any) && !activeMinigame && (!action.performance)) {
             const currentSeason = (world?.season || 'Spring') as any;
@@ -93,7 +107,7 @@ export function useSimulationActions(
             }
         }
 
-        const isSilentAction = actionType === 'EQUIP_ITEM' || actionType === 'UNEQUIP_ITEM';
+        const isSilentAction = actionType === 'EQUIP_ITEM' || actionType === 'UNEQUIP_ITEM' || actionType === 'CONSUME';
 
         if (action.performance && !isSilentAction) {
             setActiveMinigame(null);
@@ -138,14 +152,14 @@ export function useSimulationActions(
                     durability: []
                 });
             }
+        } finally {
+            if (!isSilentAction) {
+                setActionLoading(null);
+            }
+            setActiveMinigame(null);
+            setActiveMinigameAction(null);
+            setActiveMinigameMethod(null);
         }
-
-        if (!isSilentAction) {
-            setActionLoading(null);
-        }
-        setActiveMinigame(null);
-        setActiveMinigameAction(null);
-        setActiveMinigameMethod(null);
 
     }, [pin, player, actionLoading, world, activeMinigame, setActiveMinigame, setActiveMinigameMethod, setActiveMinigameAction]);
 

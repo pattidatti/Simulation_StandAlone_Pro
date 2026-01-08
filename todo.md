@@ -7,6 +7,7 @@
 - [ ] 
 
 ## Low Priority
+- [ ] Krigsrommet 
 - [] UI på oppgradering av bygninger må være mye mer tydelig. Hvilket nivå man er på, hva man kan oppgradere, hva man har oppgradert, hva man kan oppgradere til og kjempetydelig når man har nådd max nivå. 
 - [ ] Sjekke produksjonsbygningenes oppgraderinger. Har alt ekstra funksjoner, er den nye større fordeler av å oppgradere på alle bygningene?
 - [x] Må kunne legge til beleiringssverd og rustning i forsvarsverket som baron og konge. Sjekke at funksjonene fungerer. 

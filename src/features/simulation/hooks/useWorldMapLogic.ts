@@ -26,6 +26,8 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
     const [isDiceGameOpen, setIsDiceGameOpen] = useState(false);
     const [isChickenCoopOpen, setIsChickenCoopOpen] = useState(false);
     const [isConstructionOpen, setIsConstructionOpen] = useState(false);
+    const [isTaxationOpen, setIsTaxationOpen] = useState(false);
+    const [isResourceGameOpen, setIsResourceGameOpen] = useState(false);
 
     const getViewLevel = useCallback((mode: string): number => {
         if (mode === 'kingdom') return 0;
@@ -53,6 +55,8 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
                 if (upgradingBuildingId) { setUpgradingBuildingId(null); return; }
                 if (isDiceGameOpen) { setIsDiceGameOpen(false); return; }
                 if (isChickenCoopOpen) { setIsChickenCoopOpen(false); return; }
+                if (isTaxationOpen) { setIsTaxationOpen(false); return; }
+                if (isResourceGameOpen) { setIsResourceGameOpen(false); return; }
                 if (dialogNPC) { setDialogNPC(null); return; }
                 if (selectedEvent) { setSelectedEvent(null); return; }
                 if (selectedPOI) { setSelectedPOI(null); return; }
@@ -67,7 +71,7 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [viewMode, upgradingBuildingId, isDiceGameOpen, isChickenCoopOpen, dialogNPC, selectedEvent, selectedPOI, setViewMode, activeTab]);
+    }, [viewMode, upgradingBuildingId, isDiceGameOpen, isChickenCoopOpen, isTaxationOpen, dialogNPC, selectedEvent, selectedPOI, setViewMode, activeTab]);
 
     const handlePOIAction = useCallback((poiId: string, actionId: any) => {
         const actId = typeof actionId === 'string' ? actionId : (actionId.type || actionId.id);
@@ -107,6 +111,12 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
             return;
         }
 
+        if (actId === 'OPEN_TAXATION') {
+            setIsTaxationOpen(true);
+            setSelectedPOI(null);
+            return;
+        }
+
         const prodCtx = getProductionContext(poiId);
         if (prodCtx && (actId === 'OPEN_CRAFTING' || actId === 'CRAFT' || actId === 'REFINE' || actId.startsWith('REFINE_') || actId.startsWith('CRAFT_') || (CRAFTING_RECIPES as any)[actId] || actId === 'REPAIR')) {
             setProductionContext({ ...prodCtx, initialView: actId === 'REPAIR' ? 'REPAIR' : 'PRODUCE' });
@@ -139,6 +149,8 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
             setUpgradingBuildingId(bId);
         } else if (actId === 'OPEN_DICE_GAME') {
             setIsDiceGameOpen(true);
+        } else if (actId === 'OPEN_RESOURCE_GAME') {
+            setIsResourceGameOpen(true);
         } else if (actId === 'CHAT_LOCAL') {
             const randomNPC = TAVERN_NPCS[Math.floor(Math.random() * TAVERN_NPCS.length)];
             setDialogNPC(randomNPC);
@@ -172,6 +184,10 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
         setIsChickenCoopOpen,
         isConstructionOpen,
         setIsConstructionOpen,
+        isTaxationOpen,
+        setIsTaxationOpen,
+        isResourceGameOpen,
+        setIsResourceGameOpen,
         direction,
         handlePOIAction
     };

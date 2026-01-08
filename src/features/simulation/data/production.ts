@@ -94,7 +94,7 @@ export const VILLAGE_BUILDINGS: Record<string, { id: string, name: string, icon:
         locationId: 'village',
         description: 'Et sted for hvile og rykter. Øker stamina-regenerering.',
         levels: {
-            1: { requirements: {}, unlocks: ['ENTER_TAVERN', 'REST_BASIC', 'BUY_MEAL', 'OPEN_DICE_GAME', 'CHAT_LOCAL'], bonus: 'Standard hvile' },
+            1: { requirements: {}, unlocks: ['ENTER_TAVERN', 'REST_BASIC', 'BUY_MEAL', 'OPEN_DICE_GAME', 'OPEN_RESOURCE_GAME', 'CHAT_LOCAL'], bonus: 'Standard hvile' },
             2: { requirements: { wood: 100, stone: 50, gold: 250 }, unlocks: ['REST_COMFY'], bonus: 'Dobbel stamina-regen' },
             3: { requirements: { plank: 50, stone: 150, gold: 750 }, unlocks: ['REST_ROYAL'], bonus: 'Gjenoppretter all stamina raskt' }
         }

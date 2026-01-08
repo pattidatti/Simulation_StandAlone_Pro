@@ -95,6 +95,17 @@ export interface SimulationPlayer {
         unlockedManeColors: string[];
         unlockedHats: string[];
     };
+    weaponRack?: {
+        level: number;
+        lastPolishedAt?: number;
+        slots: {
+            id: string; // Slot ID (0, 1, 2...)
+            type: 'TROPHY' | 'ITEM';
+            itemId: string;
+            instanceId?: string;
+        }[];
+        unlockedTrophies: string[];
+    };
     roleStats?: Partial<Record<Role, RoleStats>>;
     online?: boolean;
     hasSeenIntro?: boolean;

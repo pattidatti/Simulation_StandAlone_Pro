@@ -18,6 +18,7 @@ import { TavernWindow } from './components/TavernWindow';
 import { SimulationDestinySplash } from './components/SimulationDestinySplash';
 import { ChatSystem } from './components/ChatSystem';
 import { PlayerProfileModal } from './components/PlayerProfileModal';
+import { WeaponRackWindow } from './components/WeaponRackWindow';
 import { Trophy } from 'lucide-react';
 import { INITIAL_RESOURCES, INITIAL_SKILLS, INITIAL_EQUIPMENT } from './constants';
 import { ref, update } from 'firebase/database';
@@ -72,6 +73,7 @@ export const SimulationPlayer: React.FC = () => {
     const [inspectingPlayer, setInspectingPlayer] = useState<SimPlayer | null>(null);
     const [isStablesOpen, setIsStablesOpen] = useState(false);
     const [isTavernOpen, setIsTavernOpen] = useState(false);
+    const [isWeaponRackOpen, setIsWeaponRackOpen] = useState(false);
 
     const handleSimulationAction = (action: any) => {
         const actionType = typeof action === 'string' ? action : action.type;
@@ -81,6 +83,10 @@ export const SimulationPlayer: React.FC = () => {
         }
         if (actionType === 'OPEN_TAVERN_MENU') {
             setIsTavernOpen(true);
+            return;
+        }
+        if (actionType === 'OPEN_WEAPON_RACK') {
+            setIsWeaponRackOpen(true);
             return;
         }
         handleAction(action);
@@ -248,6 +254,14 @@ export const SimulationPlayer: React.FC = () => {
                             room={room}
                             onAction={handleAction}
                             onClose={() => setIsTavernOpen(false)}
+                        />
+                    )}
+
+                    {isWeaponRackOpen && (
+                        <WeaponRackWindow
+                            player={player}
+                            onAction={handleAction}
+                            onClose={() => setIsWeaponRackOpen(false)}
                         />
                     )}
 

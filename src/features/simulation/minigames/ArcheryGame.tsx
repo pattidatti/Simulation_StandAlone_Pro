@@ -28,9 +28,9 @@ export const ArcheryGame: React.FC<ArcheryGameProps> = ({ onComplete, speedMulti
         const animate = () => {
             timeRef.current += 0.02 * speedMultiplier;
 
-            // Procedural Sway (Lissajous-ish curve)
-            const swayX = Math.sin(timeRef.current) * 15 + Math.cos(timeRef.current * 2.3) * 10;
-            const swayY = Math.cos(timeRef.current * 0.8) * 10 + Math.sin(timeRef.current * 1.5) * 5;
+            // Procedural Sway (Lissajous-ish curve) - REDUCED
+            const swayX = Math.sin(timeRef.current) * 4 + Math.cos(timeRef.current * 2.3) * 2;
+            const swayY = Math.cos(timeRef.current * 0.8) * 3 + Math.sin(timeRef.current * 1.5) * 1.5;
 
             // Mouse moves "Base" aim, sway is added on top
             // Ideally we'd capture mouse movement, but for a web-minigame without pointer lock, 
@@ -106,7 +106,7 @@ export const ArcheryGame: React.FC<ArcheryGameProps> = ({ onComplete, speedMulti
             onClick={handleShoot}
             className="relative w-full h-[600px] overflow-hidden bg-slate-900 cursor-crosshair select-none group"
             style={{
-                backgroundImage: 'url("/images/minigames/archery_bg.png")',
+                backgroundImage: 'url("/images/minigames/forestry_bg.png")', // Fallback to forestry
                 backgroundSize: 'cover',
                 backgroundPosition: 'center 30%' // Aim up slightly
             }}

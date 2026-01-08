@@ -1,10 +1,11 @@
-import { ref, runTransaction, get, push, serverTimestamp, update, increment } from 'firebase/database';
+import { ref, runTransaction, get, push, set, serverTimestamp, update, increment } from 'firebase/database';
 import { simulationDb as db } from './simulationFirebase';
 import { GAME_BALANCE, VILLAGE_BUILDINGS, ITEM_TEMPLATES } from './constants';
 import { logSimulationMessage } from './utils/simulationUtils';
 import { logSystemicStat } from './utils/statsUtils';
 import { finalizeLeadershipProject } from './gameLogic';
 import type { SimulationPlayer } from './simulationTypes';
+
 
 /*
  * GLOBAL ACTION HANDLERS
@@ -242,13 +243,23 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
         const current = building.progress?.[resource as keyof import('./simulationTypes').Resources] || 0;
         const needed = req - current;
 
+        // Check completion check BEFORE validation to allow 'dummy' trigger
+        let preFinishedCheck = true;
+        Object.entries(nextLevelDef.requirements).forEach(([r, amt]) => {
+            if ((building.progress[r] || 0) < (amt as number)) preFinishedCheck = false;
+        });
+
         // Validation: Is this resource actually needed?
-        if (needed <= 0) {
+        if (needed <= 0 && !preFinishedCheck) {
             failureReason = `Fullt lager for ${resource}. (Krav: ${req}, Har: ${current}, Nivå: ${currentLevel}->${nextLevel})`;
             return repaired ? building : undefined;
         }
 
         actualContributed = Math.min(amount, needed);
+
+        // If finished, we proceed to upgrade logic even if actualContributed is 0
+        // But we must NOT increment progress for dummy/full resources
+
 
         // Mutate Building
         if (!building.progress) building.progress = {};
@@ -360,87 +371,167 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
 };
 
 /* --- TAX HANDLER --- */
-export const handleGlobalTax = async (pin: string, playerId: string, _action: any) => {
-    // Tax is complex because it scrapes ALL players.
-    // Iterating all players in a transaction is exactly what we want to avoid.
-    // OPTIMIZED STRATEGY: 
-    // Instead of pushing/pulling resources from 50 players instantly,
-    // we set a "Tax Mandate" timestamp. 
-    // Players "pay tax" lazily when they next perform an action (Solo Action).
-    // BUT, the user wants immediate feedback.
+export const handleGlobalTax = async (pin: string, playerId: string, action: any) => {
+    const actorRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
+    const actorSnap = await get(actorRef);
+    if (!actorSnap.exists()) return { success: false, error: "Spiller finnes ikke" };
+    const actor = actorSnap.val() as SimulationPlayer;
 
-    // Fallback: We DO read all players, but we process them in batches or accept the heavy read?
-    // Actually, distinct transactions on each player is better than one big transaction.
-    // We can fire off 50 promises of runTransaction(player). parallel.
-    // This is scalable-ish (Firebase handles it well).
+    const actionType = action.type || 'TAX';
+    const isKing = actor.role === 'KING' || actionType === 'TAX_ROYAL';
+    const taxRate = action.taxRate !== undefined ? action.taxRate : 10;
+    const rateFactor = taxRate / 100;
 
     const roomPlayersRef = ref(db, `simulation_rooms/${pin}/players`);
     const snapshot = await get(roomPlayersRef);
-    if (!snapshot.exists()) return { success: false, error: "No players" };
+    if (!snapshot.exists()) return { success: false, error: "Ingen spillere i rommet" };
+    const allPlayers = snapshot.val();
 
-    const players = snapshot.val();
-    let taxCollectedGold = 0;
-    let taxCollectedGrain = 0;
+    let totalGoldFloat = 0;
+    let totalGrainFloat = 0;
+    let taxPayers = 0;
 
-    // We can't sum up safely in parallel without mutex, so we just collect what we INTEND to take
-    // and hope the transactions succeed. 
-    // OR we just transaction the Baron immediately after? No, we need to know how much we got.
+    const actorRegionId = (actor.regionId || '').trim().toLowerCase();
 
-    // REVISED: We loop players, calculate tax, and runTransaction on them.
-    // We sum the result.
+    // 1. COLLECT PHASE: Individual Transactions per player
+    const taxationPromises = Object.entries(allPlayers).map(async ([targetId, pData]: [string, any]) => {
+        if (targetId === playerId) return;
 
-    const taxationPromises = Object.keys(players).map(async (targetId) => {
+        const pReg = (pData.regionId || '').trim().toLowerCase();
+        // Match Logic mirroring UI and ManagementHandlers
+        const isMatch = isKing
+            ? pData.role === 'BARON'
+            : (pData.role === 'PEASANT' && (pReg === actorRegionId || pReg.includes(actorRegionId) || actorRegionId.includes(pReg)));
+
+        if (!isMatch) return;
+
         const targetRef = ref(db, `simulation_rooms/${pin}/players/${targetId}`);
-        let taxesFromThisPlayer = { gold: 0, grain: 0 };
+        let taxesFromThisPlayer = { gold: 0, grain: 0, goldFloat: 0, grainFloat: 0 };
 
         await runTransaction(targetRef, (p: any) => {
-            if (!p || p.role !== 'PEASANT' || p.regionId !== playerId) return; // Only tax own peasants (if ID matches region)
+            if (!p) return;
+            if (!p.resources) p.resources = { gold: 0, grain: 0 };
 
-            // Logic match ManagementHandlers:
-            const goldTax = Math.floor((p.resources.gold || 0) * GAME_BALANCE.TAX.PEASANT_RATE_DEFAULT);
-            const grainTax = Math.floor((p.resources.grain || 0) * GAME_BALANCE.TAX.PEASANT_RATE_DEFAULT);
+            // Robust Gold Discovery
+            const goldAmount = Number(
+                p.resources.gold ??
+                p.gold ??
+                p.wealth ??
+                p.stats?.gold ??
+                (p.inventory?.find((i: any) => i.id === 'gold')?.amount) ??
+                0
+            );
+            const grainAmount = Number(p.resources.grain ?? 0);
 
-            if (goldTax > 0) {
-                p.resources.gold -= goldTax;
-                taxesFromThisPlayer.gold = goldTax;
+            const goldTaxFloat = goldAmount * rateFactor;
+            const grainTaxFloat = grainAmount * rateFactor;
+
+            if (goldTaxFloat > 0) {
+                const roundedGold = Math.floor(goldTaxFloat);
+                if (p.resources.gold !== undefined) p.resources.gold -= roundedGold;
+                else if (p.gold !== undefined) p.gold -= roundedGold;
+                taxesFromThisPlayer.goldFloat = goldTaxFloat;
             }
-            if (grainTax > 0) {
-                p.resources.grain -= grainTax;
-                taxesFromThisPlayer.grain = grainTax;
+            if (grainTaxFloat > 0) {
+                const roundedGrain = Math.floor(grainTaxFloat);
+                p.resources.grain -= roundedGrain;
+                taxesFromThisPlayer.grainFloat = grainTaxFloat;
             }
             return p;
         });
 
-        // Accumulate (This is safe as we are in the map closure, not shared state writing)
-        // Wait, 'taxCollectedGold' is shared. We need atomic add or lock.
-        // Javascript is single threaded event loop, so `taxCollectedGold += val` inside the `then` block is safe
-        // provided we await the transaction. 
-        if (taxesFromThisPlayer.gold > 0) taxCollectedGold += taxesFromThisPlayer.gold;
-        if (taxesFromThisPlayer.grain > 0) taxCollectedGrain += taxesFromThisPlayer.grain;
+        if (taxesFromThisPlayer.goldFloat > 0 || taxesFromThisPlayer.grainFloat > 0) {
+            taxPayers++;
+            totalGoldFloat += taxesFromThisPlayer.goldFloat;
+            totalGrainFloat += taxesFromThisPlayer.grainFloat;
+        }
     });
 
     await Promise.all(taxationPromises);
 
-    // Give to Baron
-    const baronRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
-    await runTransaction(baronRef, (actor: any) => {
-        if (!actor) return;
-        actor.resources.gold = (actor.resources.gold || 0) + taxCollectedGold;
-        actor.resources.grain = (actor.resources.grain || 0) + taxCollectedGrain;
-        actor.status.legitimacy = Math.max(0, (actor.status.legitimacy || 100) - 5);
-        return actor;
+    const taxTotalGold = Math.floor(totalGoldFloat);
+    const taxTotalGrain = Math.floor(totalGrainFloat);
+
+    // 2. DISTRIBUTION PHASE: Give to Actor
+    await runTransaction(actorRef, (actorUpdate: any) => {
+        if (!actorUpdate) return;
+        if (!actorUpdate.resources) actorUpdate.resources = { gold: 0, grain: 0 };
+        actorUpdate.resources.gold = (actorUpdate.resources.gold || 0) + taxTotalGold;
+        actorUpdate.resources.grain = (actorUpdate.resources.grain || 0) + taxTotalGrain;
+
+        // Legitimacy Penalty
+        const penalty = Math.max(0, 5 + Math.floor((taxRate - 10) / 2));
+        actorUpdate.status.legitimacy = Math.max(0, (actorUpdate.status.legitimacy || 100) - penalty);
+        return actorUpdate;
     });
 
-    const msg = `Skatteinnkreving fullført: ${taxCollectedGold}g og ${taxCollectedGrain} korn.`;
-    logSimulationMessage(pin, `[${new Date().toLocaleTimeString()}] ${msg}`);
+    // 3. HISTORY PHASE
+    const currentTimestamp = Date.now();
+    const worldRef = ref(db, `simulation_rooms/${pin}/world`);
+    const worldSnap = await get(worldRef);
+    const world = worldSnap.val() || { year: 1, season: 'Spring' };
+    const currentYear = world.year || 1;
+    const currentSeason = world.season || 'Spring';
+
+    const historyEntry = {
+        year: currentYear,
+        season: currentSeason,
+        amountGold: taxTotalGold,
+        amountGrain: taxTotalGrain,
+        rate: taxRate,
+        timestamp: currentTimestamp
+    };
+
+    if (isKing) {
+        // Update World History
+        const updates: any = {};
+        updates['lastRoyalTaxCollection'] = { year: currentYear, season: currentSeason };
+        if (!world.taxRateDetails) updates['taxRateDetails'] = { kingTax: taxRate };
+        else updates['taxRateDetails/kingTax'] = taxRate;
+
+        await update(worldRef, updates);
+
+        // Add to history list
+        const historyRef = ref(db, `simulation_rooms/${pin}/world/royalTaxHistory`);
+        const hSnap = await get(historyRef);
+        const hList = hSnap.exists() ? hSnap.val() : [];
+        hList.push(historyEntry);
+        if (hList.length > 10) hList.shift();
+        await set(historyRef, hList);
+
+    } else {
+        // Update Region History
+        const regRef = ref(db, `simulation_rooms/${pin}/regions/${actor.regionId}`);
+        const regUpdates: any = {};
+        regUpdates['taxRate'] = taxRate;
+        regUpdates['lastTaxCollection'] = { year: currentYear, season: currentSeason };
+        await update(regRef, regUpdates);
+
+        // Add to history list
+        const regHistoryRef = ref(db, `simulation_rooms/${pin}/regions/${actor.regionId}/taxHistory`);
+        const rhSnap = await get(regHistoryRef);
+        const rhList = rhSnap.exists() ? rhSnap.val() : [];
+        rhList.push(historyEntry);
+        if (rhList.length > 10) rhList.shift();
+        await set(regHistoryRef, rhList);
+    }
+
+    const msg = isKing
+        ? `Kongelig Skatt (${taxRate}%): ${taxTotalGold}g og ${taxTotalGrain} korn fra ${taxPayers} baroner.`
+        : `Skatteinnkreving (${taxRate}%): ${taxTotalGold}g og ${taxTotalGrain} korn fra ${taxPayers} bønder.`;
+
+    logSimulationMessage(pin, `[${new Date().toLocaleTimeString()}] ${actor.name}: ${msg}`);
 
     return {
         success: true,
         data: {
             success: true,
-            timestamp: Date.now(),
+            timestamp: currentTimestamp,
             message: msg,
-            utbytte: [{ resource: 'gold', amount: taxCollectedGold }, { resource: 'grain', amount: taxCollectedGrain }],
+            utbytte: [
+                { resource: 'gold', amount: taxTotalGold },
+                { resource: 'grain', amount: taxTotalGrain }
+            ],
             xp: [],
             durability: []
         }

@@ -37,6 +37,8 @@ export interface SimulationRegion {
     garrison?: Garrison;
     fortification?: Fortification;
     activeSiege?: ActiveSiege;
+    lastTaxCollection?: { year: number; season: string };
+    taxHistory?: Array<{ year: number; season: string; amountGold: number; amountGrain: number; rate: number; timestamp: number }>;
 }
 
 export interface WorldEvent {
@@ -78,6 +80,8 @@ export interface SimulationRoom {
         weather: WeatherType;
         gameTick: number;
         lastTickAt: number;
+        lastRoyalTaxCollection?: { year: number; season: string };
+        royalTaxHistory?: Array<{ year: number; season: string; amountGold: number; amountGrain: number; rate: number; timestamp: number }>;
         taxRateDetails: {
             kingTax: number;
         };

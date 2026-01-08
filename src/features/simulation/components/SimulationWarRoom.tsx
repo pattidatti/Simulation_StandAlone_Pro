@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSimulation } from '../SimulationContext';
 import { SimulationMapWindow } from './ui/SimulationMapWindow';
-import { Sword, Shield, Castle, Coins, Hammer, AlertTriangle } from 'lucide-react';
+import { Sword, Shield, Castle, Hammer, AlertTriangle } from 'lucide-react';
 import { GameButton } from '../ui/GameButton';
 import { ResourceIcon } from '../ui/ResourceIcon';
 import type { SimulationPlayer, SimulationRegion } from '../simulationTypes';
@@ -55,7 +55,6 @@ export const SimulationWarRoom: React.FC<SimulationWarRoomProps> = ({ player, re
     // State for Sliders
     const [swordsToDeposit, setSwordsToDeposit] = useState(1);
     const [armorToDeposit, setArmorToDeposit] = useState(1);
-    const [taxRate, setTaxRate] = useState(region.taxRate || 10);
 
     return (
         <SimulationMapWindow
@@ -66,8 +65,8 @@ export const SimulationWarRoom: React.FC<SimulationWarRoomProps> = ({ player, re
             <div className="space-y-8">
 
                 {/* HEADLINE STATUS */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col items-center">
+                <div className="flex justify-center mb-6">
+                    <div className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col items-center w-full max-w-sm">
                         <span className="text-game-stone_light text-xs uppercase font-bold mb-1">Festningsverk</span>
                         <div className="text-2xl font-bold text-white flex items-center gap-2">
                             <Castle className="w-6 h-6 text-game-stone" />
@@ -89,30 +88,6 @@ export const SimulationWarRoom: React.FC<SimulationWarRoomProps> = ({ player, re
                         >
                             Reparer (10 <ResourceIcon resource="stone" size="sm" /> 10 <ResourceIcon resource="wood" size="sm" />)
                         </GameButton>
-                    </div>
-
-                    <div className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col items-center">
-                        <span className="text-game-stone_light text-xs uppercase font-bold mb-1">Skattekiste</span>
-                        <div className="text-2xl font-bold text-white flex items-center gap-2">
-                            <Coins className="w-6 h-6 text-game-gold" />
-                            {player.resources.gold?.toFixed(0) || 0}g
-                        </div>
-                        <div className="w-full mt-2 space-y-2">
-                            <div className="flex justify-between items-center text-xs text-game-stone_light">
-                                <span>Skattetrykk:</span>
-                                <span className={`${taxRate > 15 ? 'text-red-400' : 'text-emerald-400'}`}>{taxRate}%</span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="20"
-                                value={taxRate}
-                                onChange={(e) => setTaxRate(parseInt(e.target.value))}
-                                onMouseUp={() => onAction({ type: 'SET_TAX', newRate: taxRate })}
-                                onTouchEnd={() => onAction({ type: 'SET_TAX', newRate: taxRate })}
-                                className="w-full accent-game-gold cursor-pointer"
-                            />
-                        </div>
                     </div>
                 </div>
 

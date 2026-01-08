@@ -37,7 +37,10 @@ export const POINTS_OF_INTEREST: POI[] = [
         vest: { top: '40%', left: '30%' },
         ost: { top: '40%', left: '68%' },
         roles: ['PEASANT', 'BARON', 'KING', 'SOLDIER'],
-        actions: [{ id: 'OPEN_CONSTRUCTION', label: 'Bidra til bygging', cost: 'Ressurser' }],
+        actions: [
+            { id: 'OPEN_CONSTRUCTION', label: 'Bidra til bygging', cost: 'Ressurser' },
+            { id: 'OPEN_TAXATION', label: 'Skattekammeret', cost: 'Baron Only', roleReq: 'BARON' }
+        ],
         isHub: true
     },
     {
@@ -90,9 +93,12 @@ export const POINTS_OF_INTEREST: POI[] = [
     {
         id: 'throne_room', label: 'Tronsalen', icon: '👑', top: '40%', left: '50%', roles: ['KING'], parentId: 'castle',
         actions: [
-            { id: 'TAX_ROYAL', label: 'Kongelig Skatt', cost: 'King Only' },
             { id: 'DECREE', label: 'Utsted Dekret', cost: 'King Only' }
         ]
+    },
+    {
+        id: 'treasury', label: 'Skattekammeret', icon: '💰', top: '55%', left: '65%', roles: ['BARON', 'KING'], parentId: 'castle',
+        actions: [{ id: 'OPEN_TAXATION', label: 'Åpne Skattekammeret', cost: 'Administrasjon' }]
     },
     {
         id: 'barracks', label: 'Kasernen', icon: '🗡️', top: '60%', left: '30%', roles: ['PEASANT', 'BARON', 'KING', 'SOLDIER'], parentId: 'castle',
@@ -348,6 +354,12 @@ export const POINTS_OF_INTEREST: POI[] = [
         actions: [{ id: 'OPEN_DICE_GAME', label: 'Spill Terninger', cost: 'Min. 0.5g' }]
     },
     {
+        id: 'tavern_resource_wheel', label: 'Soga-hjulet', icon: '🎡', top: '65%', left: '75%', roles: ['PEASANT', 'BARON', 'KING', 'SOLDIER', 'MERCHANT'], parentId: 'tavern',
+        actions: [
+            { id: 'OPEN_RESOURCE_GAME', label: 'Sats Ressurser', cost: 'Varer' }
+        ]
+    },
+    {
         id: 'tavern_gossip', label: 'Lokalbefolkningen', icon: '🗣️', top: '40%', left: '70%', roles: ['PEASANT', 'BARON', 'KING', 'SOLDIER', 'MERCHANT'], parentId: 'tavern',
         actions: [{ id: 'CHAT_LOCAL', label: 'Snakk med folk', cost: 'Gratis' }]
     },
@@ -442,6 +454,7 @@ export const POINTS_OF_INTEREST: POI[] = [
         id: 'farm_upgrade_spot', label: 'Tegneark', icon: '📜', top: '40%', left: '15%', roles: ['PEASANT'], parentId: 'farm_house',
         actions: [{ id: 'BUILDING_UPGRADE_farm_house', label: 'Bygg ut gården', cost: 'Varierer' }]
     },
+
     {
         id: 'chicken_coop', label: 'Hønsehus', icon: '🐔', top: '40%', left: '75%', roles: ['PEASANT'], parentId: 'peasant_farm',
         actions: [

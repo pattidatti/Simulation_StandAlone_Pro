@@ -9,10 +9,12 @@ import { useWorldMapLogic } from './hooks/useWorldMapLogic';
 import { POINTS_OF_INTEREST } from './data/WorldMapData';
 
 import { TavernDiceGame } from './TavernDiceGame';
+import { TavernResourceGame } from './components/TavernResourceGame';
 import { FloatingActionTooltip } from './components/FloatingActionTooltip';
 import { SimulationAtmosphereLayer } from './components/SimulationAtmosphereLayer';
 import { SimulationProcessHUD } from './components/SimulationProcessHUD';
 import { SimulationMapWindow } from './components/ui/SimulationMapWindow';
+import { TaxationWindow } from './components/TaxationWindow';
 import { ChickenCoopWindow } from './components/ChickenCoopWindow';
 import { BuildingUpgradeWindow } from './components/BuildingUpgradeWindow';
 import { TavernDialog } from './components/TavernDialog';
@@ -20,6 +22,7 @@ import { WorldMapPOI } from './components/WorldMap/WorldMapPOI';
 import { WorldMapEvents } from './components/WorldMap/WorldMapEvents';
 import { WorldMapKingdomPins } from './components/WorldMap/WorldMapKingdomPins';
 import { SimulationContributionModal } from './components/SimulationContributionModal';
+import { RackSvg } from './components/WeaponRackWindow';
 
 interface WorldMapProps {
     player: SimulationPlayer;
@@ -61,6 +64,10 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
         setIsChickenCoopOpen,
         isConstructionOpen,
         setIsConstructionOpen,
+        isTaxationOpen,
+        setIsTaxationOpen,
+        isResourceGameOpen,
+        setIsResourceGameOpen,
         direction,
         handlePOIAction
     } = useWorldMapLogic(player, onAction, onOpenMarket);
@@ -193,6 +200,20 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                             <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${weather === 'Fog' ? 'opacity-100 backdrop-blur-sm bg-white/10' : 'opacity-0'}`} />
                         </div>
 
+                        {/* In-World Elements (Projected into scene) */}
+                        {viewMode === 'farm_house' && (
+                            <div
+                                className="absolute bottom-[70%] left-[10%] w-[18%] h-auto z-20 cursor-pointer hover:scale-105 hover:brightness-110 transition-all drop-shadow-2xl opacity-90 hover:opacity-100"
+                                onClick={() => onAction('OPEN_WEAPON_RACK')}
+                                title="Åpne Våpenstativet"
+                            >
+                                <div className="absolute -inset-4 bg-black/40 blur-xl rounded-full" />
+                                <div className="relative">
+                                    <RackSvg level={player.weaponRack?.level || 0} slots={player.weaponRack?.slots || []} />
+                                </div>
+                            </div>
+                        )}
+
                         <SimulationAtmosphereLayer weather={weather} season={season} isInterior={isInterior} />
 
                         <div className="absolute inset-0 pointer-events-none">
@@ -268,6 +289,9 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                 {isDiceGameOpen && (
                     <TavernDiceGame playerGold={player.resources?.gold || 0} onClose={() => setIsDiceGameOpen(false)} onPlay={(res: any) => onAction({ type: 'PLAY_DICE', ...res })} />
                 )}
+                {isResourceGameOpen && (
+                    <TavernResourceGame player={player} onClose={() => setIsResourceGameOpen(false)} onPlay={(res: any) => onAction({ type: 'PLAY_RESOURCE_GAME', ...res })} />
+                )}
                 {isChickenCoopOpen && (
                     <ChickenCoopWindow player={player} activeProcesses={player.activeProcesses || []} onAction={onAction} onClose={() => setIsChickenCoopOpen(false)} />
                 )}
@@ -281,6 +305,14 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                         onAction={onAction}
                         onClose={() => setIsConstructionOpen(false)}
                         viewingRegionId={viewingRegionId}
+                    />
+                )}
+                {isTaxationOpen && (
+                    <TaxationWindow
+                        player={player}
+                        room={room}
+                        onAction={onAction}
+                        onClose={() => setIsTaxationOpen(false)}
                     />
                 )}
             </AnimatePresence>

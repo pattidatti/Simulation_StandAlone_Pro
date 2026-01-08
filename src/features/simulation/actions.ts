@@ -4,6 +4,7 @@ import { calculateStaminaCost, logSimulationMessage } from './utils/simulationUt
 import { ACTION_COSTS, GAME_BALANCE, INITIAL_RESOURCES, INITIAL_SKILLS } from './constants';
 import { ACTION_REGISTRY } from './logic/actionRegistry';
 import { handleGlobalContribution, handleGlobalTax, handleGlobalTrade, handleReinforceGarrison, handleRepairWalls, handleSetTax } from './globalActions';
+import { handleWeaponRackAction } from './logic/WeaponRackHandlers';
 import { logSystemicStat } from './utils/statsUtils';
 import type { SkillType, EquipmentSlot, ActionType, Resources } from './simulationTypes';
 
@@ -19,6 +20,10 @@ export const performAction = async (pin: string, playerId: string, action: any):
 
     if (isGlobalAction) {
         return await performGlobalAction(pin, playerId, action) as any;
+    }
+
+    if (action.type.startsWith('RACK_')) {
+        return await handleWeaponRackAction(pin, playerId, action);
     }
 
     return performSoloAction(pin, playerId, action);
