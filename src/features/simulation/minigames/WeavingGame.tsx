@@ -35,7 +35,7 @@ export const WeavingGame: React.FC<{ onComplete: (score: number) => void, speedM
 
     return (
         <div className="p-12 text-center min-h-[600px] relative flex flex-col items-center justify-center overflow-hidden"
-            style={{ backgroundImage: 'url("/images/minigames/weavery_bg.png")', backgroundSize: 'cover' }}>
+            style={{ backgroundImage: 'url("/images/minigames/weavery_bg.png")', backgroundSize: 'cover', backgroundColor: '#1e1b4b' }}>
             <div className="absolute inset-0 bg-black/70 z-0" />
             <h2 className="relative z-10 text-4xl font-black text-white mb-8 tracking-tighter uppercase italic">Veveri: Vevstol 🧶</h2>
 

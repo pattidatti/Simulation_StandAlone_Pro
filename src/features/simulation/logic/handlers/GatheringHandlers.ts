@@ -78,9 +78,18 @@ export const handlePlant = (ctx: ActionContext) => {
     // Prevent double sowing (existing process check)
     const existing = actor.activeProcesses.find(p => p.type === 'CROP' && p.locationId === locationId);
     if (existing) {
-        localResult.success = false;
-        localResult.message = "Det vokser allerede noe her.";
-        return false;
+        // CLEANUP CHECK: If the existing process is 'done' (readyAt < now) or invalid, we should overwrite it
+        // This prevents the "Ghost Crop" bug where a user harvests but the process stays
+        const now = Date.now();
+        if (existing.readyAt <= now) {
+            // It's a stuck crop, remove it
+            const idx = actor.activeProcesses.indexOf(existing);
+            if (idx > -1) actor.activeProcesses.splice(idx, 1);
+        } else {
+            localResult.success = false;
+            localResult.message = "Det vokser allerede noe her.";
+            return false;
+        }
     }
 
     // Create new process
@@ -152,7 +161,13 @@ export const handleHarvest = (ctx: ActionContext) => {
     }
 
     // Remove process
-    actor.activeProcesses!.splice(readyIndex, 1);
+    // Remove process - AGGRESSIVE CLEANUP
+    // Remove ALL matching processes at this location to prevent "ghost" crops
+    const processesToRemove = actor.activeProcesses!.filter(p => p.locationId === locationId && p.readyAt <= now);
+    processesToRemove.forEach(p => {
+        const idx = actor.activeProcesses!.indexOf(p);
+        if (idx > -1) actor.activeProcesses!.splice(idx, 1);
+    });
 
     // Damage Tool (if applicable)
     getActionSlots(actor, 'WORK').forEach(slot => {

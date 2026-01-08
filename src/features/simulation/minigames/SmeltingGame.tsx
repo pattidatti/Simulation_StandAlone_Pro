@@ -66,7 +66,7 @@ export const SmeltingGame: React.FC<{ onComplete: (score: number) => void, speed
         <div
             onClick={handlePump}
             className="p-12 min-h-[600px] relative flex flex-col items-center justify-center overflow-hidden cursor-pointer select-none"
-            style={{ backgroundImage: 'url("/images/minigames/smeltery_bg.png")', backgroundSize: 'cover' }}
+            style={{ backgroundImage: 'url("/images/minigames/smeltery_bg.png")', backgroundSize: 'cover', backgroundColor: '#2a1205' }}
         >
             <div className="absolute inset-0 bg-black/80 z-0" />
 

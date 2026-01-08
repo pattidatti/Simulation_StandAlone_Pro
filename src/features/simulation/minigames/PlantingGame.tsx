@@ -5,7 +5,7 @@ import { animationManager } from '../logic/AnimationManager';
 export const PlantingGame: React.FC<{ onComplete: (score: number) => void }> = ({ onComplete }) => {
     const [seeds, setSeeds] = useState<{ x: number, y: number, id: number }[]>([]);
     const [isFinished, setIsFinished] = useState(false);
-    const quota = 20;
+    const quota = 10;
 
     const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (isFinished) return;

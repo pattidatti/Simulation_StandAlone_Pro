@@ -62,6 +62,9 @@ export const ACTION_REGISTRY: ActionRegistry = {
     // Social & Rest
     SLEEP: handleSleep,
     REST: handleRest,
+    REST_BASIC: handleRest,
+    REST_COMFY: handleRest,
+    REST_ROYAL: handleRest,
     EAT: handleRest,
     FEAST: handleRest,
     PRAY: handlePray,

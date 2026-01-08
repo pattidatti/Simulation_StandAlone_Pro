@@ -363,11 +363,13 @@ export const HorseRidingGame: React.FC<{
             const bob = gameState.current.bobAmt;
             const jumpY = gameState.current.isJumping ? -Math.sin(gameState.current.jumpTime) * 120 : 0;
             const skinColor = horse?.skinId ? {
-                brown: '#78350f',
-                white: '#f8fafc',
-                black: '#0f172a',
-                golden: '#fbbf24'
-            }[horse.skinId as string] || '#78350f' : '#78350f';
+                brown: '#8B4513',    // Rust (Updated hex to match UI)
+                white: '#E2E8F0',    // Pearl
+                black: '#1A202C',    // Void
+                golden: '#F6E05E',   // Gold
+                chestnut: '#7C2D12', // Red (New)
+                grey: '#94A3B8',     // Mist (New)
+            }[horse.skinId as string] || '#8B4513' : '#8B4513';
 
             ctx.save();
             ctx.translate(horseX + (shake > 0 ? (Math.random() - 0.5) * shake : 0), canvas.height - 110 + bob + jumpY);
@@ -385,7 +387,7 @@ export const HorseRidingGame: React.FC<{
             ctx.fill();
 
             // Muzzle
-            ctx.fillStyle = horse?.skinId === 'black' ? '#020617' : '#451a03';
+            ctx.fillStyle = (horse?.skinId === 'black' || horse?.skinId === 'chestnut') ? '#020617' : '#451a03';
             ctx.beginPath();
             ctx.ellipse(0, 40, 30, 40, 0, 0, Math.PI * 2);
             ctx.fill();
@@ -416,7 +418,9 @@ export const HorseRidingGame: React.FC<{
                 const hatIcon = {
                     straw_hat: '👒',
                     cowboy_hat: '🤠',
-                    crown: '👑'
+                    crown: '👑',
+                    viking: '🪖',
+                    tophat: '🎩'
                 }[horse.hatId as string];
 
                 if (hatIcon) {

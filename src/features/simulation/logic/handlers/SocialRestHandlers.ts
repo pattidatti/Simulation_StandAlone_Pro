@@ -110,28 +110,111 @@ export const handleRest = (ctx: ActionContext) => {
         setCooldown(actor, 'REST_SQUARE', 6 * 60 * 1000); // 6 min cooldown
     }
 
-    // TAVERN UPGRADE: Dobbel stamina regen at level 2 + 100g cost
-    if (locationId === 'village' && actionType === 'REST') {
-        const tavernLevel = ctx.room.world?.settlement?.buildings?.['tavern']?.level || 1;
-        if (tavernLevel >= 2) {
-            const TAVERN_COST = 100;
-            if ((actor.resources.gold || 0) < TAVERN_COST) {
+    // TAVERN / INN LOGIC
+    if (locationId === 'village' || locationId === 'tavern_bar') {
+
+        // Check for specific rest types from the UI
+        if (['REST_BASIC', 'REST_COMFY', 'REST_ROYAL'].includes(actionType)) {
+
+            // --- DYNAMIC PRICING LOGIC ---
+            if (!ctx.room.metadata) ctx.room.metadata = {};
+            const metadata = ctx.room.metadata;
+
+            // 1. Calculate Decay
+            const now = Date.now();
+            const lastRest = metadata.lastTavernRest || now;
+            const diffHours = (now - lastRest) / (1000 * 60 * 60); // Real-time hours for now
+            // To make it feel responsive in short sessions, let's say it decays 10% every 5 minutes (in game scale)
+            // Let's us ms directly: 5 mins = 300,000 ms
+            const intervalsPassed = (now - lastRest) / 300000;
+
+            let currentDemand = metadata.tavernDemand || 1.0;
+            if (intervalsPassed > 0) {
+                // Decay: Reduce demand by 0.05 per interval, min 1.0
+                currentDemand = Math.max(1.0, currentDemand - (intervalsPassed * 0.05));
+            }
+
+            // 2. Define Tiers
+            let baseCost = 150;
+            let baseStam = 30;
+            let hpGain = 0;
+            let tierBuff: any = null;
+            let label = "Hvilte i salen";
+
+            if (actionType === 'REST_BASIC') {
+                baseCost = 150;
+                baseStam = 30;
+                label = "Hvilte i salen";
+            } else if (actionType === 'REST_COMFY') {
+                baseCost = 500;
+                baseStam = 80;
+                hpGain = 10;
+                label = "Hvilte i komfortabelt rom";
+                tierBuff = {
+                    id: 'rest_comfy_' + now,
+                    type: 'STAMINA_SAVE',
+                    value: 0.2,
+                    label: 'Utvilt',
+                    description: '20% redusert stamina-forbruk i 10 min.',
+                    expiresAt: now + 600000
+                };
+            } else if (actionType === 'REST_ROYAL') {
+                baseCost = 1500;
+                baseStam = 100;
+                hpGain = 50;
+                label = "Hvilte i Kongesuite";
+                tierBuff = {
+                    id: 'rest_royal_' + now,
+                    type: 'STAMINA_SAVE',
+                    value: 0.5,
+                    label: 'Luksusliv',
+                    description: '50% redusert stamina, +1 HP/sek regenerering i 20 min.',
+                    expiresAt: now + 1200000,
+                    passiveEffect: 'HP_REGEN' // Custom handler needed elsewhere for this, but consistent with metadata 
+                };
+            }
+
+            // 3. Final Price Calculation
+            const finalPrice = Math.ceil(baseCost * currentDemand);
+
+            // 4. Transaction
+            if ((actor.resources.gold || 0) < finalPrice) {
                 localResult.success = false;
-                localResult.message = `Vertshuset krever ${TAVERN_COST}g for et komfortabelt rom. Du har ikke råd.`;
+                localResult.message = `Vertshuset krever ${finalPrice}g (Etterspørsel: ${Math.round(currentDemand * 100)}%). Du har ikke råd.`;
                 return false;
             }
 
-            actor.resources.gold -= TAVERN_COST;
-            localResult.utbytte.push({ resource: 'gold', amount: -TAVERN_COST });
+            actor.resources.gold -= finalPrice;
+            localResult.utbytte.push({ resource: 'gold', amount: -finalPrice });
 
-            stam *= 2;
-            msg = `Hvilte i det komfortable vertshuset (-${TAVERN_COST}g). Du føler deg raskt bedre!`;
+            // 5. Apply Effects
+            stam = baseStam;
+            hp = hpGain;
+            msg = `${label} (-${finalPrice}g). Føler deg bedre!`;
 
-            if (tavernLevel >= 3) {
-                stam = 100;
-                msg = `Hvilte i konge-suiten på vertshuset (-${TAVERN_COST}g). All energi gjenopprettet!`;
+            if (tierBuff) {
+                if (!actor.activeBuffs) actor.activeBuffs = [];
+                // Remove existing stamina buffs to prevent stacking weirdness
+                actor.activeBuffs = actor.activeBuffs.filter(b => b.type !== 'STAMINA_SAVE');
+                actor.activeBuffs.push(tierBuff);
+                msg += ` (Buff: ${tierBuff.label})`;
             }
+
+            // 6. Update Demand
+            // Increase demand by 10% per use
+            metadata.tavernDemand = currentDemand + 0.1;
+            metadata.lastTavernRest = now;
+
+            return true;
         }
+
+        // Legacy / Fallback for generic 'REST' action if still used at tavern
+        /*
+        const tavernLevel = ctx.room.world?.settlement?.buildings?.['tavern']?.level || 1;
+        if (tavernLevel >= 2) {
+             // ... old logic ... kept commented out or removed as we replaced it above
+        }
+        */
     }
 
     if (actor.upgrades?.includes('roof')) stam += 20;
@@ -199,17 +282,30 @@ export const handleGamble = (ctx: ActionContext) => {
 };
 
 export const handleBuyMeal = (ctx: ActionContext) => {
-    const { actor, localResult } = ctx;
-    const cost = 5;
+    const { actor, room, localResult } = ctx;
+
+    // Get Market Price for Bread
+    const marketKey = actor.regionId || 'capital';
+    const market = room.markets?.[marketKey] || room.market;
+    let breadPrice = 5; // Default fallback
+
+    if (market && (market as any)['bread']) {
+        breadPrice = (market as any)['bread'].price;
+    }
+
+    // Cost = Market Price + 20% Markup (Service Charge)
+    const cost = Math.ceil(breadPrice * 1.2);
+
     if ((actor.resources.gold || 0) >= cost) {
         actor.resources.gold -= cost;
         const staminaGain = 10;
         actor.status.stamina = Math.min(100, (actor.status.stamina || 0) + staminaGain);
         localResult.utbytte.push({ resource: 'stamina', amount: staminaGain });
-        localResult.message = "Kjøpte et måltid i baren. (+10 Stamina)";
+        localResult.utbytte.push({ resource: 'gold', amount: -cost });
+        localResult.message = `Kjøpte et måltid i baren for ${cost}g. (+10 Stamina)`;
     } else {
         localResult.success = false;
-        localResult.message = "Har ikke råd til mat (koster 5g).";
+        localResult.message = `Har ikke råd til mat (koster ${cost}g).`;
         return false;
     }
     return true;

@@ -112,4 +112,5 @@ export interface SimulationRoom {
         produced: Record<string, number>;
         consumed: Record<string, number>;
     };
+    metadata?: any;
 }

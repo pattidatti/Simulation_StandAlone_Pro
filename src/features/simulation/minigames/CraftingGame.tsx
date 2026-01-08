@@ -85,7 +85,7 @@ export const CraftingGame: React.FC<{ onComplete: (score: number) => void, speed
             }}
             onClick={handleHit}
             className={`p-12 min-h-[600px] relative flex flex-col items-center justify-center overflow-hidden cursor-crosshair ${shake ? 'animate-shake' : ''}`}
-            style={{ backgroundImage: 'url("/images/minigames/smithing_bg.png")', backgroundSize: 'cover' }}
+            style={{ backgroundImage: 'url("/images/minigames/smithing_bg.png")', backgroundSize: 'cover', backgroundColor: '#0f172a' }}
         >
             <div className={`absolute inset-0 bg-black/70 z-0 transition-all duration-75 ${isHitStopping ? 'bg-amber-900/40 mix-blend-hard-light' : ''}`} />
 
