@@ -171,6 +171,27 @@ export const handleContribute = (ctx: ActionContext) => {
         buildingState.level = nextLevel;
         buildingState.progress = {};
         if (!isPrivate) buildingState.contributions = {};
+
+        // --- FORTIFICATION LINK ---
+        // If this is a defensive building, upgrade region fortification
+        if (['watchtower', 'manor_ost', 'manor_vest'].includes(buildingDef.id)) {
+            // Find region for this building
+            let regionId = 'capital';
+            if (buildingDef.id === 'manor_ost') regionId = 'region_ost';
+            if (buildingDef.id === 'manor_vest') regionId = 'region_vest';
+
+            if (room.regions && room.regions[regionId]) {
+                const fort = room.regions[regionId].fortification || { hp: 1000, maxHp: 1000, level: 1 };
+                const hpBoost = 200 * nextLevel; // +200, +400, +600 etc cumulatively? Or just maxHp += 500?
+                // Let's just add +500 MaxHP flat per level upgrade
+                fort.maxHp += 500;
+                fort.hp += 500; // Heal the new amount
+                fort.level = Math.max(fort.level, nextLevel);
+                room.regions[regionId].fortification = fort;
+                localResult.message += ` 🛡️ Murene forsterket! (+500 HP)`;
+            }
+        }
+
         localResult.message += ` ⚒️ NYTT NIVÅ: ${buildingDef.name} nådde Nivå ${nextLevel}!`;
     }
     return true;
@@ -202,6 +223,22 @@ export const handleUpgradeBuilding = (ctx: ActionContext) => {
                     room.world.settlement.buildings[bId] = { id: bId, level: 1, progress: {}, contributions: {} };
                 }
                 room.world.settlement.buildings[bId].level = nextLevel;
+
+                // --- FORTIFICATION LINK ---
+                if (['watchtower', 'manor_ost', 'manor_vest'].includes(bId)) {
+                    let regionId = 'capital';
+                    if (bId === 'manor_ost') regionId = 'region_ost';
+                    if (bId === 'manor_vest') regionId = 'region_vest';
+
+                    if (room.regions && room.regions[regionId]) {
+                        const fort = room.regions[regionId].fortification || { hp: 1000, maxHp: 1000, level: 1 };
+                        fort.maxHp += 500;
+                        fort.hp += 500;
+                        fort.level = Math.max(fort.level, nextLevel);
+                        room.regions[regionId].fortification = fort;
+                    }
+                }
+
                 localResult.message = `Oppgraderte ${buildingDef.name} til Nivå ${nextLevel}!`;
             } else {
                 localResult.success = false;

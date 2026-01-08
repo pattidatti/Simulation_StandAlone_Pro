@@ -49,8 +49,8 @@ export const SimulationWarRoom: React.FC<SimulationWarRoomProps> = ({ player, re
     const fort = region.fortification || { hp: 1000, maxHp: 1000, level: 1 };
 
     // Inventory Analysis
-    const swordsInInventory = player.inventory?.filter(i => i.id === 'iron_sword').length || 0;
-    const armorInInventory = player.inventory?.filter(i => i.id === 'leather_armor').length || 0;
+    const swordsInInventory = player.resources?.swords || 0;
+    const armorInInventory = player.resources?.armor || 0;
 
     // State for Sliders
     const [swordsToDeposit, setSwordsToDeposit] = useState(1);
@@ -132,7 +132,7 @@ export const SimulationWarRoom: React.FC<SimulationWarRoomProps> = ({ player, re
                                     <div className="bg-rose-500/10 p-2 rounded-lg"><Sword className="w-6 h-6 text-rose-500" /></div>
                                     <div>
                                         <div className="text-white font-bold">Angrepsstyrke</div>
-                                        <div className="text-rose-200 text-xs">Jernsverd donert</div>
+                                        <div className="text-rose-200 text-xs">Beleiringsvåpen</div>
                                     </div>
                                 </div>
                                 <span className="text-2xl font-black text-rose-500">{garrison.swords}</span>
@@ -173,7 +173,7 @@ export const SimulationWarRoom: React.FC<SimulationWarRoomProps> = ({ player, re
                                     <div className="bg-blue-500/10 p-2 rounded-lg"><Shield className="w-6 h-6 text-blue-500" /></div>
                                     <div>
                                         <div className="text-white font-bold">Forsvarsstyrke</div>
-                                        <div className="text-blue-200 text-xs">Rustninger donert</div>
+                                        <div className="text-blue-200 text-xs">Beleiringsrustning</div>
                                     </div>
                                 </div>
                                 <span className="text-2xl font-black text-blue-500">{garrison.armor}</span>

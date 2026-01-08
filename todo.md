@@ -7,8 +7,9 @@
 - [ ] 
 
 ## Low Priority
+- [] Hogge trær skal ikke fungere med mellomrom. 
 - [ ] Sjekke produksjonsbygningenes oppgraderinger. Har alt ekstra funksjoner, er den nye større fordeler av å oppgradere på alle bygningene?
-- [ ] Må kunne legge til beleiringssverd og rustning i forsvarsverket som baron og konge. Sjekke at funksjonene fungerer. 
+- [x] Må kunne legge til beleiringssverd og rustning i forsvarsverket som baron og konge. Sjekke at funksjonene fungerer. 
 - [ ] Kan bør kunne bestemme hvor mye man vil bidra med på oppgraderinger. 
 - [ ] Sjekke at produksjonsbygningene er individuelle per ragion. 
 - [x] Bidra til tronerommet fungerer ikke?

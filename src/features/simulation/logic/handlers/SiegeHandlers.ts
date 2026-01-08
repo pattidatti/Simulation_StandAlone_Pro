@@ -446,3 +446,89 @@ export const handleSiegeAction = (ctx: ActionContext) => {
 
     return false;
 };
+
+export const handleReinforceGarrison = (ctx: ActionContext) => {
+    const { actor, room, action, localResult } = ctx;
+    const { resource, amount } = action;
+
+    const regionId = actor.regionId === 'capital' || !actor.regionId ? 'capital' : actor.regionId;
+    // Check ownership or residency permissions?
+    // For now, allow anyone to reinforce their current region's garrison, but War Room UI limits it to Baron/King.
+    // If we want common people to donate, we should relax UI restrictions later.
+
+    // Validate Resource
+    if (resource !== 'swords' && resource !== 'armor') {
+        localResult.success = false;
+        localResult.message = "Ugyldig ressurs for garnisonen.";
+        return false;
+    }
+
+    const currentStock = (actor.resources as any)[resource] || 0;
+    if (currentStock < amount) {
+        localResult.success = false;
+        localResult.message = `Du har ikke nok ${resource}.`;
+        return false;
+    }
+
+    if (!room.regions[regionId].garrison) {
+        room.regions[regionId].garrison = { swords: 0, armor: 0, morale: 100 };
+    }
+
+    // Transfer
+    (actor.resources as any)[resource] -= amount;
+    (room.regions[regionId].garrison as any)[resource] = ((room.regions[regionId].garrison as any)[resource] || 0) + amount;
+
+    localResult.utbytte.push({ resource, amount: -amount });
+    localResult.message = `Forsterket garnisonen med ${amount} ${resource === 'swords' ? 'våpen' : 'rustninger'}.`;
+    return true;
+};
+
+export const handleRepairWalls = (ctx: ActionContext) => {
+    const { actor, room, action, localResult } = ctx;
+    const { amount } = action; // "amount" here means "number of repairs actions"
+
+    const regionId = actor.regionId === 'capital' || !actor.regionId ? 'capital' : actor.regionId;
+    const region = room.regions[regionId];
+
+    if (!region.fortification) {
+        region.fortification = { hp: 1000, maxHp: 1000, level: 1 };
+    }
+
+    const fort = region.fortification;
+    if (fort.hp >= fort.maxHp) {
+        localResult.success = false;
+        localResult.message = "Murene er allerede i perfekt stand.";
+        return false;
+    }
+
+    // Cost: 10 Stone + 10 Wood per fix
+    const stoneCost = 10 * amount;
+    const woodCost = 10 * amount;
+
+    if ((actor.resources.stone || 0) < stoneCost || (actor.resources.wood || 0) < woodCost) {
+        localResult.success = false;
+        localResult.message = "Mangler stein eller ved til reparasjon.";
+        return false;
+    }
+
+    // Deduct
+    actor.resources.stone = (actor.resources.stone || 0) - stoneCost;
+    actor.resources.wood = (actor.resources.wood || 0) - woodCost;
+
+    // Repair Logic: 50 HP per action
+    const repairAmount = 50 * amount;
+    fort.hp = Math.min(fort.maxHp, fort.hp + repairAmount);
+
+    localResult.utbytte.push({ resource: 'stone', amount: -stoneCost });
+    localResult.utbytte.push({ resource: 'wood', amount: -woodCost });
+    localResult.message = `Reparerte murene (+${repairAmount} HP).`;
+
+    // Also fix gateHp if siege active logic requires? 
+    // SiegeHandler uses 'region.fortification.hp' for gate init, but active siege copies it to 'siege.gateHp'.
+    // If siege is ACTIVE, we should maybe heal the active gateHp too?
+    if (region.activeSiege && (region.activeSiege as any).gateHp !== undefined) {
+        (region.activeSiege as any).gateHp += repairAmount; // Simple heal logic
+    }
+
+    return true;
+};
