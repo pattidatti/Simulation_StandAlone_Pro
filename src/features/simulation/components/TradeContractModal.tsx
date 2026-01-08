@@ -3,6 +3,7 @@ import { X, Send, Handshake, AlertCircle } from 'lucide-react';
 import type { SimulationPlayer, Resources } from '../simulationTypes';
 import { handleCreateTrade } from '../socialActions';
 import { ACTION_ICONS } from '../data/gameBalance';
+import { RESOURCE_DETAILS } from '../constants';
 
 interface TradeContractModalProps {
     isOpen: boolean;
@@ -83,7 +84,7 @@ export const TradeContractModal: React.FC<TradeContractModalProps> = ({ isOpen, 
                         <div key={res} className="flex items-center gap-2 bg-slate-900/50 p-2 rounded-lg border border-slate-700/50">
                             <span className="text-lg w-8 text-center">{ACTION_ICONS[res.toUpperCase()] || '📦'}</span>
                             <div className="flex-1 min-w-0">
-                                <div className="text-xs text-slate-300 font-medium capitalize truncate">{res.replace('_', ' ')}</div>
+                                <div className="text-xs text-slate-300 font-medium capitalize truncate">{(RESOURCE_DETAILS as any)[res]?.label || res.replace('_', ' ')}</div>
                                 {max && <div className="text-[10px] text-slate-500">Du har: {maxVal}</div>}
                             </div>
                             <input
@@ -148,7 +149,7 @@ export const TradeContractModal: React.FC<TradeContractModalProps> = ({ isOpen, 
                             {RESOURCE_LIST.map(res => (
                                 <div key={res} className="flex items-center gap-2 bg-slate-900/50 p-2 rounded-lg border border-slate-700/50 hover:border-indigo-500/30 transition-colors">
                                     <span className="text-lg w-8 text-center opacity-70">{ACTION_ICONS[res.toUpperCase()] || '📦'}</span>
-                                    <span className="flex-1 text-xs text-slate-300 font-medium capitalize truncate">{res.replace('_', ' ')}</span>
+                                    <span className="flex-1 text-xs text-slate-300 font-medium capitalize truncate">{(RESOURCE_DETAILS as any)[res]?.label || res.replace('_', ' ')}</span>
                                     <input
                                         type="number"
                                         value={demand[res] || ''}

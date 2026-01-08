@@ -157,6 +157,11 @@ export const SimulationProduction: React.FC<SimulationProductionProps> = React.m
         return processesAtBuilding.find(p => p.readyAt <= now);
     }, [processesAtBuilding, now]);
 
+    const inProgressProcess = useMemo(() => {
+        if (!selectedRecipeId) return null;
+        return processesAtBuilding.find(p => p.itemId === selectedRecipeId && p.readyAt > now);
+    }, [processesAtBuilding, selectedRecipeId, now]);
+
     const handleProduce = () => {
         if (readyProcess) {
             onAction({ type: 'HARVEST', locationId: buildingId });
@@ -494,13 +499,47 @@ export const SimulationProduction: React.FC<SimulationProductionProps> = React.m
                                     <GameButton
                                         variant="primary"
                                         size="lg"
-                                        className={`h-20 text-xl w-full transition-all duration-300 ${readyProcess ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-400/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]' : ''}`}
+                                        className={`h-20 text-xl w-full transition-all duration-300 relative overflow-hidden ${readyProcess ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-400/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]' : ''}`}
                                         onClick={handleProduce}
-                                        disabled={!!actionLoading || (!readyProcess && ((selectedRecipe.level || 1) > currentBuildingLevel || !checkActionRequirements(player, selectedType === 'REFINE' ? { type: 'REFINE', recipeId: selectedRecipeId } : { type: 'CRAFT', subType: selectedRecipeId }, room.world?.season, room.world?.weather, room.world?.gameTick || 0).success))}
+                                        disabled={!!actionLoading || (!readyProcess && !inProgressProcess && ((selectedRecipe.level || 1) > currentBuildingLevel || !checkActionRequirements(player, selectedType === 'REFINE' ? { type: 'REFINE', recipeId: selectedRecipeId } : { type: 'CRAFT', subType: selectedRecipeId }, room.world?.season, room.world?.weather, room.world?.gameTick || 0).success))}
                                     >
-                                        {readyProcess
-                                            ? `HENT ${readyProcess.itemId === (selectedRecipeId || '') ? (selectedRecipe?.label || 'PRODUKSJON').toUpperCase() : 'PRODUKSJON'}`
-                                            : (selectedRecipe.level || 1) > currentBuildingLevel ? 'KREVER OPPGRADERING' : 'START PRODUKSJON'}
+                                        {/* Progress Bar Overlay */}
+                                        {inProgressProcess && (
+                                            <div
+                                                className="absolute inset-0 bg-white/10 transition-all duration-1000 ease-linear pointer-events-none"
+                                                style={{
+                                                    width: `${Math.min(100, (1 - (inProgressProcess.readyAt - now) / (inProgressProcess.duration || 1000)) * 100)}%`
+                                                }}
+                                            />
+                                        )}
+
+                                        <div className="relative z-10 flex items-center justify-center gap-3">
+                                            {readyProcess ? (
+                                                <>
+                                                    <span className="animate-bounce">🎁</span>
+                                                    <span>HENT {readyProcess.itemId === (selectedRecipeId || '') ? (selectedRecipe?.label || 'PRODUKSJON').toUpperCase() : 'PRODUKSJON'}</span>
+                                                </>
+                                            ) : inProgressProcess ? (
+                                                <div className="flex flex-col items-center leading-none">
+                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Produksjon pågår</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="animate-spin text-sm">⚙️</span>
+                                                        <span className="font-mono text-2xl">{Math.ceil((inProgressProcess.readyAt - now) / 1000)}s</span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    {(selectedRecipe.level || 1) > currentBuildingLevel ? (
+                                                        <span>KREVER OPPGRADERING</span>
+                                                    ) : (
+                                                        <>
+                                                            <span>🔥</span>
+                                                            <span>START PRODUKSJON</span>
+                                                        </>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
                                     </GameButton>
                                 </div>
                             </div>

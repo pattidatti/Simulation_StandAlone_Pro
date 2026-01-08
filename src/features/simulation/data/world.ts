@@ -16,8 +16,6 @@ export const INITIAL_MARKET: SimulationMarket = {
     honey: { price: 30, stock: 50, demand: 1.0 },
     meat: { price: 25, stock: 100, demand: 1.0 },
     glass: { price: 50, stock: 20, demand: 1.0 },
-    // LEGACY SUPPORT
-    iron: { price: 40, stock: 0, demand: 1.0 },
 };
 
 export const EVENTS = {

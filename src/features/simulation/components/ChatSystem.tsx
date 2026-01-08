@@ -15,7 +15,7 @@ interface ChatSystemProps {
 
 export const ChatSystem: React.FC<ChatSystemProps> = ({ pin, player, onOpenProfile }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const { activeChannelId, setActiveChannelId, channels, messages, isLoading } = useChat(pin, player);
+    const { activeChannelId, setActiveChannelId, channels, messages, totalUnreadCount, markChannelAsRead, isLoading } = useChat(pin, player);
     const [inputText, setInputText] = useState('');
     const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -26,6 +26,13 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({ pin, player, onOpenProfi
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages, isOpen]);
+
+    // Mark as read when open or switching channels
+    useEffect(() => {
+        if (isOpen) {
+            markChannelAsRead(activeChannelId);
+        }
+    }, [isOpen, activeChannelId, markChannelAsRead]);
 
     // Hotkey: Toggle with 'C'
     useEffect(() => {
@@ -73,8 +80,11 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({ pin, player, onOpenProfi
             >
                 <div className="relative">
                     <MessageSquare size={24} className="group-hover:text-white text-slate-200" />
-                    {/* Unread dot mock */}
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-slate-900" />
+                    {totalUnreadCount > 0 && (
+                        <div className="absolute -top-2 -right-2 min-w-[20px] h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-slate-900 px-1 animate-in zoom-in duration-300">
+                            {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
+                        </div>
+                    )}
                 </div>
             </button>
         );
@@ -100,7 +110,7 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({ pin, player, onOpenProfi
                         key={channel.id}
                         onClick={() => setActiveChannelId(channel.id)}
                         className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all",
+                            "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all relative",
                             activeChannelId === channel.id
                                 ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20"
                                 : "bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
@@ -108,6 +118,9 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({ pin, player, onOpenProfi
                     >
                         {getChannelIcon(channel.type)}
                         {channel.name}
+                        {channel.unreadCount > 0 && activeChannelId !== channel.id && (
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-slate-900" />
+                        )}
                     </button>
                 ))}
             </div>

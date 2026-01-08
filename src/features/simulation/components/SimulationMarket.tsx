@@ -181,7 +181,7 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                                         return (
                                             <GameCard key={region.id} title={region.name} className="bg-indigo-950/30 border-indigo-500/20">
                                                 <div className="space-y-3">
-                                                    {['grain', 'wood', 'iron'].map(res => {
+                                                    {['grain', 'wood', 'iron_ore', 'iron_ingot'].map(res => {
                                                         const item = (targetMarket as any)[res];
                                                         if (!item) return null;
                                                         const foreignPrice = item.price;

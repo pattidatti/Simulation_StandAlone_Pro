@@ -15,7 +15,26 @@ export const useChat = (pin: string, player: SimulationPlayer | null) => {
     const [activeChannelId, setActiveChannelId] = useState<string>('global');
     const [channels, setChannels] = useState<Record<string, ChatChannel>>({});
     const [messages, setMessages] = useState<Record<string, SimulationMessage[]>>({});
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, _setIsLoading] = useState(false);
+    const [totalUnreadCount, setTotalUnreadCount] = useState(0);
+
+    // Track last read timestamps per channel
+    const [lastReadTimestamps, setLastReadTimestamps] = useState<Record<string, number>>(() => {
+        if (!player?.id) return {};
+        const saved = localStorage.getItem(`chat_last_read_${pin}_${player.id}`);
+        return saved ? JSON.parse(saved) : {};
+    });
+
+    const markChannelAsRead = (channelId: string) => {
+        const now = Date.now();
+        setLastReadTimestamps(prev => {
+            const next = { ...prev, [channelId]: now };
+            if (player?.id) {
+                localStorage.setItem(`chat_last_read_${pin}_${player.id}`, JSON.stringify(next));
+            }
+            return next;
+        });
+    };
 
     // 1. Determine Accessible Channels
     useEffect(() => {
@@ -60,35 +79,57 @@ export const useChat = (pin: string, player: SimulationPlayer | null) => {
 
     }, [player?.regionId, player?.role]);
 
-    // 2. Subscribe to Active Channel Messages
+    // 2. Subscribe to ALL Accessible Channels for Unread Logic
     useEffect(() => {
-        if (!pin || !activeChannelId) return;
-        setIsLoading(true);
+        if (!pin || !player || Object.keys(channels).length === 0) return;
 
-        const channelRef = ref(db, `simulation_rooms/${pin}/channels/${activeChannelId}/messages`);
-        const q = query(channelRef, limitToLast(50));
+        const unsubs: (() => void)[] = [];
 
-        const unsub = onValue(q, (snapshot) => {
-            const data = snapshot.val();
-            const msgs = data ? Object.values(data) as SimulationMessage[] : [];
-            // Sort by timestamp
-            msgs.sort((a, b) => a.timestamp - b.timestamp);
+        Object.keys(channels).forEach(channelId => {
+            const channelRef = ref(db, `simulation_rooms/${pin}/channels/${channelId}/messages`);
+            const q = query(channelRef, limitToLast(20)); // Only need latest for unread check
 
-            setMessages(prev => ({
-                ...prev,
-                [activeChannelId]: msgs
-            }));
-            setIsLoading(false);
+            const unsub = onValue(q, (snapshot) => {
+                const data = snapshot.val();
+                const msgs = data ? Object.values(data) as SimulationMessage[] : [];
+                msgs.sort((a, b) => (a.timestamp as number) - (b.timestamp as number));
+
+                setMessages(prev => ({
+                    ...prev,
+                    [channelId]: msgs
+                }));
+
+                // Update unread count for this channel
+                const lastRead = lastReadTimestamps[channelId] || 0;
+                const newUnread = msgs.filter(m => (m.timestamp as number) > lastRead && m.senderId !== player.id).length;
+
+                setChannels(prev => {
+                    if (prev[channelId] && prev[channelId].unreadCount === newUnread) return prev;
+                    return {
+                        ...prev,
+                        [channelId]: { ...prev[channelId], unreadCount: newUnread }
+                    };
+                });
+            });
+            unsubs.push(unsub);
         });
 
-        return () => unsub();
-    }, [pin, activeChannelId]);
+        return () => unsubs.forEach(u => u());
+    }, [pin, player?.id, Object.keys(channels).join(','), lastReadTimestamps]);
+
+    // 3. Calculate Total Unread
+    useEffect(() => {
+        const total = Object.values(channels).reduce((acc, ch) => acc + (ch.unreadCount || 0), 0);
+        setTotalUnreadCount(total);
+    }, [channels]);
 
     return {
         activeChannelId,
         setActiveChannelId,
         channels,
         messages: messages[activeChannelId] || [],
-        isLoading
+        isLoading: isLoading && !messages[activeChannelId],
+        totalUnreadCount,
+        markChannelAsRead
     };
 };
