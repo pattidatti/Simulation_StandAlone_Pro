@@ -23,7 +23,7 @@ export const WorldMapPOI: React.FC<WorldMapPOIProps> = ({ viewMode, viewingRegio
                 const isCorrectView = viewMode === 'global' ? !poi.parentId : poi.parentId === viewMode;
                 if (!isCorrectView) return null;
 
-                const isRelevant = poi.roles.includes(player.role) || poi.id === 'market' || poi.isHub;
+                const isRelevant = (player.role === 'KING' && poi.id !== 'peasant_farm') || poi.roles.includes(player.role) || poi.id === 'market' || poi.isHub;
                 const isResourceNode = ['grain_fields', 'forest_clearing', 'mine_shaft', 'quarry_poi', 'forest_forage'].includes(poi.id);
 
                 const isBarony = viewMode === 'global';

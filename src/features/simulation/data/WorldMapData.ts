@@ -44,7 +44,7 @@ export const POINTS_OF_INTEREST: POI[] = [
         id: 'peasant_farm', label: 'Husmannsplassen', icon: '🛖', top: '30%', left: '60%',
         vest: { top: '85%', left: '72%' },
         ost: { top: '75%', left: '30%' },
-        roles: ['PEASANT', 'BARON', 'KING'],
+        roles: ['PEASANT', 'BARON'],
         actions: [], isHub: true
     },
     {
@@ -138,7 +138,7 @@ export const POINTS_OF_INTEREST: POI[] = [
     {
         id: 'bakery', label: 'Bakeri', icon: '🍞', top: '80%', left: '30%',
         village: { top: '38%', left: '35%' },
-        roles: ['PEASANT', 'BARON'], parentId: 'village',
+        roles: ['PEASANT', 'BARON', 'KING'], parentId: 'village',
         actions: [],
         isHub: true, isInterior: true
     },
@@ -147,7 +147,7 @@ export const POINTS_OF_INTEREST: POI[] = [
     {
         id: 'great_forge', label: 'Storsmie', icon: '⚒️', top: '35%', left: '15%',
         village: { top: '48%', left: '23%' },
-        roles: ['PEASANT', 'BARON'], parentId: 'village',
+        roles: ['PEASANT', 'BARON', 'KING'], parentId: 'village',
         actions: [],
         isHub: true, isInterior: true
     },
@@ -162,7 +162,7 @@ export const POINTS_OF_INTEREST: POI[] = [
     {
         id: 'smeltery', label: 'Smeltehytte', icon: '🔥', top: '60%', left: '95%',
         village: { top: '75%', left: '12%' },
-        roles: ['PEASANT', 'BARON'], parentId: 'village',
+        roles: ['PEASANT', 'BARON', 'KING'], parentId: 'village',
         actions: [
             { id: 'REFINE_IRON_BASIC', label: 'Smelte Jern', cost: '-20⚡ -5malm' },
             { id: 'REFINE_IRON_FAST', label: 'Industri-smelting', cost: '-30⚡ -10malm' },
@@ -172,7 +172,7 @@ export const POINTS_OF_INTEREST: POI[] = [
     {
         id: 'sawmill', label: 'Sagbruk', icon: '🪚', top: '55%', left: '15%',
         village: { top: '70%', left: '45%' },
-        roles: ['PEASANT', 'BARON'], parentId: 'village',
+        roles: ['PEASANT', 'BARON', 'KING'], parentId: 'village',
         actions: [
             { id: 'REFINE_PLANK_BASIC', label: 'Sag Planker', cost: '-10⚡ -5ved' },
             { id: 'REFINE_PLANK_FAST', label: 'Hurtig-saging', cost: '-15⚡ -5ved' }
@@ -193,7 +193,7 @@ export const POINTS_OF_INTEREST: POI[] = [
     {
         id: 'watchtower', label: 'Vaktårn', icon: '🏰', top: '15%', left: '68%',
         village: { top: '25%', left: '82%' },
-        roles: ['BARON', 'SOLDIER'], parentId: 'village',
+        roles: ['BARON', 'SOLDIER', 'KING'], parentId: 'village',
         actions: [],
         isHub: true, isInterior: true
     },
@@ -209,7 +209,7 @@ export const POINTS_OF_INTEREST: POI[] = [
     {
         id: 'well', label: 'Bybrønn', icon: '💧', top: '69%', left: '60%',
         village: { top: '48%', left: '50%' },
-        roles: ['PEASANT', 'BARON'], parentId: 'village',
+        roles: ['PEASANT', 'BARON', 'KING'], parentId: 'village',
         actions: [],
         isHub: true
     },
@@ -223,57 +223,57 @@ export const POINTS_OF_INTEREST: POI[] = [
     },
     // --- GREAT FORGE INTERIOR ---
     {
-        id: 'forge_anvil', label: 'Ambolt', icon: '🔨', top: '50%', left: '40%', roles: ['PEASANT', 'BARON'], parentId: 'great_forge',
+        id: 'forge_anvil', label: 'Ambolt', icon: '🔨', top: '50%', left: '40%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'great_forge',
         actions: [
             { id: 'OPEN_CRAFTING', label: 'Åpne Smia', cost: 'Gratis' }
         ]
     },
     {
-        id: 'forge_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '75%', roles: ['PEASANT', 'BARON'], parentId: 'great_forge',
+        id: 'forge_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '75%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'great_forge',
         actions: [{ id: 'BUILDING_UPGRADE_great_forge', label: 'Oppgrader Smia', cost: 'Varierer' }]
     },
     // --- BAKERY INTERIOR ---
     {
-        id: 'bakery_oven', label: 'Bakerovn', icon: '🔥', top: '50%', left: '50%', roles: ['PEASANT', 'BARON'], parentId: 'bakery',
+        id: 'bakery_oven', label: 'Bakerovn', icon: '🔥', top: '50%', left: '50%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'bakery',
         actions: [
             { id: 'REFINE', label: 'Åpne Bakeriet', cost: 'Gratis' }
         ]
     },
     {
-        id: 'bakery_upgrades', label: 'Tegneark', icon: '📜', top: '30%', left: '80%', roles: ['PEASANT', 'BARON'], parentId: 'bakery',
+        id: 'bakery_upgrades', label: 'Tegneark', icon: '📜', top: '30%', left: '80%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'bakery',
         actions: [{ id: 'BUILDING_UPGRADE_bakery', label: 'Oppgrader Bakeriet', cost: 'Varierer' }]
     },
     // --- WINDMILL INTERIOR ---
     {
-        id: 'windmill_stones', label: 'Kvernsteiner', icon: '⚙️', top: '50%', left: '40%', roles: ['PEASANT', 'BARON'], parentId: 'windmill',
+        id: 'windmill_stones', label: 'Kvernsteiner', icon: '⚙️', top: '50%', left: '40%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'windmill',
         actions: [
             { id: 'REFINE', label: 'Åpne Mølla', cost: 'Gratis' }
         ]
     },
     {
-        id: 'windmill_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '80%', roles: ['PEASANT', 'BARON'], parentId: 'windmill',
+        id: 'windmill_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '80%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'windmill',
         actions: [{ id: 'BUILDING_UPGRADE_windmill', label: 'Oppgrader Mølla', cost: 'Varierer' }]
     },
     // --- SAWMILL INTERIOR ---
     {
-        id: 'sawmill_blade', label: 'Saga', icon: '🪚', top: '50%', left: '40%', roles: ['PEASANT', 'BARON'], parentId: 'sawmill',
+        id: 'sawmill_blade', label: 'Saga', icon: '🪚', top: '50%', left: '40%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'sawmill',
         actions: [
             { id: 'REFINE', label: 'Åpne Sagbruket', cost: 'Gratis' }
         ]
     },
     {
-        id: 'sawmill_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '80%', roles: ['PEASANT', 'BARON'], parentId: 'sawmill',
+        id: 'sawmill_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '80%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'sawmill',
         actions: [{ id: 'BUILDING_UPGRADE_sawmill', label: 'Oppgrader Sagbruket', cost: 'Varierer' }]
     },
     // --- SMELTERY INTERIOR ---
     {
-        id: 'smeltery_furnace', label: 'Smelteovn', icon: '🔥', top: '50%', left: '30%', roles: ['PEASANT', 'BARON'], parentId: 'smeltery',
+        id: 'smeltery_furnace', label: 'Smelteovn', icon: '🔥', top: '50%', left: '30%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'smeltery',
         actions: [
             { id: 'REFINE', label: 'Åpne Smeltehytta', cost: 'Gratis' }
         ]
     },
     {
-        id: 'smeltery_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '80%', roles: ['PEASANT', 'BARON'], parentId: 'smeltery',
+        id: 'smeltery_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '80%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'smeltery',
         actions: [{ id: 'BUILDING_UPGRADE_smeltery', label: 'Oppgrader Smeltehytta', cost: 'Varierer' }]
     },
     // --- WEAVERY INTERIOR ---
@@ -312,24 +312,24 @@ export const POINTS_OF_INTEREST: POI[] = [
     },
     // --- APOTHECARY INTERIOR ---
     {
-        id: 'apothecary_bench', label: 'Arbeidsbenk', icon: '🧪', top: '50%', left: '40%', roles: ['PEASANT', 'BARON'], parentId: 'apothecary',
+        id: 'apothecary_bench', label: 'Arbeidsbenk', icon: '🧪', top: '50%', left: '40%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'apothecary',
         actions: [
             { id: 'OPEN_CRAFTING', label: 'Åpne Apoteket', cost: 'Gratis' }
         ]
     },
     {
-        id: 'apothecary_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '80%', roles: ['PEASANT', 'BARON'], parentId: 'apothecary',
+        id: 'apothecary_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '80%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'apothecary',
         actions: [{ id: 'BUILDING_UPGRADE_apothecary', label: 'Oppgrader Apoteket', cost: 'Varierer' }]
     },
     // --- WELL INTERIOR (Courtyard) ---
     {
-        id: 'well_water', label: 'Brønnkum', icon: '💧', top: '50%', left: '50%', roles: ['PEASANT', 'BARON'], parentId: 'well',
+        id: 'well_water', label: 'Brønnkum', icon: '💧', top: '50%', left: '50%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'well',
         actions: [
             { id: 'GATHER_WATER', label: 'Hent Vann', cost: '-10⚡' }
         ]
     },
     {
-        id: 'well_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '80%', roles: ['PEASANT', 'BARON'], parentId: 'well',
+        id: 'well_upgrades', label: 'Tegneark', icon: '📜', top: '40%', left: '80%', roles: ['PEASANT', 'BARON', 'KING'], parentId: 'well',
         actions: [{ id: 'BUILDING_UPGRADE_well', label: 'Oppgrader Brønnen', cost: 'Varierer' }]
     },
 

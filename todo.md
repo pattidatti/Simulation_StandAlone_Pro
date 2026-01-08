@@ -7,8 +7,8 @@
 - [ ] 
 
 ## Low Priority
-
-
+- [ ] Kan bør kunne bestemme hvor mye man vil bidra med på oppgraderinger. 
+- [ ] Sjekke at produksjonsbygningene er individuelle per ragion. 
 - [ ] Bidra til tronerommet fungerer ikke?
 - [ ] BIlder på minigames laster ikke. 
 - [x] Start produksjonsknappen i møllen må være mer smart. Etter man har startet, må den bytte til timeren, slik at brukeren får skikkelig feedback på at produksjonen er i gang. 
