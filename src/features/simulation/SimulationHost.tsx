@@ -123,11 +123,15 @@ export const SimulationHost: React.FC = () => {
         };
     }, [pin]);
 
+    const onlineCount = React.useMemo(() => {
+        if (!roomData?.players) return 0;
+        const now = Date.now();
+        return Object.values(roomData.players).filter((p: any) => p.online && (now - (p.lastActive || 0) < 60000)).length;
+    }, [roomData?.players]);
+
     // --- GAME TICKER (ADMIN HOST) ---
     // Ensure time ticks even if only Admin is online
-    // --- GAME TICKER (ADMIN HOST) ---
-    // Ensure time ticks even if only Admin is online
-    useGameTicker(pin, roomData?.status || 'LOBBY', roomData?.world);
+    useGameTicker(pin, roomData?.status || 'LOBBY', roomData?.world, onlineCount);
 
     // --- GAME TICKER (ADMIN HOST) ---
 
@@ -154,25 +158,7 @@ export const SimulationHost: React.FC = () => {
         // 5. Players (FULL FETCH for Host - required for Bot Brain/God Mode)
         const unsubPlayers = onValue(ref(db, `${baseUrl}/players`), (snap: DataSnapshot) => {
             const players = snap.val() || {};
-            setRoomData(prev => {
-                if (!prev) return null;
-
-                const realCount = Object.keys(players).length;
-                const metadataRef = ref(db, `simulation_server_metadata/${pin}`);
-                setTimeout(() => {
-                    get(metadataRef).then((metaSnap: DataSnapshot) => {
-                        if (metaSnap.exists()) {
-                            const meta = metaSnap.val();
-                            if (meta.playerCount !== realCount) {
-                                // console.log("Fixing player count metadata...", realCount);
-                                update(metadataRef, { playerCount: realCount });
-                            }
-                        }
-                    });
-                }, 5000);
-
-                return { ...prev, players: players };
-            });
+            setRoomData(prev => prev ? { ...prev, players } : null);
         });
 
         // 6. World Events
@@ -195,16 +181,16 @@ export const SimulationHost: React.FC = () => {
             if (snap.exists()) {
                 const val = snap.val();
                 setRoomData(prev => ({
-                    ...prev!, // Safe cast as we likely have partial data or will overwrite
+                    ...prev!,
                     pin: val.pin,
                     status: val.status,
                     settings: val.settings,
                     hostName: val.hostName,
-                    isPublic: val.isPublic ?? true, // Default to true if undefined
+                    isPublic: val.isPublic ?? true,
                     world: val.world,
                     markets: val.markets || {},
                     market: val.market || INITIAL_MARKET,
-                    players: prev?.players || {}, // Keep existing if any
+                    players: prev?.players || {},
                     messages: prev?.messages || [],
                     regions: val.regions || {},
                     diplomacy: {},

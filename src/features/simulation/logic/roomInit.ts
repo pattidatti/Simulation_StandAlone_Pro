@@ -1,4 +1,4 @@
-import { ref, set } from 'firebase/database';
+import { ref, set, update } from 'firebase/database';
 import { simulationDb as db } from '../simulationFirebase';
 import { VILLAGE_BUILDINGS, INITIAL_MARKET } from '../constants';
 import type { SimulationRoom, SimulationMessage } from '../simulationTypes';
@@ -41,7 +41,7 @@ export const generateInitialRoomState = (pin: string, name: string): SimulationR
     worldEvents: {},
 });
 
-export const syncServerMetadata = async (pin: string, data: SimulationRoom | null) => {
+export const syncServerMetadata = async (pin: string, data: Partial<SimulationRoom> | null) => {
     if (!pin || !data) return;
     const metadataRef = ref(db, `simulation_server_metadata/${pin}`);
 
@@ -51,15 +51,19 @@ export const syncServerMetadata = async (pin: string, data: SimulationRoom | nul
         return;
     }
 
-    await set(metadataRef, {
+    const payload: any = {
         pin: pin,
-        name: (data as any).name || `Rike #${pin}`,
-        status: data.status,
-        playerCount: Object.keys(data.players || {}).length,
-        worldYear: data.world?.year || 1100,
-        season: data.world?.season || 'Spring',
-        isPublic: data.isPublic ?? true, // Default to true if undefined
-        hostName: data.hostName || "Anonym Host",
         lastUpdated: Date.now()
-    });
+    };
+
+    if ((data as any).name) payload.name = (data as any).name;
+    if (data.status) payload.status = data.status;
+    if (data.players) payload.playerCount = Object.keys(data.players).length;
+    if ((data as any).playerCount !== undefined) payload.playerCount = (data as any).playerCount;
+    if (data.world?.year) payload.worldYear = data.world.year;
+    if (data.world?.season) payload.season = data.world.season;
+    if (data.hostName) payload.hostName = data.hostName;
+    if (data.isPublic !== undefined) payload.isPublic = data.isPublic;
+
+    await update(metadataRef, payload);
 };

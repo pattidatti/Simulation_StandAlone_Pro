@@ -251,8 +251,12 @@ export function useSimulationData(pin: string | undefined, impersonateId: string
         }
     }, [pin, user?.uid]);
 
+    const onlineCount = Object.values(players || {}).filter((p: any) =>
+        p.online && (Date.now() - (p.lastActive || 0) < 60000)
+    ).length;
+
     // --- ROBUST RACE-TO-TICK HEARTBEAT ---
-    useGameTicker(pin, roomStatus, world);
+    useGameTicker(pin, roomStatus, world, onlineCount);
 
     return {
         player,

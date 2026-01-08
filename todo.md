@@ -15,9 +15,9 @@
 - [x] Må fjerne Iron fra marked og ellers, dette brukes såvidt jeg vet til ingenting. 
 - [x] Iron_ingot dukker opp flere steder, er dette seperat item fra jernbarre, eller bare ikke oversatt?
 - [x] Rød prikk på chat nede i venstre skal bare være synlig når man har uleste meldinger. 
-- [ ] Landingpage: Gjøre serverlisten litt penere og lettere å lese. De bruker ofte lang tid på å laste inn, hvorfor det? Må ha visning over hvor mange som er online akkurat der og da. 
+- [x] Landingpage: Gjøre serverlisten litt penere og lettere å lese. De bruker ofte lang tid på å laste inn, hvorfor det? Må ha visning over hvor mange som er online akkurat der og da. Riktig årstall og sesong må også være med.  
 - [] Opprette ny kanal i chat kalt Feedback (Tilgjengelig for alle). 
-- [ ] Krigsrommet må ha eget POI inne i slottet. 
+- [x] Krigsrommet må ha eget POI inne i slottet. 
 - [ ] Vinduet som å bygge/oppgradere slottet og tronsalen trenger episke realistiske bilder, ikke placeholder av en sofa. 
 - [x] Implement deletion logic <!-- id: 8 -->
     - [x] Add action to `globalActions.ts` (or relevant file) <!-- id: 9 -->
@@ -27,7 +27,7 @@
     - [x] Implement confirmation modal/overlay <!-- id: 13 -->
 - [x] Verify functionality <!-- id: 14 -->
 - [] Mangler minigames på jakt og felle. 
-- [] Handling feilet på bidra på slottet.  ,maksimalt nivå oppnådd på slottet. Er dette en bug, fordi det ene baroni har laget slottet, men ikke den andre?
+- [x] Handling feilet på bidra på slottet.  ,maksimalt nivå oppnådd på slottet. Er dette en bug, fordi det ene baroni har laget slottet, men ikke den andre?
 
 - [ ] PUblic leaderboard. 
 - [ ] Spise omelett krever stamina? 

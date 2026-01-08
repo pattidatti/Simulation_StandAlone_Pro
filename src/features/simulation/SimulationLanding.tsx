@@ -3,8 +3,10 @@ import { useSimulationAuth } from './SimulationAuthContext';
 import { useAudio } from './SimulationAudioContext';
 import { SimulationServerBrowser } from './SimulationServerBrowser';
 import { SimulationAuthModal } from './SimulationAuthModal';
-import { Crown, Play } from 'lucide-react';
+import { Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ref, onValue } from 'firebase/database';
+import { simulationDb as db } from './simulationFirebase';
 
 export const SimulationLanding: React.FC = () => {
     const { user, isAnonymous, logout } = useSimulationAuth();
@@ -15,6 +17,19 @@ export const SimulationLanding: React.FC = () => {
 
     const { startPlaylist, resume } = useAudio();
     const [hasInteracted, setHasInteracted] = useState(false);
+    const [totalLive, setTotalLive] = useState(0);
+
+    useEffect(() => {
+        const metaRef = ref(db, 'simulation_server_metadata');
+        const unsub = onValue(metaRef, (snap) => {
+            if (snap.exists()) {
+                const data = snap.val();
+                const total = Object.values(data).reduce((acc: number, server: any) => acc + (server.playerCount || 0), 0);
+                setTotalLive(total);
+            }
+        });
+        return () => unsub();
+    }, []);
 
     useEffect(() => {
         // Try to start immediately (works if navigating from within app)
@@ -105,20 +120,37 @@ export const SimulationLanding: React.FC = () => {
                     </div>
 
                     {/* Server Browser (Minimalist Glass) */}
-                    <div className="w-full max-w-4xl bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
-                        <div className="mb-6 flex items-center justify-between border-b border-white/5 pb-4">
-                            <h3 className="text-xs font-bold tracking-[0.2em] text-white/60 uppercase flex items-center gap-2">
-                                <Play size={12} className="text-emerald-500" />
-                                Aktive Verdener
-                            </h3>
-                            <div className="flex items-center gap-2 text-[10px] text-white/40 uppercase tracking-widest">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                Live Feed
-                            </div>
-                        </div>
+                    <div className="w-full max-w-5xl bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-4 md:p-10 shadow-2xl relative overflow-hidden">
+                        {/* Noise Filter logic could be CSS, but we use a subtle overlay */}
+                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat" />
 
-                        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                            <SimulationServerBrowser />
+                        <div className="relative z-10">
+                            <div className="mb-8 flex items-center justify-between border-b border-white/5 pb-6">
+                                <h3 className="text-[10px] font-black tracking-[0.3em] text-white/40 uppercase flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                    Aktive Verdener
+                                </h3>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex -space-x-1.5 items-center mr-1">
+                                        {[...Array(Math.min(3, totalLive))].map((_, i) => (
+                                            <div key={i} className="w-5 h-5 rounded-full border-2 border-slate-900 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" />
+                                        ))}
+                                        {totalLive > 3 && (
+                                            <div className="w-5 h-5 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[8px] font-black text-white/60">
+                                                +{totalLive - 3}
+                                            </div>
+                                        )}
+                                        {totalLive === 0 && (
+                                            <div className="w-5 h-5 rounded-full border-2 border-slate-800 bg-slate-900/50" />
+                                        )}
+                                    </div>
+                                    <span className="text-[10px] text-white/40 uppercase font-black tracking-widest">{totalLive} Live Nå</span>
+                                </div>
+                            </div>
+
+                            <div className="max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                                <SimulationServerBrowser />
+                            </div>
                         </div>
                     </div>
 
