@@ -124,6 +124,11 @@ export const handleRefine = (ctx: ActionContext) => {
         }
 
         if (canAfford) {
+            // SPEED BONUS: 25% faster per level above requirement
+            const levelDiff = Math.max(0, buildLevel - (recipe.requiredLevel || 1));
+            const speedMod = 1 - (levelDiff * 0.25); // Level 2 (+1) = 75% duration, Level 3 (+2) = 50% duration
+            const finalDuration = recipe.duration ? Math.max(recipe.duration * 0.1, recipe.duration * speedMod) : 0;
+
             // Check if this is a timed process
             if (recipe.duration) {
                 if (!actor.activeProcesses) actor.activeProcesses = [];
@@ -151,13 +156,13 @@ export const handleRefine = (ctx: ActionContext) => {
                     itemId: recipeId,
                     locationId: locationId,
                     startedAt: Date.now(),
-                    duration: recipe.duration,
-                    readyAt: Date.now() + recipe.duration,
+                    duration: finalDuration,
+                    readyAt: Date.now() + finalDuration,
                     notified: false
                 };
 
                 actor.activeProcesses.push(newProcess);
-                localResult.message = `Startet ${recipe.label.toLowerCase()}. Ferdig om ${Math.ceil(recipe.duration / 60000)} minutter (-${finalStaminaCost}⚡).`;
+                localResult.message = `Startet ${recipe.label.toLowerCase()}. Ferdig om ${Math.ceil(finalDuration / 60000)} minutter (-${finalStaminaCost}⚡).`;
                 return true;
             }
 
@@ -169,9 +174,14 @@ export const handleRefine = (ctx: ActionContext) => {
             const performance = action.performance || 0.5;
             const baseOutput = recipe.output?.amount || recipe.outputAmount || 1;
 
+            // YIELD BONUS: +20% yield per level above requirement
+            const yieldLevelDiff = Math.max(0, buildLevel - (recipe.requiredLevel || 1));
+            const yieldMod = 1 + (yieldLevelDiff * 0.2);
+
             const yieldAmount = calculateYield(actor, baseOutput, 'CRAFTING', {
                 performance,
-                isRefining: true
+                isRefining: true,
+                upgrades: yieldMod
             });
 
             const currentAmount = (actor.resources as any)[recipe.outputResource] || 0;

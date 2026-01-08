@@ -56,13 +56,33 @@ async function performSoloAction(pin: string, playerId: string, action: any) {
             };
 
             const trackXp = (skill: SkillType, amount: number) => {
+                let finalAmount = amount;
+
+                // Building-based XP Boosts (+10% for Level 2+)
+                const buildings = world.settlement?.buildings || {};
+                const skillToBuilding: Record<string, string> = {
+                    'WOODCUTTING': 'sawmill',
+                    'FARMING': 'windmill',
+                    'MINING': 'smeltery',
+                    'CRAFTING': 'great_forge',
+                    'TRADING': 'weavery'
+                };
+
+                const buildingId = skillToBuilding[skill];
+                if (buildingId) {
+                    const level = buildings[buildingId]?.level || 1;
+                    if (level >= 2) {
+                        finalAmount = Math.ceil(finalAmount * 1.1); // +10%
+                    }
+                }
+
                 const preLevel = actor.skills?.[skill]?.level || 0;
                 const msgList: string[] = [];
-                addXp(actor, skill, amount, msgList);
+                addXp(actor, skill, finalAmount, msgList);
                 if (msgList.length > 0) localResult.message += " " + msgList.join(" ");
 
                 const postLevel = actor.skills?.[skill]?.level || 0;
-                localResult.xp.push({ skill, amount, levelUp: postLevel > preLevel });
+                localResult.xp.push({ skill, amount: finalAmount, levelUp: postLevel > preLevel });
             };
 
             const initialLevel = actor.stats.level || 1;

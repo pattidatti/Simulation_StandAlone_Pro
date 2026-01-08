@@ -95,6 +95,7 @@ export const WoodcuttingGame: React.FC<{
                 {!isFinished ? (
                     <button
                         onClick={handleHit}
+                        onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                         className={`absolute w-20 h-20 bg-rose-500 rounded-full border-4 border-white shadow-[0_0_30px_rose] transition-all active:scale-90 ${isHitStopping ? 'scale-110 brightness-150' : 'animate-pulse cursor-pointer'}`}
                         style={{ left: `${target.x}%`, top: `${target.y}%`, transform: 'translate(-50%, -50%)' }}
                     >

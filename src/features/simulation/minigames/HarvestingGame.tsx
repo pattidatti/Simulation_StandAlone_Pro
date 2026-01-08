@@ -36,7 +36,8 @@ export const HarvestingGame: React.FC<{
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [strikes, isFinished, pointerPos, targetPos, equipment, speedMultiplier, isHitStopping]); // Added isHitStopping dependency
+    }, [strikes, isFinished, pointerPos, targetPos, equipment, speedMultiplier, isHitStopping]);
+
 
     useEffect(() => {
         if (strikes.length >= 5 || isFinished || isHitStopping) return; // Pause game loop during hit stop

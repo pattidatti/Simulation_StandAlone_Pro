@@ -182,7 +182,6 @@ export const handleContribute = (ctx: ActionContext) => {
 
             if (room.regions && room.regions[regionId]) {
                 const fort = room.regions[regionId].fortification || { hp: 1000, maxHp: 1000, level: 1 };
-                const hpBoost = 200 * nextLevel; // +200, +400, +600 etc cumulatively? Or just maxHp += 500?
                 // Let's just add +500 MaxHP flat per level upgrade
                 fort.maxHp += 500;
                 fort.hp += 500; // Heal the new amount

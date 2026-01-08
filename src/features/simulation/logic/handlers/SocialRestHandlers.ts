@@ -25,13 +25,24 @@ export const handleSleep = (ctx: ActionContext) => {
     // Remove existing if any
     actor.activeBuffs = actor.activeBuffs.filter(b => b.type !== 'STAMINA_SAVE' || b.label !== 'Godt utvilt');
 
+    // FARM HOUSE UPGRADE: Higher level = better buff
+    const farmLevel = actor.buildings?.['farm_house']?.level || 1;
+    let buffValue = 0.5; // Base 50%
+    let buffDuration = 300000; // 5 mins
+
+    if (farmLevel >= 3) buffValue = 0.6; // Level 3: 60%
+    if (farmLevel >= 4) {
+        buffValue = 0.7; // Level 4: 70%
+        buffDuration = 600000; // 10 mins
+    }
+
     actor.activeBuffs.push({
         id: 'well_rested_' + Date.now(),
         type: 'STAMINA_SAVE',
-        value: 0.5, // 50%
+        value: buffValue,
         label: 'Godt utvilt',
-        description: '50% mindre stamina-forbruk etter en god natts søvn.',
-        expiresAt: Date.now() + 300000, // 5 minutes
+        description: `${Math.round(buffValue * 100)}% mindre stamina-forbruk etter en god natts søvn (Gård Nivå ${farmLevel}).`,
+        expiresAt: Date.now() + buffDuration,
     });
 
     localResult.message = "Du sov tungt gjennom natten. Våknet opp uthvilt og full av energi!";
@@ -97,6 +108,30 @@ export const handleRest = (ctx: ActionContext) => {
         stam = 10; // Matched label
         msg = "Hvilte på torget.";
         setCooldown(actor, 'REST_SQUARE', 6 * 60 * 1000); // 6 min cooldown
+    }
+
+    // TAVERN UPGRADE: Dobbel stamina regen at level 2 + 100g cost
+    if (locationId === 'village' && actionType === 'REST') {
+        const tavernLevel = ctx.room.world?.settlement?.buildings?.['tavern']?.level || 1;
+        if (tavernLevel >= 2) {
+            const TAVERN_COST = 100;
+            if ((actor.resources.gold || 0) < TAVERN_COST) {
+                localResult.success = false;
+                localResult.message = `Vertshuset krever ${TAVERN_COST}g for et komfortabelt rom. Du har ikke råd.`;
+                return false;
+            }
+
+            actor.resources.gold -= TAVERN_COST;
+            localResult.utbytte.push({ resource: 'gold', amount: -TAVERN_COST });
+
+            stam *= 2;
+            msg = `Hvilte i det komfortable vertshuset (-${TAVERN_COST}g). Du føler deg raskt bedre!`;
+
+            if (tavernLevel >= 3) {
+                stam = 100;
+                msg = `Hvilte i konge-suiten på vertshuset (-${TAVERN_COST}g). All energi gjenopprettet!`;
+            }
+        }
     }
 
     if (actor.upgrades?.includes('roof')) stam += 20;
