@@ -9,7 +9,7 @@ import { useWorldMapLogic } from './hooks/useWorldMapLogic';
 import { POINTS_OF_INTEREST } from './data/WorldMapData';
 
 import { TavernDiceGame } from './TavernDiceGame';
-import { TavernResourceGame } from './components/TavernResourceGame';
+import { TavernResourceGame } from './TavernResourceGame';
 import { FloatingActionTooltip } from './components/FloatingActionTooltip';
 import { SimulationAtmosphereLayer } from './components/SimulationAtmosphereLayer';
 import { SimulationProcessHUD } from './components/SimulationProcessHUD';
