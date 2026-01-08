@@ -45,12 +45,29 @@ const LEVEL_CONFIGS: Record<string, HorseLevelConfig> = {
     }
 };
 
+interface SideObject {
+    id: number;
+    side: 'left' | 'right';
+    z: number;
+    type: 'tree' | 'house' | 'cow' | 'rock' | 'bush';
+    offset: number; // How far from the path
+}
+
+const SIDE_ASSETS: Record<string, string> = {
+    tree: '🌲',
+    house: '🏠',
+    cow: '🐄',
+    rock: '🪨',
+    bush: '🌿'
+};
+
 export const HorseRidingGame: React.FC<{
     onComplete: (performance: number) => void;
     speedMultiplier?: number;
     levelId?: string;
     level?: number;
-}> = ({ onComplete, speedMultiplier = 1.0, levelId = 'ride_easy', level = 1 }) => {
+    horse?: any;
+}> = ({ onComplete, speedMultiplier = 1.0, levelId = 'ride_easy', level = 1, horse }) => {
     const config = LEVEL_CONFIGS[levelId] || LEVEL_CONFIGS.ride_easy;
 
     // Difficulty Scaling based on level 1-5
@@ -66,10 +83,13 @@ export const HorseRidingGame: React.FC<{
     const gameState = useRef({
         lane: 1,
         targetLane: 1,
+        cameraTilt: 0,
         isJumping: false,
         jumpTime: 0,
         obstacles: [] as Obstacle[],
+        sideObjects: [] as SideObject[],
         lastSpawn: 0,
+        lastSideSpawn: 0,
         distance: 0,
         speed: config.speed * speedMultiplier * levelScale,
         gameOver: false,
@@ -117,6 +137,11 @@ export const HorseRidingGame: React.FC<{
                 if (Math.abs(gameState.current.targetLane - gameState.current.lane) < 0.01) {
                     gameState.current.lane = gameState.current.targetLane;
                 }
+
+                // Camera tilt logic
+                gameState.current.cameraTilt = diff * 0.15;
+            } else {
+                gameState.current.cameraTilt *= 0.9; // Smooth return
             }
 
             // Jump logic
@@ -144,12 +169,24 @@ export const HorseRidingGame: React.FC<{
                 gameState.current.lastSpawn = gameState.current.ticks;
             }
 
-            // Move obstacles
+            // Spawn side objects (New)
+            if (gameState.current.ticks - gameState.current.lastSideSpawn > 15 / speedMultiplier) {
+                const types: SideObject['type'][] = ['tree', 'tree', 'bush', 'rock', 'house', 'cow'];
+                gameState.current.sideObjects.push({
+                    id: Date.now(),
+                    side: Math.random() > 0.5 ? 'left' : 'right',
+                    z: 0,
+                    type: types[Math.floor(Math.random() * types.length)],
+                    offset: 0.2 + Math.random() * 0.5 // Relative to path width
+                });
+                gameState.current.lastSideSpawn = gameState.current.ticks;
+            }
+
+            // Move objects
             gameState.current.obstacles.forEach(obs => {
                 obs.z += gameState.current.speed;
 
                 // Collision check
-                // Adjusted collision window to match the visual quadratic speedup
                 if (obs.z > 0.88 && obs.z < 0.96) {
                     const playerLane = Math.round(gameState.current.lane);
                     if (obs.lane === playerLane) {
@@ -163,8 +200,14 @@ export const HorseRidingGame: React.FC<{
                 }
             });
 
-            // Clean up old obstacles (Faster cleanup)
+            // Move side objects
+            gameState.current.sideObjects.forEach(obj => {
+                obj.z += gameState.current.speed;
+            });
+
+            // Clean up
             gameState.current.obstacles = gameState.current.obstacles.filter(obs => obs.z < 1.05);
+            gameState.current.sideObjects = gameState.current.sideObjects.filter(obj => obj.z < 1.05);
 
             // Increase score
             const currentDist = gameState.current.distance;
@@ -195,16 +238,25 @@ export const HorseRidingGame: React.FC<{
             if (!ctx) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            const tilt = gameState.current.cameraTilt;
+
+            // --- WORLD RENDERING (TILTED) ---
+            ctx.save();
+            // Apply Camera Tilt
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(tilt);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
             // Draw Background (Sky/Forest)
             const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
             gradient.addColorStop(0, config.colors.sky);
-            gradient.addColorStop(0.5, '#334155'); // Transition
-            gradient.addColorStop(0.5, '#064e3b'); // Emerald 900 (Ground)
-            gradient.addColorStop(1, '#065f46'); // Emerald 800
+            gradient.addColorStop(0.5, '#334155');
+            gradient.addColorStop(0.5, '#064e3b');
+            gradient.addColorStop(1, '#065f46');
             ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(-canvas.width * 0.5, 0, canvas.width * 2, canvas.height); // Wider to cover tilt
 
-            // Draw Path Perspective (WIDER SPREAD)
+            // Draw Path Perspective
             ctx.beginPath();
             ctx.moveTo(canvas.width * 0.45, canvas.height * 0.5);
             ctx.lineTo(canvas.width * 0.55, canvas.height * 0.5);
@@ -226,19 +278,37 @@ export const HorseRidingGame: React.FC<{
             });
             ctx.setLineDash([]);
 
+            // Draw Side Objects (New)
+            gameState.current.sideObjects.forEach(obj => {
+                const renderZ = obj.z * obj.z;
+                const horizonY = canvas.height * 0.5;
+                const y = horizonY + (canvas.height - horizonY) * renderZ;
+                const pathWidthAtZ = (canvas.width * 0.1) + (canvas.width * 1.6) * renderZ;
+
+                const xOffset = (pathWidthAtZ * obj.offset) + (pathWidthAtZ * 0.1);
+                const x = (canvas.width * 0.5) + (obj.side === 'left' ? -xOffset : xOffset);
+
+                const size = 20 + 200 * renderZ;
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.font = `${size}px serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.globalAlpha = obj.z > 0.95 ? Math.max(0, 1 - (obj.z - 0.95) * 10) : 1;
+                ctx.fillText(SIDE_ASSETS[obj.type] || '🌲', 0, 0);
+                ctx.restore();
+            });
+
             // Draw Obstacles
             gameState.current.obstacles.forEach(obs => {
-                // QUADRATIC DEPTH for realistic speed-up
                 const renderZ = obs.z * obs.z;
                 const horizonY = canvas.height * 0.5;
                 const y = horizonY + (canvas.height - horizonY) * renderZ;
 
                 const pathWidthAtZ = (canvas.width * 0.1) + (canvas.width * 1.6) * renderZ;
                 const laneX = (canvas.width * 0.5) + (obs.lane - 1) * (pathWidthAtZ / 3);
-
                 const size = 30 + 150 * renderZ;
-
-                // Fade out as they get very close to player to avoid "lingering"
                 const opacity = obs.z > 0.95 ? Math.max(0, 1 - (obs.z - 0.95) * 10) : 1;
 
                 ctx.save();
@@ -261,10 +331,13 @@ export const HorseRidingGame: React.FC<{
                 ctx.restore();
             });
 
-            // Lane Indicator (Shadow)
-            const pLane = gameState.current.lane;
-            const horseX = (canvas.width * 0.5) + (pLane - 1) * (canvas.width * 0.45); // MUCH WIDER MOVEMENT
+            ctx.restore(); // End World Rendering
 
+            // --- PLAYER & UI (STABLE OR SLIGHTLY TILTED) ---
+            const pLane = gameState.current.lane;
+            const horseX = (canvas.width * 0.5) + (pLane - 1) * (canvas.width * 0.45);
+
+            // Lane Indicator (Shadow)
             ctx.save();
             ctx.fillStyle = 'rgba(0,0,0,0.3)';
             ctx.beginPath();
@@ -272,15 +345,36 @@ export const HorseRidingGame: React.FC<{
             ctx.fill();
             ctx.restore();
 
-            // Draw Horse Head (First Person)
+            // Speed Streaks (New)
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 10; i++) {
+                const sx = (gameState.current.ticks * 20 + i * 200) % canvas.width;
+                const sy = (i * 77) % canvas.height;
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(sx + 50, sy);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Draw Horse Head
             const bob = gameState.current.bobAmt;
             const jumpY = gameState.current.isJumping ? -Math.sin(gameState.current.jumpTime) * 120 : 0;
+            const skinColor = horse?.skinId ? {
+                brown: '#78350f',
+                white: '#f8fafc',
+                black: '#0f172a',
+                golden: '#fbbf24'
+            }[horse.skinId as string] || '#78350f' : '#78350f';
 
             ctx.save();
             ctx.translate(horseX + (shake > 0 ? (Math.random() - 0.5) * shake : 0), canvas.height - 110 + bob + jumpY);
+            ctx.rotate(tilt * 0.5); // Subtle horse tilt
 
             // Horse Neck
-            ctx.fillStyle = '#78350f';
+            ctx.fillStyle = skinColor;
             ctx.beginPath();
             ctx.ellipse(0, 150, 80, 200, 0, 0, Math.PI * 2);
             ctx.fill();
@@ -291,29 +385,68 @@ export const HorseRidingGame: React.FC<{
             ctx.fill();
 
             // Muzzle
-            ctx.fillStyle = '#451a03';
+            ctx.fillStyle = horse?.skinId === 'black' ? '#020617' : '#451a03';
             ctx.beginPath();
             ctx.ellipse(0, 40, 30, 40, 0, 0, Math.PI * 2);
             ctx.fill();
 
             // Ears
-            ctx.fillStyle = '#78350f';
+            ctx.fillStyle = skinColor;
             ctx.beginPath();
             ctx.moveTo(-30, -50); ctx.lineTo(-40, -90); ctx.lineTo(-10, -60); ctx.fill();
             ctx.beginPath();
             ctx.moveTo(30, -50); ctx.lineTo(40, -90); ctx.lineTo(10, -60); ctx.fill();
 
             // Mane
-            ctx.fillStyle = '#1e1b4b';
+            const maneColor = horse?.maneColor || '#1e1b4b';
+            if (maneColor === 'rainbow') {
+                const gradient = ctx.createLinearGradient(-10, -60, 20, 100);
+                gradient.addColorStop(0, '#f43f5e');
+                gradient.addColorStop(0.3, '#fbbf24');
+                gradient.addColorStop(0.6, '#10b981');
+                gradient.addColorStop(1, '#6366f1');
+                ctx.fillStyle = gradient;
+            } else {
+                ctx.fillStyle = maneColor;
+            }
             ctx.fillRect(-10, -60, 20, 100);
+
+            // Hat
+            if (horse?.hatId && horse?.hatId !== 'none') {
+                const hatIcon = {
+                    straw_hat: '👒',
+                    cowboy_hat: '🤠',
+                    crown: '👑'
+                }[horse.hatId as string];
+
+                if (hatIcon) {
+                    ctx.font = '60px serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(hatIcon, 0, -60);
+                }
+            }
 
             ctx.restore();
 
-            // HUD
+            // --- HUD & PROGRESS BAR ---
+            // Progress Bar (New)
+            const progress = gameState.current.distance / (config.targetDistance * distScale);
+            const barWidth = canvas.width * 0.6;
+            const barX = (canvas.width - barWidth) / 2;
+            const barY = 20;
+
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.roundRect?.(barX, barY, barWidth, 10, 5); // Some browsers might not have roundRect, but it's modern standard
+            ctx.fill();
+
+            ctx.fillStyle = '#fbbf24'; // Amber 400
+            ctx.roundRect?.(barX, barY, barWidth * Math.min(1, progress), 10, 5);
+            ctx.fill();
+
             ctx.fillStyle = 'white';
-            ctx.font = 'black 24px Inter';
-            ctx.textAlign = 'left';
-            ctx.fillText(`AVSTAND: ${Math.floor(gameState.current.distance * 100)}m`, 20, 40);
+            ctx.font = 'bold 12px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText(config.label.toUpperCase() + ` - NIVÅ ${level}`, canvas.width / 2, barY + 25);
 
             update();
             animationFrame = requestAnimationFrame(draw);

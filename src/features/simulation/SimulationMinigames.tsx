@@ -2,7 +2,7 @@ import React from 'react';
 import { calculateYield } from './utils/simulationUtils';
 import { GAME_BALANCE, SEASONS, WEATHER } from './constants';
 import { ITEM_TEMPLATES, RESOURCE_DETAILS } from './data/items';
-import type { EquipmentItem, ActionType } from './simulationTypes';
+import type { EquipmentItem, ActionType, SimulationPlayer } from './simulationTypes';
 import { getActionCostString } from './utils/actionUtils';
 
 // Extracted Minigames
@@ -37,6 +37,7 @@ interface MinigameProps {
     currentWeather?: string;
     totalTicks?: number;
     action?: any;
+    player?: SimulationPlayer;
 }
 
 export const MINIGAME_VARIANTS: Record<string, { id: string, label: string, icon: string, desc: string }[]> = {
@@ -109,7 +110,7 @@ const MinigameToolBadge: React.FC<{ item: EquipmentItem }> = ({ item }) => {
 import { getBestToolForAction } from './utils/simulationUtils';
 
 /* --- MAIN OVERLAY COMPONENT --- */
-export const MinigameOverlay: React.FC<MinigameProps> = ({ type, onComplete, onCancel, equipment, skills, playerUpgrades, currentSeason = 'Spring', currentWeather = 'Clear', totalTicks = 0, selectedMethod: initialMethod, action }) => {
+export const MinigameOverlay: React.FC<MinigameProps> = ({ type, onComplete, onCancel, equipment, skills, playerUpgrades, currentSeason = 'Spring', currentWeather = 'Clear', totalTicks = 0, selectedMethod: initialMethod, action, player }) => {
     const [selectedMethod, setSelectedMethod] = React.useState<string | null>(initialMethod || null);
 
     // Auto-select method if only one option exists or if passed as prop
@@ -385,6 +386,7 @@ export const MinigameOverlay: React.FC<MinigameProps> = ({ type, onComplete, onC
                                 speedMultiplier={environmentMods.speedMultiplier}
                                 levelId={selectedMethod || 'ride_easy'}
                                 level={action?.level || 1}
+                                horse={player.horseCustomization}
                             />;
 
                         default:

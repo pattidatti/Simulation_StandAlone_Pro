@@ -6,7 +6,7 @@ import { handleTax, handleDraft, handleDecree, handleContribute, handleUpgradeBu
 import { handleStartSiege, handleJoinSiege, handleSiegeAction, handleReinforceGarrison, handleRepairWalls } from './handlers/SiegeHandlers';
 import { handleRaid, handlePatrol } from './handlers/CombatHandlers';
 import { handleBuy, handleSell, handleTradeRoute } from './handlers/MarketHandlers';
-import { handleSleep, handleRest, handlePray, handleChat, handleGamble, handleBuyMeal, handleRetire, handleConsume, handleMountHorse } from './handlers/SocialRestHandlers';
+import { handleSleep, handleRest, handlePray, handleChat, handleGamble, handleBuyMeal, handleRetire, handleConsume, handleMountHorse, handleBuyHorseCosmetic, handleSelectHorseCosmetic } from './handlers/SocialRestHandlers';
 
 export const ACTION_REGISTRY: ActionRegistry = {
     // Gathering
@@ -76,6 +76,8 @@ export const ACTION_REGISTRY: ActionRegistry = {
     GATHER_WATER: handleRest,          // Added for Well
     TRADE_ROUTE: handleTradeRoute,
     MOUNT_HORSE: handleMountHorse,
+    BUY_HORSE_COSMETIC: handleBuyHorseCosmetic,
+    SELECT_HORSE_COSMETIC: handleSelectHorseCosmetic,
 
     // Market
     BUY: handleBuy,

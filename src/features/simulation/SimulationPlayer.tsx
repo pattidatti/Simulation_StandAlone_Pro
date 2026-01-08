@@ -214,6 +214,7 @@ export const SimulationPlayer: React.FC = () => {
                     {activeMinigame && (
                         <MinigameOverlay
                             type={activeMinigame}
+                            player={player}
                             playerUpgrades={player.upgrades}
                             equipment={Object.values(player.equipment || {})}
                             skills={player.skills}

@@ -21,7 +21,7 @@
 - [x] Landingpage: Gjøre serverlisten litt penere og lettere å lese. De bruker ofte lang tid på å laste inn, hvorfor det? Må ha visning over hvor mange som er online akkurat der og da. Riktig årstall og sesong må også være med.  
 - [] Opprette ny kanal i chat kalt Feedback (Tilgjengelig for alle). 
 - [x] Krigsrommet må ha eget POI inne i slottet. 
-- [ ] Vinduet som å bygge/oppgradere slottet og tronsalen trenger episke realistiske bilder, ikke placeholder av en sofa. 
+- [x] Vinduet som å bygge/oppgradere slottet og tronsalen trenger episke realistiske bilder, ikke placeholder av en sofa. 
 - [x] Implement deletion logic <!-- id: 8 -->
     - [x] Add action to `globalActions.ts` (or relevant file) <!-- id: 9 -->
     - [x] Update state reducers/handlers <!-- id: 10 -->

@@ -87,6 +87,14 @@ export interface SimulationPlayer {
         progress: Partial<Resources>;
     }>;
     minigameProgress?: Record<string, number>; // e.g., { ride_easy: 3, ride_medium: 1 }
+    horseCustomization?: {
+        skinId: string;
+        maneColor: string;
+        hatId?: string;
+        unlockedSkins: string[];
+        unlockedManeColors: string[];
+        unlockedHats: string[];
+    };
     roleStats?: Partial<Record<Role, RoleStats>>;
     online?: boolean;
     hasSeenIntro?: boolean;

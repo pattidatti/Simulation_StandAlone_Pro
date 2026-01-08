@@ -351,16 +351,30 @@ export const handleMountHorse = (ctx: ActionContext) => {
     const method = action.method || 'ride_easy';
     const level = action.level || 1;
 
-    let diffMult = 1.0 + (level - 1) * 0.2;
+    let trackMult = 1.0;
     let diffLabel = 'lav';
 
     if (method === 'ride_medium') {
-        diffMult *= 1.6;
+        trackMult = 1.6;
         diffLabel = 'middels';
     } else if (method === 'ride_hard') {
-        diffMult *= 2.5;
+        trackMult = 2.5;
         diffLabel = 'høy';
     }
+
+    const levelMult = 1 + (level - 1) * 0.5;
+    const grainCost = Math.ceil(10 * trackMult * levelMult);
+
+    // Initial deduction (if not a minigame result)
+    if (performance === 0.5 && !action.isComplete) {
+        if ((actor.resources.grain || 0) < grainCost) {
+            localResult.message = `Du har ikke nok korn! Trenger ${grainCost} korn.`;
+            return false;
+        }
+        actor.resources.grain = (actor.resources.grain || 0) - grainCost;
+    }
+
+    const diffMult = trackMult * (1 + (level - 1) * 0.2); // XP scaling
 
     // Small HP/Stamina bonus for a refreshing ride
     actor.status.stamina = Math.min(100, (actor.status.stamina || 0) + 5);
@@ -374,12 +388,79 @@ export const handleMountHorse = (ctx: ActionContext) => {
         const currentMax = actor.minigameProgress[method] || 1;
         if (level === currentMax && currentMax < 5) {
             actor.minigameProgress[method] = currentMax + 1;
-            localResult.message = `Glimrende ridning! Du har låst opp nivå ${currentMax + 1} for ${method === 'ride_easy' ? 'Engelskogen' : method === 'ride_medium' ? 'Fjellpasset' : 'Ulvestien'}!`;
+            localResult.message = `Glimrende ridning! Du har låst opp nivå ${currentMax + 1} for ${method === 'ride_easy' ? 'Engelskogen' : method === 'ride_medium' ? 'Fjellpasset' : 'Ulvestien'}! (Brukt ${grainCost} korn)`;
         } else {
-            localResult.message = `Du red en tur i ${diffLabel} vanskelighetsgrad (Lvl ${level}). Føler deg forfrisket!`;
+            localResult.message = `Du red en tur i ${diffLabel} vanskelighetsgrad (Lvl ${level}). Føler deg forfrisket! (Brukt ${grainCost} korn)`;
         }
     } else {
-        localResult.message = `Du red en tur i ${diffLabel} vanskelighetsgrad (Lvl ${level}). (Ytelse: ${Math.round(performance * 100)}%)`;
+        localResult.message = `Du red en tur i ${diffLabel} vanskelighetsgrad (Lvl ${level}). (Ytelse: ${Math.round(performance * 100)}%, Brukt ${grainCost} korn)`;
+    }
+
+    return true;
+};
+
+export const handleBuyHorseCosmetic = (ctx: ActionContext) => {
+    const { actor, action, localResult } = ctx;
+    const { cosmeticId, cosmeticType, price } = action;
+
+    if (!actor.horseCustomization) {
+        actor.horseCustomization = {
+            skinId: 'brown',
+            maneColor: '#1e1b4b',
+            unlockedSkins: ['brown'],
+            unlockedManeColors: ['#1e1b4b'],
+            unlockedHats: []
+        };
+    }
+
+    if ((actor.resources.gold || 0) < price) {
+        localResult.message = `Du har ikke nok gull! Trenger ${price}g.`;
+        return false;
+    }
+
+    actor.resources.gold = (actor.resources.gold || 0) - price;
+
+    if (cosmeticType === 'skin') {
+        if (!actor.horseCustomization.unlockedSkins) actor.horseCustomization.unlockedSkins = ['brown'];
+        if (!actor.horseCustomization.unlockedSkins.includes(cosmeticId)) {
+            actor.horseCustomization.unlockedSkins.push(cosmeticId);
+        }
+    } else if (cosmeticType === 'mane') {
+        if (!actor.horseCustomization.unlockedManeColors) actor.horseCustomization.unlockedManeColors = ['#1e1b4b'];
+        if (!actor.horseCustomization.unlockedManeColors.includes(cosmeticId)) {
+            actor.horseCustomization.unlockedManeColors.push(cosmeticId);
+        }
+    } else if (cosmeticType === 'hat') {
+        if (!actor.horseCustomization.unlockedHats) actor.horseCustomization.unlockedHats = [];
+        if (!actor.horseCustomization.unlockedHats.includes(cosmeticId)) {
+            actor.horseCustomization.unlockedHats.push(cosmeticId);
+        }
+    }
+
+    localResult.message = `Du kjøpte en ny ting til hesten din for ${price}g!`;
+    return true;
+};
+
+export const handleSelectHorseCosmetic = (ctx: ActionContext) => {
+    const { actor, action } = ctx;
+    const { cosmeticId, cosmeticType } = action;
+
+    if (!actor.horseCustomization) {
+        actor.horseCustomization = {
+            skinId: 'brown',
+            maneColor: '#1e1b4b',
+            unlockedSkins: ['brown'],
+            unlockedManeColors: ['#1e1b4b'],
+            unlockedHats: []
+        };
+    }
+
+    if (cosmeticType === 'skin') {
+        actor.horseCustomization.skinId = cosmeticId;
+    } else if (cosmeticType === 'mane') {
+        actor.horseCustomization.maneColor = cosmeticId;
+    } else if (cosmeticType === 'hat') {
+        actor.horseCustomization.hatId = cosmeticId;
     }
 
     return true;
