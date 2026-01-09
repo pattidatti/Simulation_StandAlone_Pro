@@ -287,8 +287,36 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
                 globalUpdates[`regions/${regId}/rulerId`] = winnerId;
                 globalUpdates[`regions/${regId}/rulerName`] = winner.name;
             } else if (newRole === 'KING') {
+                // 1. Set Role/Region
                 globalUpdates[`players/${winnerId}/regionId`] = 'capital';
                 globalUpdates[`public_profiles/${winnerId}/regionId`] = 'capital';
+                globalUpdates[`regions/capital/rulerId`] = winnerId;
+                globalUpdates[`regions/capital/rulerName`] = winner.name;
+
+                // 2. Clear previous baronies if any
+                const regionsSnap = await get(ref(db, `simulation_rooms/${pin}/regions`));
+                if (regionsSnap.exists()) {
+                    const regions = regionsSnap.val();
+                    Object.entries(regions).forEach(([rid, rData]: [string, any]) => {
+                        if (rData.rulerId === winnerId && rid !== 'capital') {
+                            globalUpdates[`regions/${rid}/rulerId`] = null;
+                            globalUpdates[`regions/${rid}/rulerName`] = "VAKANT";
+                        }
+                    });
+                }
+
+                // 3. Demote OLD King
+                const playersSnap = await get(ref(db, `simulation_rooms/${pin}/players`));
+                if (playersSnap.exists()) {
+                    const players = playersSnap.val();
+                    Object.entries(players).forEach(([pid, pData]: [string, any]) => {
+                        if (pData.role === 'KING' && pid !== winnerId) {
+                            globalUpdates[`players/${pid}/role`] = 'PEASANT';
+                            globalUpdates[`public_profiles/${pid}/role`] = 'PEASANT';
+                            if (pData.status) globalUpdates[`players/${pid}/status/legitimacy`] = 0;
+                        }
+                    });
+                }
             }
 
             // Atomic update for roll, profile, and region meta
@@ -1194,7 +1222,8 @@ export const handleAbdicate = async (pin: string, playerId: string) => {
     await runTransaction(playerRef, (p: any) => {
         if (!p) return;
         p.role = 'PEASANT';
-        p.status.legitimacy = 0; // Reset legitimacy
+        if (p.status) p.status.legitimacy = 0; // Reset legitimacy
+        success = true;
         return p;
     });
 
