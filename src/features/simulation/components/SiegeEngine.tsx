@@ -338,14 +338,14 @@ export const SiegeEngine: React.FC<SiegeEngineProps> = ({ player, siege, regionI
                                                 <p className="text-indigo-300 text-xs font-bold">Du mister 1 Beleiringsrustning/sek.</p>
                                             </div>
 
-                                            {player.resources.armor > 0 && (
+                                            {player.resources.siege_armor > 0 && (
                                                 <GameButton
                                                     variant="primary"
                                                     className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 border-emerald-400 font-black shadow-lg shadow-emerald-500/20"
                                                     onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'DONATE_ARMOR', payload: { targetId: player.id, targetRegionId: regionId } })}
                                                     icon={<Shield className="w-5 h-5" />}
                                                 >
-                                                    FORSTERK MED +1 RUSTNING ({player.resources.armor} IGJEN)
+                                                    FORSTERK MED +1 RUSTNING ({player.resources.siege_armor} IGJEN)
                                                 </GameButton>
                                             )}
                                         </div>

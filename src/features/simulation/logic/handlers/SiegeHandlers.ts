@@ -49,10 +49,10 @@ export const handleStartSiege = (ctx: ActionContext) => {
 
     // Initialize Siege
     // Constraint: 500 Siege Swords required to initiate (Logic hurdle)
-    const playerSwords = actor.resources?.swords || 0;
+    const playerSwords = actor.resources?.siege_sword || 0;
     if (playerSwords < 500) {
         localResult.success = false;
-        localResult.message = `Du trenger minst 500 sverd i forsyninger for å starte en beleiring! (Eier: ${playerSwords})`;
+        localResult.message = `Du trenger minst 500 beleiringssverd i forsyninger for å starte en beleiring! (Eier: ${playerSwords})`;
         return false;
     }
 
@@ -147,12 +147,12 @@ export const handleSiegeAction = (ctx: ActionContext) => {
     // --- PHASE 1: BREACH (Attack Gate) ---
     if (siege.phase === 'BREACH') {
         if (action.subType === 'ATTACK_GATE') {
-            const currentSwords = actor.resources?.swords || 0;
+            const currentSwords = actor.resources?.siege_sword || 0;
             const hasSwords = currentSwords > 0;
             const damage = hasSwords ? 25 : 2; // Fists do minimal damage, swords do full
 
             if (hasSwords) {
-                actor.resources.swords -= 1;
+                actor.resources.siege_sword -= 1;
             }
 
             siege.gateHp = Math.max(0, (siege.gateHp || 1000) - damage);
@@ -163,11 +163,11 @@ export const handleSiegeAction = (ctx: ActionContext) => {
 
             // FX: "Clang!"
             localResult.message = hasSwords
-                ? `🗡️ Du hugger løs på porten! (-${damage} HP). Du har ${actor.resources.swords} sverd igjen.`
+                ? `🗡️ Du hugger løs på porten! (-${damage} HP). Du har ${actor.resources.siege_sword} beleiringssverd igjen.`
                 : `👊 Du slår på porten med nevene... det gjør nesten ingen skade. (-${damage} HP)`;
 
             if (hasSwords) {
-                localResult.utbytte.push({ resource: 'swords', amount: -1 });
+                localResult.utbytte.push({ resource: 'siege_sword', amount: -1 });
             }
 
             // Check Victory
@@ -233,13 +233,13 @@ export const handleSiegeAction = (ctx: ActionContext) => {
 
                 // --- ARMOR BUFFER LOGIC ---
                 // If player has armor resource, it absorbs damage first (1 armor = 1 damage)
-                const currentArmor = actor.resources?.armor || 0;
+                const currentArmor = actor.resources?.siege_armor || 0;
                 const armorAbsorb = Math.min(currentArmor, totalDmg);
                 const remainingDmg = totalDmg - armorAbsorb;
 
                 if (armorAbsorb > 0) {
-                    actor.resources.armor -= armorAbsorb;
-                    localResult.utbytte.push({ resource: 'armor', amount: -armorAbsorb });
+                    actor.resources.siege_armor -= armorAbsorb;
+                    localResult.utbytte.push({ resource: 'siege_armor', amount: -armorAbsorb });
                 }
 
                 participant.hp -= remainingDmg;
@@ -367,14 +367,14 @@ export const handleSiegeAction = (ctx: ActionContext) => {
             // JOIN
             if (!t.occupiers) t.occupiers = {};
             const initialArmor = 10;
-            const armor = actor.resources.armor || 0;
+            const armor = actor.resources.siege_armor || 0;
             if (armor < initialArmor) {
                 localResult.message = `Mangler Beleiringsrustning! Du har ${armor}, men trenger ${initialArmor}.`;
                 return false;
             }
 
             // TAKE ALL ARMOR (Death Race)
-            actor.resources.armor = 0;
+            actor.resources.siege_armor = 0;
 
             t.occupiers[actor.id] = {
                 id: actor.id,
@@ -397,13 +397,13 @@ export const handleSiegeAction = (ctx: ActionContext) => {
                 return false;
             }
 
-            const myArmor = actor.resources.armor || 0;
+            const myArmor = actor.resources.siege_armor || 0;
             if (myArmor < 1) {
                 localResult.message = "Du har ingen beleiringsrustning å gi!";
                 return false;
             }
 
-            actor.resources.armor = myArmor - 1;
+            actor.resources.siege_armor = myArmor - 1;
             target.armor += 1;
 
             // Stats
@@ -457,7 +457,7 @@ export const handleReinforceGarrison = (ctx: ActionContext) => {
     // If we want common people to donate, we should relax UI restrictions later.
 
     // Validate Resource
-    if (resource !== 'swords' && resource !== 'armor') {
+    if (resource !== 'siege_sword' && resource !== 'siege_armor') {
         localResult.success = false;
         localResult.message = "Ugyldig ressurs for garnisonen.";
         return false;

@@ -8,8 +8,8 @@ export interface Resources {
     iron_ore: number;
     iron_ingot: number;
     stone: number;
-    swords: number;
-    armor: number;
+    siege_sword: number;
+    siege_armor: number;
     favor: number;
     wool: number;
     cloth: number;

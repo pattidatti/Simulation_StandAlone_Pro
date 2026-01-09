@@ -5,8 +5,9 @@
 
 ## Medium Priority
 - [ ] 
-
 ## Low Priority
+- [ ] Dart i vertshuset (andre etasje)
+- [ ] Husmannsplass mangler bilder når man har oppgradert 1-5. 
 - [ ] Mulighet for å kjøpe større antall i markedet. Oppdatere UI på marked. 
 - [ ] Bryne må ha 100 i holdbarhet. 
 - [ ] Kan ikke reparerer alle items i smien. 

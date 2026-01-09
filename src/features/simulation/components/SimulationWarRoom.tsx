@@ -49,8 +49,8 @@ export const SimulationWarRoom: React.FC<SimulationWarRoomProps> = ({ player, re
     const fort = region.fortification || { hp: 1000, maxHp: 1000, level: 1 };
 
     // Inventory Analysis
-    const swordsInInventory = player.resources?.swords || 0;
-    const armorInInventory = player.resources?.armor || 0;
+    const swordsInInventory = player.resources?.siege_sword || 0;
+    const armorInInventory = player.resources?.siege_armor || 0;
 
     // State for Sliders
     const [swordsToDeposit, setSwordsToDeposit] = useState(1);
@@ -134,7 +134,7 @@ export const SimulationWarRoom: React.FC<SimulationWarRoomProps> = ({ player, re
                                     variant="primary"
                                     className="w-full bg-rose-600 hover:bg-rose-500 border-rose-400"
                                     disabled={swordsInInventory < 1 || !!actionLoading}
-                                    onClick={() => onAction({ type: 'REINFORCE_GARRISON', resource: 'swords', amount: swordsToDeposit })}
+                                    onClick={() => onAction({ type: 'REINFORCE_GARRISON', resource: 'siege_sword', amount: swordsToDeposit })}
                                 >
                                     Donér {swordsToDeposit} Sverd
                                 </GameButton>
@@ -175,7 +175,7 @@ export const SimulationWarRoom: React.FC<SimulationWarRoomProps> = ({ player, re
                                     variant="primary"
                                     className="w-full bg-blue-600 hover:bg-blue-500 border-blue-400"
                                     disabled={armorInInventory < 1 || !!actionLoading}
-                                    onClick={() => onAction({ type: 'REINFORCE_GARRISON', resource: 'armor', amount: armorToDeposit })}
+                                    onClick={() => onAction({ type: 'REINFORCE_GARRISON', resource: 'siege_armor', amount: armorToDeposit })}
                                 >
                                     Donér {armorToDeposit} Rustning
                                 </GameButton>

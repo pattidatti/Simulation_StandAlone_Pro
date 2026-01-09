@@ -40,8 +40,10 @@ export const handleCraft = (ctx: ActionContext) => {
                 const amount = recipe.outputAmount || 1;
                 (actor.resources as any)[outputId] = ((actor.resources as any)[outputId] || 0) + amount;
                 localResult.utbytte.push({ resource: outputId, amount: amount });
-                const tpl = ITEM_TEMPLATES[outputId];
-                localResult.message = `Laget ${amount}x ${tpl?.name || outputId}!`;
+
+                const resourceLabel = RESOURCE_DETAILS[outputId]?.label;
+                const templateName = ITEM_TEMPLATES[outputId]?.name;
+                localResult.message = `Laget ${amount}x ${resourceLabel || templateName || outputId}!`;
                 trackXp('CRAFTING', 25 * recipe.level);
                 logSystemicStat(room.pin, 'crafted', outputId, amount); // Log stat
             } else {
