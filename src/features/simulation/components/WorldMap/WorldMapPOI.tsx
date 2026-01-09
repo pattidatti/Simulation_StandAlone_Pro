@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Clock } from 'lucide-react';
 import { POINTS_OF_INTEREST } from '../../data/WorldMapData';
 import type { POI } from '../../data/WorldMapData';
 import type { SimulationPlayer } from '../../simulationTypes';
@@ -15,11 +16,24 @@ interface WorldMapPOIProps {
 }
 
 export const WorldMapPOI: React.FC<WorldMapPOIProps> = ({ viewMode, viewingRegionId, player, onSelect, onEnterHub, onPOIAction, room }) => {
+    const [now, setNow] = React.useState(Date.now());
+
+    React.useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
     if (viewMode === 'kingdom') return null;
+
+    const activeProcesses = player.activeProcesses || [];
 
     return (
         <>
             {POINTS_OF_INTEREST.map(poi => {
+                const process = activeProcesses.find(p => p.locationId === poi.id && p.readyAt > now);
+                const timeLeft = process ? Math.ceil((process.readyAt - now) / 1000) : 0;
+                const isOnCooldown = timeLeft > 0;
+
                 const isCorrectView = viewMode === 'global' ? !poi.parentId : poi.parentId === viewMode;
                 if (!isCorrectView) return null;
 
@@ -79,11 +93,19 @@ export const WorldMapPOI: React.FC<WorldMapPOIProps> = ({ viewMode, viewingRegio
                             }}
                             className={`flex flex-col items-center transition-all ${isRelevant ? 'scale-100' : 'scale-75 opacity-40 grayscale pointer-events-none'}`}
                         >
-                            <div className={`w-16 h-16 rounded-3xl flex items-center justify-center text-4xl shadow-2xl border-2 transition-all duration-300 group-hover:scale-110 bg-slate-900/90 backdrop-blur-xl border-white/10 hover:bg-slate-800`}>
+                            <div className={`w-16 h-16 rounded-3xl flex items-center justify-center text-4xl shadow-2xl border-2 transition-all duration-300 group-hover:scale-110 bg-slate-900/90 backdrop-blur-xl border-white/10 hover:bg-slate-800 overflow-hidden relative`}>
                                 {poi.icon}
+                                {isOnCooldown && (
+                                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] rounded-3xl flex flex-col items-center justify-center z-10 transition-all group-hover:scale-110">
+                                        <Clock className="w-5 h-5 text-indigo-400 mb-0.5 animate-pulse" />
+                                        <span className="text-white font-black text-xs">
+                                            {timeLeft}s
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                             <span className="bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full mt-2 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-indigo-600/30">
-                                {isResourceNode ? 'KLIKK FOR Å STARTE' : (isCastle ? (canEnterCastle ? 'GÅ INN' : 'BIDRA TIL BYGGING') : poi.label)}
+                                {isOnCooldown ? `KLAR OM ${timeLeft}S` : (isResourceNode ? 'KLIKK FOR Å STARTE' : (isCastle ? (canEnterCastle ? 'GÅ INN' : 'BIDRA TIL BYGGING') : poi.label))}
                             </span>
                         </button>
                     </motion.div>

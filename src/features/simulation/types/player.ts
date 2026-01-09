@@ -46,7 +46,7 @@ export interface RoleStats {
 
 export interface ActiveProcess {
     id: string;
-    type: 'CROP' | 'CRAFT' | 'COOP' | 'MILL' | 'WELL' | 'COOLDOWN';
+    type: 'CROP' | 'CRAFT' | 'COOP' | 'MILL' | 'WELL' | 'COOLDOWN' | 'HIVE';
     itemId: string;
     startedAt: number;
     duration: number;

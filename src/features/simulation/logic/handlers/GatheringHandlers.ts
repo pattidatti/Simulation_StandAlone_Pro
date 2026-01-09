@@ -348,6 +348,21 @@ export const handleGatherWool = (ctx: ActionContext) => {
 
 export const handleGatherHoney = (ctx: ActionContext) => {
     const { actor, action, localResult, trackXp } = ctx;
+    const locationId = (action as any).locationId || 'beehives';
+
+    // Cooldown Check
+    if (!actor.activeProcesses) actor.activeProcesses = [];
+    const existing = actor.activeProcesses.find(p => p.type === 'HIVE' && p.locationId === locationId);
+    if (existing) {
+        if (existing.readyAt > Date.now()) {
+            localResult.success = false;
+            localResult.message = "Biene trenger hvile før de kan lage mer honning.";
+            return false;
+        }
+        // Cleanup finished cooldown
+        actor.activeProcesses = actor.activeProcesses.filter(p => p.id !== existing.id);
+    }
+
     const base = 4; // Base honey yield (increased from 2)
     const performance = action.performance || 0.5;
     const yieldAmount = calculateYield(actor, base, 'FARMING', { performance, actionType: 'GATHER_HONEY' });
@@ -357,6 +372,19 @@ export const handleGatherHoney = (ctx: ActionContext) => {
     localResult.message = `Hentet ${yieldAmount} honning fra bikubene`;
 
     trackXp('FARMING', Math.ceil(12 * (1 + performance)));
+
+    // Start Cooldown (5 Minutes)
+    actor.activeProcesses.push({
+        id: 'hive_' + Date.now(),
+        type: 'HIVE',
+        itemId: 'honey',
+        locationId: locationId,
+        startedAt: Date.now(),
+        duration: 300000,
+        readyAt: Date.now() + 300000,
+        notified: false
+    });
+
     return true;
 };
 
