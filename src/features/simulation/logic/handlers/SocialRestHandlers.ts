@@ -1,4 +1,5 @@
 import type { ActionContext } from '../actionTypes';
+import type { EquipmentItem } from '../../simulationTypes';
 import { getDayPart } from '../../utils/timeUtils';
 import { setCooldown } from '../../utils/actionUtils';
 import { logSystemicStat } from '../../utils/statsUtils'; // Stats logging
