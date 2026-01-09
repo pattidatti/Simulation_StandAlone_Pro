@@ -207,8 +207,7 @@ export const handleRefine = (ctx: ActionContext) => {
 
 export const handleRepair = (ctx: ActionContext) => {
     const { actor, action, localResult } = ctx;
-    const targetSlot = action.targetSlot as EquipmentSlot;
-    const buildingId = action.buildingId;
+    const { targetSlot, itemUid, buildingId } = action;
 
     if (!buildingId || !REPAIR_CONFIG[buildingId]) {
         localResult.success = false;
@@ -217,22 +216,33 @@ export const handleRepair = (ctx: ActionContext) => {
     }
 
     const config = REPAIR_CONFIG[buildingId];
-    if (!config.slots.includes(targetSlot)) {
+
+    let item: EquipmentItem | undefined;
+    let displayName = "gjenstanden";
+
+    if (targetSlot) {
+        item = actor.equipment[targetSlot as EquipmentSlot];
+    } else if (itemUid) {
+        item = actor.inventory?.find(i => i.id === itemUid);
+    }
+
+    if (!item) {
         localResult.success = false;
-        localResult.message = `Denne stasjonen kan ikke reparere ${targetSlot}.`;
+        localResult.message = "Fant ikke gjenstanden som skulle repareres.";
         return false;
     }
 
-    const item = actor.equipment[targetSlot];
-    if (!item) {
+    displayName = item.name;
+
+    if (!config.slots.includes(item.type)) {
         localResult.success = false;
-        localResult.message = "Ingen gjenstand i dette sporet.";
+        localResult.message = `Denne stasjonen kan ikke reparere ${displayName}.`;
         return false;
     }
 
     if (item.durability >= item.maxDurability) {
         localResult.success = false;
-        localResult.message = `${item.name} er allerede i perfekt stand.`;
+        localResult.message = `${displayName} er allerede i perfekt stand.`;
         return false;
     }
 
@@ -253,7 +263,7 @@ export const handleRepair = (ctx: ActionContext) => {
         const actualRepair = item.durability - oldDurability;
 
         localResult.durability.push({
-            slot: targetSlot,
+            slot: targetSlot || item.type,
             item: item.name,
             amount: actualRepair
         });

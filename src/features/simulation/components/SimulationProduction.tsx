@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSimulation } from '../SimulationContext';
 import { REFINERY_RECIPES, CRAFTING_RECIPES, RESOURCE_DETAILS, ITEM_TEMPLATES, VILLAGE_BUILDINGS, REPAIR_CONFIG, SKILL_DETAILS, GAME_BALANCE } from '../constants';
-import type { SimulationPlayer, SimulationRoom, EquipmentSlot } from '../simulationTypes';
+import type { SimulationPlayer, SimulationRoom, EquipmentSlot, EquipmentItem } from '../simulationTypes';
 import { GameButton } from '../ui/GameButton';
 import { Info, Zap, TrendingUp, Package, Wrench } from 'lucide-react';
 import { checkActionRequirements } from '../utils/actionUtils';
@@ -40,7 +40,12 @@ export const SimulationProduction: React.FC<SimulationProductionProps> = React.m
     const [selectedRepairSlot, setSelectedRepairSlot] = useState<string | null>(null);
 
     // Derived values
-    const selectedItemToRepair = viewMode === 'REPAIR' && selectedRepairSlot ? player.equipment[selectedRepairSlot as EquipmentSlot] : null;
+    const selectedItemToRepair = useMemo(() => {
+        if (viewMode !== 'REPAIR' || !selectedRepairSlot) return null;
+        const equipmentItem = player.equipment[selectedRepairSlot as EquipmentSlot];
+        if (equipmentItem) return equipmentItem;
+        return player.inventory?.find(i => i.id === selectedRepairSlot) || null;
+    }, [viewMode, selectedRepairSlot, player.equipment, player.inventory]);
 
     if (!productionContext) {
         return (
@@ -182,7 +187,13 @@ export const SimulationProduction: React.FC<SimulationProductionProps> = React.m
 
     const handleRepair = () => {
         if (!selectedRepairSlot || !buildingId) return;
-        onAction({ type: 'REPAIR', targetSlot: selectedRepairSlot, buildingId });
+        const isSlot = !!player.equipment[selectedRepairSlot as EquipmentSlot];
+        onAction({
+            type: 'REPAIR',
+            targetSlot: isSlot ? selectedRepairSlot : undefined,
+            itemUid: isSlot ? undefined : selectedRepairSlot,
+            buildingId
+        });
     };
 
     // SPECIAL WATCHTOWER VIEW
@@ -353,6 +364,7 @@ export const SimulationProduction: React.FC<SimulationProductionProps> = React.m
                             /* REPAIR VIEW */
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Equipped Items */}
                                     {REPAIR_CONFIG[buildingId]?.slots.map((slot) => {
                                         const equipment = player.equipment || {};
                                         const item = equipment[slot as EquipmentSlot];
@@ -360,7 +372,7 @@ export const SimulationProduction: React.FC<SimulationProductionProps> = React.m
 
                                         return (
                                             <RepairSlot
-                                                key={slot}
+                                                key={`slot-${slot}`}
                                                 slot={slot}
                                                 item={item}
                                                 isSelected={selectedRepairSlot === slot}
@@ -369,11 +381,26 @@ export const SimulationProduction: React.FC<SimulationProductionProps> = React.m
                                         );
                                     })}
 
-                                    {REPAIR_CONFIG[buildingId]?.slots.every(slot => !(player.equipment || {})[slot as EquipmentSlot]) && (
-                                        <div className="col-span-full py-12 text-center bg-slate-900/40 rounded-[2rem] border border-dashed border-white/5">
-                                            <p className="text-slate-500 italic">Ingen relevante gjenstander utstyrt for reparasjon her.</p>
-                                        </div>
-                                    )}
+                                    {/* Inventory Items */}
+                                    {(player.inventory || [])
+                                        .filter(item => REPAIR_CONFIG[buildingId]?.slots.includes(item.type))
+                                        .map((item) => (
+                                            <RepairSlot
+                                                key={`inv-${item.id}`}
+                                                slot={item.id}
+                                                item={item}
+                                                isSelected={selectedRepairSlot === item.id}
+                                                onSelect={setSelectedRepairSlot}
+                                            />
+                                        ))
+                                    }
+
+                                    {REPAIR_CONFIG[buildingId]?.slots.every(slot => !(player.equipment || {})[slot as EquipmentSlot]) &&
+                                        !(player.inventory || []).some(item => REPAIR_CONFIG[buildingId]?.slots.includes(item.type)) && (
+                                            <div className="col-span-full py-12 text-center bg-slate-900/40 rounded-[2rem] border border-dashed border-white/5">
+                                                <p className="text-slate-500 italic">Ingen relevante gjenstander for reparasjon her.</p>
+                                            </div>
+                                        )}
                                 </div>
                             </div>
                         )}

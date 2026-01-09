@@ -14,7 +14,9 @@ export function safeLazy<T extends React.ComponentType<any>>(
             // Check if it's a chunk loading error
             const isChunkError =
                 /failed to fetch dynamically imported module/i.test(error.message) ||
-                /loading chunk/i.test(error.message);
+                /loading chunk/i.test(error.message) ||
+                /dynamic import/i.test(error.message) ||
+                (error.name === 'TypeError' && /fetch/i.test(error.message));
 
             if (isChunkError) {
                 const RELOAD_KEY = 'last_chunk_reload';

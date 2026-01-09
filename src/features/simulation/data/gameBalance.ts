@@ -165,7 +165,7 @@ export const REPAIR_CONFIG: Record<string, { material: ResourceType, goldCost: n
         material: 'iron_ingot',
         goldCost: 20,
         staminaCost: 15,
-        slots: ['MAIN_HAND', 'OFF_HAND', 'HEAD', 'BODY', 'FEET', 'AXE', 'PICKAXE', 'SCYTHE', 'HAMMER', 'BOW', 'TRAP']
+        slots: ['MAIN_HAND', 'OFF_HAND', 'HEAD', 'BODY', 'FEET', 'AXE', 'PICKAXE', 'SCYTHE', 'HAMMER', 'BOW', 'TRAP', 'CHISEL']
     },
     weavery: {
         material: 'cloth',
