@@ -10,9 +10,10 @@ interface SiegeEngineProps {
     regionId: string;
     onAction: (action: any) => void;
     messages?: any[];
+    regions?: Record<string, any>;
 }
 
-export const SiegeEngine: React.FC<SiegeEngineProps> = ({ player, siege, regionId, onAction, messages = [] }) => {
+export const SiegeEngine: React.FC<SiegeEngineProps> = ({ player, siege, regionId, onAction, messages = [], regions = {} }) => {
     const isParticipant = (siege.attackers || {})[player.id] || (siege.defenders || {})[player.id];
     const isAttacker = !!(siege.attackers || {})[player.id];
     const isDefender = !!(siege.defenders || {})[player.id];
@@ -198,6 +199,32 @@ export const SiegeEngine: React.FC<SiegeEngineProps> = ({ player, siege, regionI
                         </div>
                     </div>
 
+                    {/* GARRISON HUD */}
+                    {regions[regionId]?.garrison && (
+                        <div className="bg-slate-900/80 backdrop-blur-md px-5 py-3 rounded-2xl border border-rose-500/30 shadow-xl flex flex-col gap-1">
+                            <span className="text-rose-400 font-bold uppercase tracking-widest text-[10px]">
+                                🏰 Slottets Garnison
+                            </span>
+                            <div className="flex items-center gap-4 text-white text-xs font-bold">
+                                <div className="flex items-center gap-1.5" title="Beleiringsvåpen i garnisonen">
+                                    <Sword className="w-3 h-3 text-rose-500" />
+                                    <span>{regions[regionId].garrison.swords || 0}</span>
+                                </div>
+                                <div className="w-px h-3 bg-white/10"></div>
+                                <div className="flex items-center gap-1.5" title="Beleiringsrustning i garnisonen">
+                                    <Shield className="w-3 h-3 text-blue-400" />
+                                    <span>{regions[regionId].garrison.armor || 0}</span>
+                                </div>
+                                {isDefender && (
+                                    <>
+                                        <div className="w-px h-3 bg-white/10"></div>
+                                        <span className="text-[10px] text-emerald-400 uppercase animate-pulse">Forsvars-bonus Aktiv</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Quick Access / Close / Info could go here */}
                 </div>
 
@@ -243,12 +270,27 @@ export const SiegeEngine: React.FC<SiegeEngineProps> = ({ player, siege, regionI
                             {/* BOSS */}
                             <div className="h-1/3 border-b border-white/10 relative flex items-center justify-center">
                                 <div className="absolute inset-0 bg-red-900/20"></div>
-                                <div className="z-10 text-center">
-                                    <h3 className="text-red-500 font-black text-xl uppercase mb-2">Garnisonssjefen</h3>
-                                    <div className="w-96 h-6 bg-black rounded-full overflow-hidden border border-red-500/50 mx-auto">
-                                        <div className="h-full bg-red-600" style={{ width: `${(s.bossHp / s.maxBossHp) * 100}% ` }} />
+                                <div className="z-10 text-center w-full px-8">
+                                    <div className="flex justify-between items-end mb-2 max-w-lg mx-auto">
+                                        <h3 className="text-red-500 font-black text-2xl uppercase tracking-tighter italic">Garnisonssjefen</h3>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-white font-black text-xl">{s.bossHp} HP</span>
+                                            {s.maxBossHp > 10000 && (
+                                                <span className="text-blue-400 text-[10px] font-bold uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/30">
+                                                    Garnison Bonus: +{s.maxBossHp - 10000} HP
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="text-6xl mt-4 animate-bounce">👹</div>
+                                    <div className="w-full max-w-lg h-8 bg-black/80 rounded-full overflow-hidden border-2 border-red-500/50 mx-auto shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-red-800 via-red-500 to-orange-400 transition-all duration-500 relative"
+                                            style={{ width: `${(s.bossHp / s.maxBossHp) * 100}%` }}
+                                        >
+                                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+                                        </div>
+                                    </div>
+                                    <div className="text-7xl mt-6 animate-bounce drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]">👹</div>
                                 </div>
                             </div>
 
@@ -435,6 +477,11 @@ export const SiegeEngine: React.FC<SiegeEngineProps> = ({ player, siege, regionI
                                                                 <div className={`text-xs font-mono flex items-center gap-2 ${isOccupyingBaron ? 'text-amber-400' : 'text-slate-400'}`}>
                                                                     <Shield className="w-3 h-3" />
                                                                     {occ.armor} RUSTNING
+                                                                    {isOccupyingBaron && regions[regionId]?.garrison?.armor > 0 && (
+                                                                        <span className="ml-2 text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                                                                            GARNISON SKJOLD ({Math.min(80, Math.floor((regions[regionId].garrison.armor / 100) * 10))}% BONUS)
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                             <div className="ml-auto text-right">

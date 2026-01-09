@@ -98,6 +98,7 @@ export const SimulationViewport: React.FC<SimulationViewportProps> = ({ player, 
                                     regionId={targetRegionId}
                                     onAction={onAction}
                                     messages={Array.isArray(room.messages) ? room.messages : Object.values(room.messages || {})}
+                                    regions={room.regions}
                                 />
                             </div>
                         );

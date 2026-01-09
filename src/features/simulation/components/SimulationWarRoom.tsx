@@ -62,129 +62,178 @@ export const SimulationWarRoom: React.FC<SimulationWarRoomProps> = ({ player, re
             icon={<Castle className="w-8 h-8 text-rose-500" />}
             onClose={onClose}
         >
-            <div className="space-y-8">
-
-                {/* HEADLINE STATUS */}
-                <div className="flex justify-center mb-6">
-                    <div className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col items-center w-full max-w-sm">
-                        <span className="text-game-stone_light text-xs uppercase font-bold mb-1">Festningsverk</span>
-                        <div className="text-2xl font-bold text-white flex items-center gap-2">
-                            <Castle className="w-6 h-6 text-game-stone" />
+            <div className="space-y-6">
+                {/* 1. HEADLINE STATUS & UPGRADES */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* CURRENT HP */}
+                    <div className="bg-black/40 border border-white/10 rounded-2xl p-6 flex flex-col items-center">
+                        <span className="text-game-stone_light text-[10px] uppercase font-bold mb-1 tracking-widest">Gjeldende Tilstand</span>
+                        <div className="text-3xl font-black text-white flex items-center gap-3">
+                            <Castle className="w-8 h-8 text-game-stone" />
                             {fort.hp} / {fort.maxHp} HP
                         </div>
-                        <div className="w-full bg-black/50 h-2 mt-2 rounded-full overflow-hidden">
+                        <div className="w-full bg-black/50 h-3 mt-4 rounded-full overflow-hidden border border-white/5">
                             <div
-                                className={`h-full ${fort.hp < fort.maxHp * 0.3 ? 'bg-red-500' : 'bg-green-500'}`}
+                                className={`h-full transition-all duration-1000 ${fort.hp < fort.maxHp * 0.3 ? 'bg-red-500' : 'bg-green-500'}`}
                                 style={{ width: `${(fort.hp / fort.maxHp) * 100}%` }}
                             />
                         </div>
+                        <div className="mt-4 flex gap-2 w-full">
+                            <GameButton
+                                variant="wood"
+                                className="flex-1 text-xs py-3"
+                                disabled={fort.hp >= fort.maxHp || (player.resources.stone || 0) < 10 || (player.resources.wood || 0) < 10}
+                                onClick={() => onAction({ type: 'REPAIR_WALLS', amount: 1 })}
+                                icon={<Hammer className="w-4 h-4" />}
+                            >
+                                Reparer Murer
+                            </GameButton>
+                        </div>
+                    </div>
+
+                    {/* UPGRADE FORTIFICATION */}
+                    <div className="bg-amber-950/10 border border-amber-500/20 rounded-2xl p-6 flex flex-col justify-between">
+                        <div>
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="text-amber-500 font-bold uppercase tracking-widest text-xs">Festningsnivå: {fort.level || 1}</h3>
+                                <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-bold">Neste: LVL {(fort.level || 1) + 1}</span>
+                            </div>
+                            <p className="text-slate-400 text-xs mb-4 leading-relaxed italic">
+                                "En sterkere festning gir angriperne mer motstand i porten og gir bueskytterne dine bedre vinkler."
+                            </p>
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-[10px] text-slate-300">
+                                    <span>Kostnad:</span>
+                                    <div className="flex gap-3">
+                                        <span className="flex items-center gap-1">{(fort.level || 1) * 5000} <ResourceIcon resource="gold" size="sm" /></span>
+                                        <span className="flex items-center gap-1">{(fort.level || 1) * 100} <ResourceIcon resource="stone" size="sm" /></span>
+                                        <span className="flex items-center gap-1">{(fort.level || 1) * 100} <ResourceIcon resource="wood" size="sm" /></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <GameButton
-                            variant="wood"
-                            size="sm"
-                            className="mt-3 w-full text-xs"
-                            disabled={fort.hp >= fort.maxHp || (player.resources.stone || 0) < 10}
-                            onClick={() => onAction({ type: 'REPAIR_WALLS', amount: 1 })}
-                            icon={<Hammer className="w-3 h-3" />}
+                            variant="primary"
+                            className="w-full mt-4 bg-amber-600 hover:bg-amber-500 border-amber-400 py-3"
+                            disabled={!!actionLoading || (player.resources.gold || 0) < (fort.level || 1) * 5000}
+                            onClick={() => onAction({ type: 'UPGRADE_FORTIFICATION' })}
                         >
-                            Reparer (10 <ResourceIcon resource="stone" size="sm" /> 10 <ResourceIcon resource="wood" size="sm" />)
+                            Oppgrader Festning
                         </GameButton>
                     </div>
                 </div>
 
-                {/* GARRISON MANAGEMENT */}
-                <div className="bg-rose-950/20 border border-rose-500/20 rounded-2xl p-6">
-                    <h3 className="text-white font-display font-bold text-xl mb-4 flex items-center gap-2">
-                        <Sword className="w-5 h-5 text-rose-500" />
-                        Garnisonen
+                {/* 2. GARRISON MANAGEMENT */}
+                <div className="bg-rose-950/10 border border-rose-500/10 rounded-3xl p-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                        <Sword className="w-32 h-32 text-rose-500" />
+                    </div>
+
+                    <h3 className="text-white font-display font-bold text-2xl mb-6 flex items-center gap-3 relative z-10">
+                        <Sword className="w-6 h-6 text-rose-500" />
+                        Slottets Garnison
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
                         {/* SWORDS */}
-                        <div className="bg-black/20 rounded-xl p-4 border border-white/5">
-                            <div className="flex justify-between items-center mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-rose-500/10 p-2 rounded-lg"><Sword className="w-6 h-6 text-rose-500" /></div>
+                        <div className="bg-black/30 rounded-2xl p-6 border border-white/5 hover:border-rose-500/20 transition-colors">
+                            <div className="flex justify-between items-center mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-rose-500/10 p-3 rounded-xl border border-rose-500/20"><Sword className="w-8 h-8 text-rose-500" /></div>
                                     <div>
-                                        <div className="text-white font-bold">Angrepsstyrke</div>
-                                        <div className="text-rose-200 text-xs">Beleiringsvåpen</div>
+                                        <div className="text-white font-black uppercase tracking-tight">Angrepsvåpen</div>
+                                        <div className="text-rose-400 text-[10px] font-bold uppercase tracking-widest mt-0.5">Lager: {garrison.swords} STK</div>
                                     </div>
                                 </div>
-                                <span className="text-2xl font-black text-rose-500">{garrison.swords}</span>
                             </div>
 
-                            <div className="space-y-3 pt-4 border-t border-white/5">
-                                <div className="flex justify-between text-xs text-game-stone_light">
-                                    <span>Din beholdning:</span>
-                                    <span className="text-white font-bold">{swordsInInventory} stk</span>
+                            <div className="bg-rose-500/5 rounded-xl p-4 mb-6 border border-rose-500/10">
+                                <h4 className="text-rose-200 text-xs font-bold uppercase mb-1 flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3 text-rose-400" /> Strategisk Effekt
+                                </h4>
+                                <p className="text-[11px] text-rose-200/60 leading-relaxed">
+                                    Hvert 10. sverd i garnisonen øker skaden fra slottets bueskyttere med 1 poeng under en beleiring. Dette gjelder i Borggården (Fase 2).
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex justify-between text-xs font-bold">
+                                    <span className="text-slate-500 italic">Din beholdning:</span>
+                                    <span className="text-white">{swordsInInventory} sverd</span>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-4 px-2">
                                     <input
                                         type="range"
                                         min="1"
                                         max={Math.max(1, swordsInInventory)}
                                         value={swordsToDeposit}
                                         onChange={(e) => setSwordsToDeposit(parseInt(e.target.value))}
-                                        className="flex-1 accent-rose-500"
+                                        className="flex-1 accent-rose-500 h-1.5 rounded-full bg-black/50"
                                         disabled={swordsInInventory < 1}
                                     />
-                                    <span className="w-8 text-center text-sm font-bold">{swordsToDeposit}</span>
+                                    <span className="w-8 text-center text-sm font-black text-rose-500">{swordsToDeposit}</span>
                                 </div>
                                 <GameButton
                                     variant="primary"
-                                    className="w-full bg-rose-600 hover:bg-rose-500 border-rose-400"
+                                    className="w-full bg-rose-600 hover:bg-rose-500 border-rose-400 py-4 font-black shadow-lg shadow-rose-900/20"
                                     disabled={swordsInInventory < 1 || !!actionLoading}
                                     onClick={() => onAction({ type: 'REINFORCE_GARRISON', resource: 'siege_sword', amount: swordsToDeposit })}
                                 >
-                                    Donér {swordsToDeposit} Sverd
+                                    Donér til Garnisonen
                                 </GameButton>
                             </div>
                         </div>
 
                         {/* ARMOR */}
-                        <div className="bg-black/20 rounded-xl p-4 border border-white/5">
-                            <div className="flex justify-between items-center mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-blue-500/10 p-2 rounded-lg"><Shield className="w-6 h-6 text-blue-500" /></div>
+                        <div className="bg-black/30 rounded-2xl p-6 border border-white/5 hover:border-blue-500/20 transition-colors">
+                            <div className="flex justify-between items-center mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-blue-500/10 p-3 rounded-xl border border-blue-500/20"><Shield className="w-8 h-8 text-blue-500" /></div>
                                     <div>
-                                        <div className="text-white font-bold">Forsvarsstyrke</div>
-                                        <div className="text-blue-200 text-xs">Beleiringsrustning</div>
+                                        <div className="text-white font-black uppercase tracking-tight">Forsvarsrustning</div>
+                                        <div className="text-blue-400 text-[10px] font-bold uppercase tracking-widest mt-0.5">Lager: {garrison.armor} STK</div>
                                     </div>
                                 </div>
-                                <span className="text-2xl font-black text-blue-500">{garrison.armor}</span>
                             </div>
 
-                            <div className="space-y-3 pt-4 border-t border-white/5">
-                                <div className="flex justify-between text-xs text-game-stone_light">
-                                    <span>Din beholdning:</span>
-                                    <span className="text-white font-bold">{armorInInventory} stk</span>
+                            <div className="bg-blue-500/5 rounded-xl p-4 mb-6 border border-blue-500/10">
+                                <h4 className="text-blue-200 text-xs font-bold uppercase mb-1 flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3 text-blue-400" /> Strategisk Effekt
+                                </h4>
+                                <p className="text-[11px] text-blue-200/60 leading-relaxed">
+                                    Donert rustning øker Garnisonssjefens HP i Borggården og gir herskeren en kraftig rustnings-buffer i Tronsalen (Fase 3).
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex justify-between text-xs font-bold">
+                                    <span className="text-slate-500 italic">Din beholdning:</span>
+                                    <span className="text-white">{armorInInventory} rustning</span>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-4 px-2">
                                     <input
                                         type="range"
                                         min="1"
                                         max={Math.max(1, armorInInventory)}
                                         value={armorToDeposit}
                                         onChange={(e) => setArmorToDeposit(parseInt(e.target.value))}
-                                        className="flex-1 accent-blue-500"
+                                        className="flex-1 accent-blue-500 h-1.5 rounded-full bg-black/50"
                                         disabled={armorInInventory < 1}
                                     />
-                                    <span className="w-8 text-center text-sm font-bold">{armorToDeposit}</span>
+                                    <span className="w-8 text-center text-sm font-black text-blue-500">{armorToDeposit}</span>
                                 </div>
                                 <GameButton
                                     variant="primary"
-                                    className="w-full bg-blue-600 hover:bg-blue-500 border-blue-400"
+                                    className="w-full bg-blue-600 hover:bg-blue-500 border-blue-400 py-4 font-black shadow-lg shadow-blue-900/20"
                                     disabled={armorInInventory < 1 || !!actionLoading}
                                     onClick={() => onAction({ type: 'REINFORCE_GARRISON', resource: 'siege_armor', amount: armorToDeposit })}
                                 >
-                                    Donér {armorToDeposit} Rustning
+                                    Styrk Forsvaret
                                 </GameButton>
                             </div>
                         </div>
-
                     </div>
                 </div>
-
             </div>
         </SimulationMapWindow>
     );

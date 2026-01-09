@@ -194,8 +194,12 @@ export const handleSiegeAction = (ctx: ActionContext) => {
         const s = siege as any;
         if (!s.bossHp) {
             // Init Phase 2 Data on first action if missing
-            s.bossHp = 10000;
-            s.maxBossHp = 10000;
+            const garrisonArmor = room.regions[regionId]?.garrison?.armor || 0;
+            const extraBossHp = garrisonArmor * 20; // 500 armor = 10k extra HP
+            const baseBossHp = 10000;
+
+            s.bossHp = baseBossHp + extraBossHp;
+            s.maxBossHp = baseBossHp + extraBossHp;
             s.bossTargetLane = 1; // Middle
             s.nextBossAttack = Date.now() + 5000;
         }
@@ -211,13 +215,38 @@ export const handleSiegeAction = (ctx: ActionContext) => {
         }
 
         if (action.subType === 'ATTACK_BOSS') {
-            s.bossHp -= 25; // Base dmg
+            const currentSwords = actor.resources?.siege_sword || 0;
+            const garrisonSwords = room.regions[regionId]?.garrison?.swords || 0;
+            const isDefender = !!defenders[actor.id];
+
+            let damage = 2; // Minimal damage (fists)
+            let usedGarrison = false;
+
+            if (currentSwords > 0) {
+                damage = 25;
+                actor.resources.siege_sword -= 1;
+                localResult.utbytte.push({ resource: 'siege_sword', amount: -1 });
+            } else if (isDefender && garrisonSwords > 0) {
+                damage = 25;
+                if (room.regions[regionId].garrison) {
+                    room.regions[regionId].garrison.swords -= 1;
+                    usedGarrison = true;
+                }
+            }
+
+            s.bossHp -= damage;
+
             // Stats
             participant.stats = participant.stats || { damageDealt: 0, damageTaken: 0, armorDonated: 0, ticksOnThrone: 0 };
-            participant.stats.damageDealt += 25;
+            participant.stats.damageDealt += damage;
 
-            localResult.message = `Angrep Bossen! HP: ${s.bossHp}`;
-            // Fallthrough to tick check
+            localResult.message = usedGarrison
+                ? `⚔️ Du bruker et sverd fra salens garnison og angriper bossen! (-${damage} HP)`
+                : damage > 2
+                    ? `🗡️ Du angriper bossen med ditt eget sverd! (-${damage} HP). Du har ${actor.resources.siege_sword} igjen.`
+                    : `👊 Du slår på bossen med nevene... (-${damage} HP)`;
+
+            return true;
         }
 
         // 2. Boss & Defense Logic (Pseudo-Tick)
@@ -233,27 +262,51 @@ export const handleSiegeAction = (ctx: ActionContext) => {
             const isShot = Math.random() < arrowChance;
 
             if (isHit || isShot) {
-                const totalDmg = (isHit ? 20 : 0) + (isShot ? ARCHER_DAMAGE : 0);
+                const garrisonSwords = room.regions[regionId]?.garrison?.swords || 0;
+                const bonusArcherDmg = Math.floor(garrisonSwords / 10);
+                const currentArcherDmg = ARCHER_DAMAGE + bonusArcherDmg;
+
+                const totalDmg = (isHit ? 20 : 0) + (isShot ? currentArcherDmg : 0);
 
                 // --- ARMOR BUFFER LOGIC ---
                 // If player has armor resource, it absorbs damage first (1 armor = 1 damage)
+                const isDefender = !!defenders[actor.id];
                 const currentArmor = actor.resources?.siege_armor || 0;
-                const armorAbsorb = Math.min(currentArmor, totalDmg);
-                const remainingDmg = totalDmg - armorAbsorb;
+                const garrisonArmor = room.regions[regionId]?.garrison?.armor || 0;
 
-                if (armorAbsorb > 0) {
+                let armorAbsorb = 0;
+                let usedGarrisonArmor = false;
+
+                if (currentArmor > 0) {
+                    armorAbsorb = Math.min(currentArmor, totalDmg);
                     actor.resources.siege_armor -= armorAbsorb;
                     localResult.utbytte.push({ resource: 'siege_armor', amount: -armorAbsorb });
+                } else if (isDefender && garrisonArmor > 0) {
+                    armorAbsorb = Math.min(garrisonArmor, totalDmg);
+                    if (room.regions[regionId].garrison) {
+                        room.regions[regionId].garrison.armor -= armorAbsorb;
+                        usedGarrisonArmor = true;
+                    }
                 }
+
+                const remainingDmg = totalDmg - armorAbsorb;
 
                 participant.hp -= remainingDmg;
                 participant.stats = participant.stats || { damageDealt: 0, damageTaken: 0, armorDonated: 0, ticksOnThrone: 0 };
                 participant.stats.damageTaken += totalDmg;
 
-                if (isHit) localResult.message += armorAbsorb >= 20 ? " 🛡️ Rustningen din tok støtet fra bossen!" : " 💥 AU! Bossen traff deg!";
-                if (isShot) localResult.message += armorAbsorb >= ARCHER_DAMAGE ? " 🛡️ Rustningen din stoppet pilene!" : ` 🏹 Piler fra murene traff deg! (-${remainingDmg} HP)`;
+                if (isHit) {
+                    localResult.message += usedGarrisonArmor
+                        ? " 🏰 Slottets garnison-rustning beskyttet deg fra bossens slag!"
+                        : armorAbsorb >= 20 ? " 🛡️ Rustningen din tok støtet fra bossen!" : " 💥 AU! Bossen traff deg!";
+                }
+                if (isShot) {
+                    localResult.message += usedGarrisonArmor
+                        ? " 🏰 Portens pilarer og garnison-rustning stoppet pilene!"
+                        : armorAbsorb >= ARCHER_DAMAGE ? " 🛡️ Rustningen din stoppet pilene!" : ` 🏹 Piler fra murene traff deg! (-${remainingDmg} HP)`;
+                }
 
-                if (remainingDmg > 0 && armorAbsorb > 0) {
+                if (remainingDmg > 0 && (armorAbsorb > 0)) {
                     localResult.message += ` (Rustningen absorberte ${armorAbsorb} skade)`;
                 }
             }
@@ -540,5 +593,48 @@ export const handleRepairWalls = (ctx: ActionContext) => {
         (region.activeSiege as any).gateHp += repairAmount; // Simple heal logic
     }
 
+    return true;
+};
+
+export const handleUpgradeFortification = (ctx: ActionContext) => {
+    const { actor, room, localResult } = ctx;
+
+    const regionId = actor.regionId === 'capital' || !actor.regionId ? 'capital' : actor.regionId;
+    const region = room.regions[regionId];
+
+    if (!region.fortification) {
+        region.fortification = { hp: 1000, maxHp: 1000, level: 1 };
+    }
+
+    const fort = region.fortification;
+    const currentLevel = fort.level || 1;
+    const nextLevel = currentLevel + 1;
+
+    // Costs
+    const goldCost = 5000 * currentLevel;
+    const stoneCost = 100 * currentLevel;
+    const woodCost = 100 * currentLevel;
+
+    if ((actor.resources.gold || 0) < goldCost || (actor.resources.stone || 0) < stoneCost || (actor.resources.wood || 0) < woodCost) {
+        localResult.success = false;
+        localResult.message = `Mangler ressurser til oppgradering. Krever ${goldCost}G, ${stoneCost} stein og ${woodCost} ved.`;
+        return false;
+    }
+
+    // Deduct
+    actor.resources.gold -= goldCost;
+    actor.resources.stone -= stoneCost;
+    actor.resources.wood -= woodCost;
+
+    // Upgrade
+    fort.level = nextLevel;
+    fort.maxHp += 500;
+    fort.hp = fort.maxHp; // Fully heal on upgrade
+
+    localResult.utbytte.push({ resource: 'gold', amount: -goldCost });
+    localResult.utbytte.push({ resource: 'stone', amount: -stoneCost });
+    localResult.utbytte.push({ resource: 'wood', amount: -woodCost });
+
+    localResult.message = `🤝 Oppgradert festningsverk til nivå ${nextLevel}! Murens styrke er nå ${fort.maxHp} HP.`;
     return true;
 };

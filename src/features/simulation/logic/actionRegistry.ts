@@ -3,7 +3,7 @@ import { handleWork, handleChop, handleMiningAction, handleForage, handleHunt, h
 import { handleCraft, handleRefine, handleRepair } from './handlers/CraftingHandlers';
 import { handleEquipItem, handleUnequipItem, handleDiscardItem } from './handlers/InventoryHandlers';
 import { handleTax, handleDraft, handleDecree, handleContribute, handleUpgradeBuilding, handleUpgrade, handleJoinRole } from './handlers/ManagementHandlers';
-import { handleStartSiege, handleJoinSiege, handleSiegeAction, handleReinforceGarrison, handleRepairWalls } from './handlers/SiegeHandlers';
+import { handleStartSiege, handleJoinSiege, handleSiegeAction, handleReinforceGarrison, handleRepairWalls, handleUpgradeFortification } from './handlers/SiegeHandlers';
 import { handleRaid, handlePatrol } from './handlers/CombatHandlers';
 import { handleBuy, handleSell, handleTradeRoute } from './handlers/MarketHandlers';
 import { handleSleep, handleRest, handlePray, handleChat, handleGamble, handleResourceGamble, handleBuyMeal, handleRetire, handleConsume, handleMountHorse, handleBuyHorseCosmetic, handleSelectHorseCosmetic } from './handlers/SocialRestHandlers';
@@ -54,6 +54,7 @@ export const ACTION_REGISTRY: ActionRegistry = {
     SIEGE_ACTION: handleSiegeAction,
     REINFORCE_GARRISON: handleReinforceGarrison,
     REPAIR_WALLS: handleRepairWalls,
+    UPGRADE_FORTIFICATION: handleUpgradeFortification,
 
     // Combat
     RAID: handleRaid,
