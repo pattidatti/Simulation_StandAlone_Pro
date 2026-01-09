@@ -928,12 +928,15 @@ export const handleReinforceGarrison = async (pin: string, playerId: string, act
     const regionId = player.regionId || 'capital';
     const regionRef = ref(db, `simulation_rooms/${pin}/regions/${regionId}`);
 
-    const itemTemplateId = resource === 'swords' ? 'iron_sword' : 'leather_armor';
-    const inventory = player.inventory || [];
-    const matchingItems = inventory.filter((i: any) => i.id === itemTemplateId);
+    // Map resource to garrison key and resource ID
+    const garrisonKey = resource === 'siege_sword' || resource === 'swords' ? 'swords' : 'armor';
+    const resourceId = resource === 'siege_sword' || resource === 'swords' ? 'siege_sword' : 'siege_armor';
 
-    if (matchingItems.length < amount) {
-        return { success: false, error: `Mangler ${amount} ${resource === 'swords' ? 'sverd' : 'rustninger'} i inventory.` };
+    const currentStock = (player.resources && player.resources[resourceId]) || 0;
+
+    if (currentStock < amount) {
+        const label = resourceId === 'siege_sword' ? 'beleiringsvåpen' : 'beleiringsrustning';
+        return { success: false, error: `Mangler ${amount} ${label}.` };
     }
 
     let success = false;
@@ -943,25 +946,30 @@ export const handleReinforceGarrison = async (pin: string, playerId: string, act
         }
         if (!region.garrison) region.garrison = { swords: 0, armor: 0, morale: 100 };
 
-        region.garrison[resource as 'swords' | 'armor'] += amount;
+        region.garrison[garrisonKey] += amount;
         success = true;
         return region;
     });
 
     if (success) {
-        let removed = 0;
-        const newInventory = inventory.filter((item: any) => {
-            if (removed < amount && item.id === itemTemplateId) {
-                removed++;
-                return false;
-            }
-            return true;
+        await runTransaction(playerRef, (p: any) => {
+            if (!p) return;
+            if (!p.resources) p.resources = {};
+            p.resources[resourceId] = (p.resources[resourceId] || 0) - amount;
+            return p;
         });
 
-        await update(playerRef, { inventory: newInventory });
-        const msg = `Forsterket garnisonen i ${regionId} med ${amount} ${resource === 'swords' ? 'sverd' : 'rustninger'}.`;
+        const label = resourceId === 'siege_sword' ? 'beleiringsvåpen' : 'beleiringsrustning';
+        const msg = `Forsterket garnisonen i ${regionId} med ${amount} ${label}.`;
         logSimulationMessage(pin, `[${new Date().toLocaleTimeString()}] ${player.name}: ${msg}`);
-        return { success: true, data: { message: msg } };
+        return {
+            success: true,
+            data: {
+                success: true,
+                message: msg,
+                utbytte: [{ resource: resourceId, amount: -amount }]
+            }
+        };
     }
 
     return { success: false, error: "Kunne ikke oppdatere garnisonen." };

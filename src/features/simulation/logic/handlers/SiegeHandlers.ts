@@ -474,9 +474,15 @@ export const handleReinforceGarrison = (ctx: ActionContext) => {
         room.regions[regionId].garrison = { swords: 0, armor: 0, morale: 100 };
     }
 
+    // Map resource to garrison key
+    const garrisonKey = resource === 'siege_sword' ? 'swords' : 'armor';
+
     // Transfer
     (actor.resources as any)[resource] -= amount;
-    (room.regions[regionId].garrison as any)[resource] = ((room.regions[regionId].garrison as any)[resource] || 0) + amount;
+    if (!room.regions[regionId].garrison) {
+        room.regions[regionId].garrison = { swords: 0, armor: 0, morale: 100 };
+    }
+    (room.regions[regionId].garrison as any)[garrisonKey] = ((room.regions[regionId].garrison as any)[garrisonKey] || 0) + amount;
 
     localResult.utbytte.push({ resource, amount: -amount });
     localResult.message = `Forsterket garnisonen med ${amount} ${resource === 'siege_sword' ? 'våpen' : 'rustninger'}.`;
