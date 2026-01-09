@@ -94,6 +94,42 @@ export const SimulationHierarchy: React.FC<SimulationHierarchyProps> = React.mem
                                                 </div>
                                             </div>
 
+                                            {/* Royal Siege Action */}
+                                            {currentPlayer.role === 'BARON' && (
+                                                <div className="mt-8 w-full space-y-2 pt-4 border-t border-white/5">
+                                                    {regions?.['capital']?.activeSiege ? (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setViewingRegionId('capital');
+                                                                setActiveTab('SIEGE');
+                                                            }}
+                                                            className="w-full py-2 bg-red-600 hover:bg-red-500 border border-red-400 rounded-lg text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 animate-pulse"
+                                                        >
+                                                            <span>🔥</span> Slutt deg til beleiringen!
+                                                        </button>
+                                                    ) : (
+                                                        <div className="space-y-2">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const swords = currentPlayer.resources?.siege_sword || 0;
+                                                                    if (swords < 500) {
+                                                                        alert(`Du trenger 500 beleiringssverd for å utfordre kongen. Du har ${swords}.`);
+                                                                        return;
+                                                                    }
+                                                                    onAction({ type: 'START_SIEGE', payload: { targetRegionId: 'capital' } });
+                                                                }}
+                                                                className="w-full py-2 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-700/50 rounded-lg text-rose-200 text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                                                            >
+                                                                <span>⚔️</span> Beleir Tronen
+                                                            </button>
+                                                            <p className="text-[9px] text-center text-slate-500 font-bold uppercase tracking-widest">Krever 500 beleiringssverd</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
                                         </div>
                                     </div>
                                     <div className="absolute top-full left-1/2 -translate-x-1/2 h-12 w-1 bg-gradient-to-b from-amber-600 to-slate-700 opacity-50"></div>

@@ -580,13 +580,36 @@ export const triggerRevolution = async (pin: string, regionId: string) => {
         await runTransaction(oldRulerRef, (p: any) => {
             if (!p) return;
             p.role = 'PEASANT';
-            p.status.legitimacy = 0;
+            if (p.status) p.status.legitimacy = 0;
             return p;
         });
         await update(ref(db, `simulation_rooms/${pin}/public_profiles/${oldRulerId}`), { role: 'PEASANT' });
     }
 
-    // Setup Election
+    const autoVotes = await setupRegionElection(pin, regionId, region);
+    logSimulationMessage(pin, `⚠️ REVOLUSJON i ${region.name}! ${oldRulerName} er styrtet. ${autoVotes} skyggeløfter ble automatisk talt opp!`);
+};
+
+export const triggerSuccessionElection = async (pin: string, regionId: string) => {
+    if (!regionId || regionId === 'capital') return;
+    const regionRef = ref(db, `simulation_rooms/${pin}/regions/${regionId}`);
+    const regionSnap = await get(regionRef);
+    const region = regionSnap.val();
+    if (!region) return;
+
+    const autoVotes = await setupRegionElection(pin, regionId, region);
+    if (autoVotes > -1) {
+        logSimulationMessage(pin, `🏛️ SUKSESSJON: Baroniet ${region.name} er ledig etter eierens kroning. Et nytt valg er i gang!`);
+    } else {
+        logSimulationMessage(pin, `🏛️ SUKSESSJON: Baroniet ${region.name} er ledig og kan nå kreves.`);
+    }
+};
+
+/**
+ * HELPER: Sets up an election object and returns count of auto-votes processed.
+ * Returns -1 if no candidates were found.
+ */
+async function setupRegionElection(pin: string, regionId: string, region: any): Promise<number> {
     const candidates: Record<string, any> = {};
     const contributions = region.coup?.contributions || {};
     const preVotes = region.coup?.preVotes || {};
@@ -604,6 +627,17 @@ export const triggerRevolution = async (pin: string, regionId: string) => {
             };
         });
 
+    if (Object.keys(candidates).length === 0) {
+        await update(ref(db, `simulation_rooms/${pin}/regions/${regionId}`), {
+            rulerId: null,
+            rulerName: "VAKANT",
+            activeElection: null,
+            'coup/bribeProgress': 0,
+            'coup/preVotes': null
+        });
+        return -1;
+    }
+
     const now = Date.now();
     const election = {
         startedAt: now,
@@ -612,9 +646,7 @@ export const triggerRevolution = async (pin: string, regionId: string) => {
         votes: {} as any
     };
 
-    // PROCESS SHADOW PLEDGES
     let autoVotes = 0;
-
     const playersRef = ref(db, `simulation_rooms/${pin}/players`);
     const allPlayersSnap = await get(playersRef);
     const allPlayers = allPlayersSnap.val() || {};
@@ -634,16 +666,16 @@ export const triggerRevolution = async (pin: string, regionId: string) => {
         }
     });
 
-    await update(regionRef, {
+    await update(ref(db, `simulation_rooms/${pin}/regions/${regionId}`), {
         rulerId: null,
         rulerName: "VAKANT",
         activeElection: election,
         'coup/bribeProgress': 0,
-        'coup/preVotes': null // Clear pledges
+        'coup/preVotes': null
     });
 
-    logSimulationMessage(pin, `⚠️ REVOLUSJON i ${region.name}! ${oldRulerName} er styrtet. ${autoVotes} skyggeløfter ble automatisk talt opp!`);
-};
+    return autoVotes;
+}
 
 export const handleGlobalBribe = async (pin: string, playerId: string, action: { regionId: string, amount: number }) => {
     const { regionId, amount } = action;
@@ -1115,15 +1147,19 @@ export const handleFinalizeElection = async (pin: string, regionId: string) => {
         const winner = winnerSnap.val();
 
         const rootRef = ref(db, `simulation_rooms/${pin}`);
+        const isCapital = regionId === 'capital';
+        const newRole = isCapital ? 'KING' : 'BARON';
+        const title = isCapital ? 'Konge' : 'Baron';
+
         const globalUpdates: any = {};
-        globalUpdates[`players/${winnerId}/role`] = 'BARON';
+        globalUpdates[`players/${winnerId}/role`] = newRole;
         globalUpdates[`players/${winnerId}/regionId`] = regionId;
-        globalUpdates[`public_profiles/${winnerId}/role`] = 'BARON';
+        globalUpdates[`public_profiles/${winnerId}/role`] = newRole;
         globalUpdates[`public_profiles/${winnerId}/regionId`] = regionId;
 
         await update(rootRef, globalUpdates);
 
-        logSimulationMessage(pin, `👑 KRONING: ${winner.name} har vunnet valget og er nå Baron av ${regionName}!`);
+        logSimulationMessage(pin, `👑 KRONING: ${winner.name} har vunnet valget og er nå ${title} av ${regionName}!`);
         return { success: true };
     }
 
@@ -1335,29 +1371,38 @@ export const handleClaimEmptyThrone = async (pin: string, playerId: string, regi
     const region = regionSnap.val();
 
     if (region.rulerId && region.rulerId !== 'Ingen') return { success: false, error: "Tronen er ikke tom!" };
+    if (region.activeElection) return { success: false, error: "Et valg pågår for denne tronen!" };
 
     let success = false;
+    const isCapital = regionId === 'capital';
+    const newRole = isCapital ? 'KING' : 'BARON';
+
     await runTransaction(playerRef, (p: any) => {
         if (!p) return;
         if ((p.resources.gold || 0) < cost) return;
         p.resources.gold -= cost;
-        p.role = 'BARON';
+        p.role = newRole;
         p.regionId = regionId;
-        p.status.legitimacy = 50; // Moderate legitimacy for buying the throne
+        if (p.status) p.status.legitimacy = 50;
         success = true;
         return p;
     });
 
     if (success) {
+        const playerName = (await get(playerRef)).val().name;
         await update(regionRef, {
             rulerId: playerId,
-            rulerName: (await get(playerRef)).val().name
+            rulerName: playerName
         });
-        await update(ref(db, `simulation_rooms/${pin}/public_profiles/${playerId}`), { role: 'BARON', regionId });
+        await update(ref(db, `simulation_rooms/${pin}/public_profiles/${playerId}`), {
+            role: newRole,
+            regionId
+        });
 
-        logSimulationMessage(pin, `👑 MAKT: En ny Baron har kjøpt seg til makt i ${region.name}!`);
+        const title = isCapital ? 'Konge' : 'Baron';
+        logSimulationMessage(pin, `👑 MAKT: En ny ${title} har kjøpt seg til makt i ${region.name}!`);
         logSystemicStat(pin, 'coups', 'success', 1);
-        return { success: true, message: "Du er nå Baron!" };
+        return { success: true, message: `Du er nå ${title}!` };
     }
 
     return { success: false, error: "Manglet gull." };

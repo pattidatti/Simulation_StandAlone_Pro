@@ -3,6 +3,7 @@ import { simulationDb as db } from '../../simulationFirebase';
 import { INITIAL_RESOURCES } from '../../constants';
 import { ACTION_REGISTRY } from '../actionRegistry';
 import { logSystemicStat } from '../../utils/statsUtils';
+import { triggerSuccessionElection } from '../../globalActions';
 import type { SkillType } from '../../simulationTypes';
 
 export async function performSiegeTransaction(pin: string, playerId: string, action: any) {
@@ -72,6 +73,7 @@ export async function performSiegeTransaction(pin: string, playerId: string, act
         if (winnerId && targetRegionId) {
             const region = regions[targetRegionId];
             const oldRulerId = region.rulerId;
+            const isRoyalSiege = targetRegionId === 'capital';
 
             if (oldRulerId && oldRulerId !== winnerId) {
                 const oldRulerSnap = await get(ref(db, `simulation_rooms/${pin}/players/${oldRulerId}`));
@@ -88,15 +90,24 @@ export async function performSiegeTransaction(pin: string, playerId: string, act
             const winnerSnap = await get(ref(db, `simulation_rooms/${pin}/players/${winnerId}`));
             if (winnerSnap.exists()) {
                 const winner = winnerSnap.val();
-                winner.role = 'BARON';
+                const oldRegionId = winner.regionId;
+                const newRole = isRoyalSiege ? 'KING' : 'BARON';
+
+                winner.role = newRole;
                 winner.regionId = targetRegionId;
                 if (winner.status) winner.status.legitimacy = 100;
                 updates[`players/${winnerId}`] = winner;
-                updates[`public_profiles/${winnerId}/role`] = 'BARON';
+                updates[`public_profiles/${winnerId}/role`] = newRole;
                 updates[`public_profiles/${winnerId}/regionId`] = targetRegionId;
 
                 region.rulerId = winnerId;
                 region.rulerName = winner.name;
+
+                // Handle Succession if a Baron moved to King
+                if (isRoyalSiege && oldRegionId && oldRegionId !== 'capital' && oldRegionId !== 'unassigned') {
+                    // Trigger succession election in the background
+                    triggerSuccessionElection(pin, oldRegionId);
+                }
             }
         }
 

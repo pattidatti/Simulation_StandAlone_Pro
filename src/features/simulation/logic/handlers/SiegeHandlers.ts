@@ -15,9 +15,13 @@ export const handleStartSiege = (ctx: ActionContext) => {
 
     // Validations
     const regionId = action.payload?.targetRegionId || actor.regionId;
-    if (!regionId || regionId === 'capital' || regionId === 'unassigned') {
+    const isRoyalSiege = regionId === 'capital' && actor.role === 'BARON';
+
+    if (!regionId || (!isRoyalSiege && (regionId === 'capital' || regionId === 'unassigned'))) {
         localResult.success = false;
-        localResult.message = "Du må angi en gyldig region for å starte beleiring.";
+        localResult.message = (regionId === 'capital' && actor.role !== 'BARON')
+            ? "Bare baroner kan gå til beleiring av hovedstaden."
+            : "Du må angi en gyldig region for å starte beleiring.";
         return false;
     }
 
