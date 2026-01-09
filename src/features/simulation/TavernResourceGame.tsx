@@ -67,7 +67,7 @@ export const TavernResourceGame: React.FC<TavernResourceGameProps> = ({ player, 
         }
 
         const result = MULTIPLIERS[resultIdx];
-        const extraRounds = 6 + Math.floor(Math.random() * 4); // Consistent full rounds
+        const extraRounds = 8 + Math.floor(Math.random() * 4); // Increased rounds for drama
 
         // 2. Calculate target rotation
         // Find the absolute angle on the wheel for the selected segment's center
@@ -75,17 +75,27 @@ export const TavernResourceGame: React.FC<TavernResourceGameProps> = ({ player, 
         for (let i = 0; i < resultIdx; i++) {
             cumulativeAngle += MULTIPLIERS[i].angle;
         }
-        const targetCenterOnWheel = cumulativeAngle + (MULTIPLIERS[resultIdx].angle / 2);
+
+        const targetSector = MULTIPLIERS[resultIdx];
+        const sectorCenter = cumulativeAngle + (targetSector.angle / 2);
+
+        // Add a "safe jitter" - the pointer shouldn't always hit the dead center, 
+        // but it MUST stay within the bounds of the sector.
+        // We use 30% of the half-angle as safe jitter.
+        const safeMargin = (targetSector.angle / 2) * 0.6;
+        const jitter = (Math.random() - 0.5) * safeMargin;
+        const targetAngleOnWheel = (sectorCenter + jitter + 360) % 360;
 
         // Pointer is at 12 o'clock (0 degrees).
-        // If we rotate the wheel by R, a point P on the wheel moves to (P + R) mod 360.
-        // We want (targetCenterOnWheel + finalRotation) % 360 = 0 (Top).
-        // So finalRotation % 360 = (360 - targetCenterOnWheel) % 360.
-        const targetRotationOffset = (360 - targetCenterOnWheel) % 360;
-        const currentMod = rotation % 360;
+        // To have point P at 0 degrees, we must rotate by (360 - P) degrees.
+        const targetRotationOffset = (360 - targetAngleOnWheel) % 360;
+
+        // Ensure we always spin forward and maintain continuity
+        const currentRotation = rotation;
+        const currentMod = currentRotation % 360;
         const additionalRotation = (targetRotationOffset - currentMod + 360) % 360;
 
-        const nextRotation = rotation + (extraRounds * 360) + additionalRotation;
+        const nextRotation = currentRotation + (extraRounds * 360) + additionalRotation;
         setRotation(nextRotation);
 
         // 3. Resolve result after animation
@@ -100,6 +110,11 @@ export const TavernResourceGame: React.FC<TavernResourceGameProps> = ({ player, 
             setLastResult(outcome);
             setIsSpinning(false);
             spinInProgress.current = false;
+
+            // Trigger Win haptics/fx if needed (Visual only here)
+            if (isWin) {
+                // We can add a brief flash or shake effect here if we had more state
+            }
 
             const newHistoryEntry = {
                 resource: selectedResource,
@@ -297,14 +312,31 @@ export const TavernResourceGame: React.FC<TavernResourceGameProps> = ({ player, 
                         </div>
                     </div>
 
-                    <div className="h-20 text-center">
+                    <div className="h-24 text-center flex flex-col items-center justify-center">
                         <AnimatePresence mode="wait">
                             {lastResult && !isSpinning && (
-                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
-                                    <div className={`text-xs font-black uppercase tracking-[0.3em] ${lastResult.isWin ? 'text-emerald-400' : 'text-slate-500'}`}>{lastResult.label}</div>
-                                    <h4 className="text-2xl font-black text-white italic tracking-tighter drop-shadow-lg">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    className="space-y-1"
+                                >
+                                    <div className={`text-xs font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2 ${lastResult.isWin ? 'text-emerald-400' : 'text-slate-500'}`}>
+                                        {lastResult.isWin && <Sparkles size={12} className="animate-pulse" />}
+                                        {lastResult.label}
+                                        {lastResult.isWin && <Sparkles size={12} className="animate-pulse" />}
+                                    </div>
+                                    <h4 className={`text-3xl font-black italic tracking-tighter drop-shadow-lg transition-all ${lastResult.multiplier >= 2.5 ? 'text-yellow-400 scale-110' : 'text-white'}`}>
                                         {lastResult.isWin ? `+${(betAmount * lastResult.multiplier).toLocaleString()} ${activeRes.label}` : "Fortellingen er over"}
                                     </h4>
+                                    {lastResult.multiplier >= 5 && (
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            className="text-[10px] font-black text-amber-500 uppercase tracking-[0.5em] mt-2 animate-bounce"
+                                        >
+                                            LEGENDARISK GEVINST!
+                                        </motion.div>
+                                    )}
                                 </motion.div>
                             )}
                         </AnimatePresence>

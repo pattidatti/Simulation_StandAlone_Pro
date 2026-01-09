@@ -7,6 +7,8 @@
 - [ ] 
 
 ## Low Priority
+- [ ] Mulighet for å kjøpe større antall i markedet. Oppdatere UI på marked. 
+- [ ] Bryne må ha 100 i holdbarhet. 
 - [ ] Kan ikke reparerer alle items i smien. 
 - [] Beleiringsrustning har feil bakenforliggende item/ressurs på markedet. Når jeg kjøper får jeg lærrustning. Kanskje det er feil med beleiringssverdet også?
 - [] Vi må ha jucy screenshake og timestop på minigames slik at de får skikkelig vekt. 
