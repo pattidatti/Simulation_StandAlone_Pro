@@ -12,10 +12,27 @@ export const handleBuy = (ctx: ActionContext) => {
     const marketKey = actor.regionId || 'capital';
     let market = room.markets?.[marketKey] || room.market;
 
-    // Self-healing: Create market if missing
-    if (!market) {
-        if (!room.markets) room.markets = {};
-        market = JSON.parse(JSON.stringify(INITIAL_MARKET));
+    // --- SELF-HEALING: Cleanup rogue entries & Sync missing keys ---
+    const rogueKeys = ['iron', 'swords', 'armor'];
+    let wasChanged = false;
+
+    // 1. Remove rogue keys
+    rogueKeys.forEach(k => {
+        if ((market as any)[k]) {
+            delete (market as any)[k];
+            wasChanged = true;
+        }
+    });
+
+    // 2. Add missing keys from INITIAL_MARKET (e.g. siege weapons)
+    Object.keys(INITIAL_MARKET).forEach(k => {
+        if (!(market as any)[k]) {
+            (market as any)[k] = JSON.parse(JSON.stringify((INITIAL_MARKET as any)[k]));
+            wasChanged = true;
+        }
+    });
+
+    if (wasChanged && room.markets) {
         room.markets[marketKey] = market;
     }
 

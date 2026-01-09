@@ -1,6 +1,6 @@
 import { ref, runTransaction, get, push, set, serverTimestamp, update, increment } from 'firebase/database';
 import { simulationDb as db } from './simulationFirebase';
-import { GAME_BALANCE, VILLAGE_BUILDINGS, ITEM_TEMPLATES, RESOURCE_DETAILS } from './constants';
+import { GAME_BALANCE, VILLAGE_BUILDINGS, ITEM_TEMPLATES, RESOURCE_DETAILS, INITIAL_MARKET } from './constants';
 import { logSimulationMessage } from './utils/simulationUtils';
 import { logSystemicStat } from './utils/statsUtils';
 import { finalizeLeadershipProject } from './gameLogic';
@@ -37,10 +37,10 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
     // TRANSACTION 1: MARKET
     await runTransaction(marketItemRef, (item: any) => {
         if (!item) {
-            // Lazy init item helper if null? Difficult inside transaction.
-            // Assumption: Market exists. If not, we abort or handle gracefully.
-            // For now, if null, we can't trade.
-            return;
+            // Lazy init item from INITIAL_MARKET
+            const initialItem = (INITIAL_MARKET as any)[resource];
+            if (!initialItem) return; // Abort if unknown resource
+            item = JSON.parse(JSON.stringify(initialItem));
         }
 
         if (actionType === 'BUY') {

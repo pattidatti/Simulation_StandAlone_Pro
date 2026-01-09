@@ -23,6 +23,8 @@ export interface SimulationMarket {
     cloth: MarketItem;
     honey: MarketItem;
     meat: MarketItem;
+    siege_sword: MarketItem;
+    siege_armor: MarketItem;
 }
 
 export interface SimulationRegion {

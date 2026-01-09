@@ -1,6 +1,6 @@
 import React from 'react';
 import type { SimulationPlayer } from '../simulationTypes';
-import { RESOURCE_DETAILS } from '../constants';
+import { RESOURCE_DETAILS, INITIAL_MARKET } from '../constants';
 import { useSimulation } from '../SimulationContext';
 import { GameCard } from '../ui/GameCard';
 import { GameButton } from '../ui/GameButton';
@@ -110,52 +110,60 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
 
                 {/* LOCAL MARKET GRID */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.entries(market || {}).map(([resId, item]: [string, any]) => {
-                        const details = (RESOURCE_DETAILS as any)[resId] || { label: resId, icon: '📦' };
-                        const price = item.price || 0;
-                        const stock = item.stock || 0;
-                        const playerStock = (player.resources as any)?.[resId] || 0;
+                    {Array.from(new Set([
+                        ...Object.keys(INITIAL_MARKET),
+                        ...Object.keys(market || {})
+                    ]))
+                        .filter(key => !['iron', 'swords', 'armor'].includes(key))
+                        .map((resId) => {
+                            const item = (market || {})[resId] || (INITIAL_MARKET as any)[resId];
+                            if (!item) return null;
 
-                        return (
-                            <GameCard key={resId} className="flex flex-col gap-4">
-                                <div className="flex justify-between items-start">
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-4xl bg-black/20 p-3 rounded-xl">{details.icon}</div>
-                                        <div>
-                                            <h3 className="font-display font-bold text-xl text-white capitalize">{details.label}</h3>
-                                            <div className="flex gap-2 mt-1">
-                                                <Badge variant="outline">Lager: {stock}</Badge>
-                                                <Badge variant="default">Eier: {playerStock}</Badge>
+                            const details = (RESOURCE_DETAILS as any)[resId] || { label: resId, icon: '📦' };
+                            const price = item.price || 0;
+                            const stock = item.stock || 0;
+                            const playerStock = (player.resources as any)?.[resId] || 0;
+
+                            return (
+                                <GameCard key={resId} className="flex flex-col gap-4">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-4xl bg-black/20 p-3 rounded-xl">{details.icon}</div>
+                                            <div>
+                                                <h3 className="font-display font-bold text-xl text-white capitalize">{details.label}</h3>
+                                                <div className="flex gap-2 mt-1">
+                                                    <Badge variant="outline">Lager: {stock}</Badge>
+                                                    <Badge variant="default">Eier: {playerStock}</Badge>
+                                                </div>
                                             </div>
                                         </div>
+                                        <div className="text-right">
+                                            <div className="text-xs text-game-stone_light uppercase font-bold">Pris pr. enhet</div>
+                                            <div className="text-2xl font-bold text-game-gold">{price.toFixed(1)}g</div>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-xs text-game-stone_light uppercase font-bold">Pris pr. enhet</div>
-                                        <div className="text-2xl font-bold text-game-gold">{price.toFixed(1)}g</div>
-                                    </div>
-                                </div>
 
-                                <div className="grid grid-cols-2 gap-3 mt-auto pt-4 border-t border-white/5">
-                                    <GameButton
-                                        variant="primary" // BUY is usually primary
-                                        onClick={() => onAction({ type: 'BUY', resource: resId })}
-                                        disabled={(player.resources?.gold || 0) < price || stock <= 0 || !!actionLoading}
-                                        icon={<ShoppingBag className="w-4 h-4" />}
-                                    >
-                                        KJØP
-                                    </GameButton>
-                                    <GameButton
-                                        variant="wood" // SELL variant
-                                        onClick={() => onAction({ type: 'SELL', resource: resId })}
-                                        disabled={playerStock < 1 || !!actionLoading}
-                                        icon={<ArrowLeftRight className="w-4 h-4" />}
-                                    >
-                                        SELG
-                                    </GameButton>
-                                </div>
-                            </GameCard>
-                        );
-                    })}
+                                    <div className="grid grid-cols-2 gap-3 mt-auto pt-4 border-t border-white/5">
+                                        <GameButton
+                                            variant="primary" // BUY is usually primary
+                                            onClick={() => onAction({ type: 'BUY', resource: resId })}
+                                            disabled={(player.resources?.gold || 0) < price || stock <= 0 || !!actionLoading}
+                                            icon={<ShoppingBag className="w-4 h-4" />}
+                                        >
+                                            KJØP
+                                        </GameButton>
+                                        <GameButton
+                                            variant="wood" // SELL variant
+                                            onClick={() => onAction({ type: 'SELL', resource: resId })}
+                                            disabled={playerStock < 1 || !!actionLoading}
+                                            icon={<ArrowLeftRight className="w-4 h-4" />}
+                                        >
+                                            SELG
+                                        </GameButton>
+                                    </div>
+                                </GameCard>
+                            );
+                        })}
                 </div>
 
                 {/* MERCHANT: FOREIGN MARKETS */}
@@ -181,7 +189,7 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                                         return (
                                             <GameCard key={region.id} title={region.name} className="bg-indigo-950/30 border-indigo-500/20">
                                                 <div className="space-y-3">
-                                                    {['grain', 'wood', 'iron_ore', 'iron_ingot'].map(res => {
+                                                    {['grain', 'wood', 'iron_ore', 'iron_ingot', 'siege_sword', 'siege_armor'].map(res => {
                                                         const item = (targetMarket as any)[res];
                                                         if (!item) return null;
                                                         const foreignPrice = item.price;

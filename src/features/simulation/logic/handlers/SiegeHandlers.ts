@@ -479,7 +479,7 @@ export const handleReinforceGarrison = (ctx: ActionContext) => {
     (room.regions[regionId].garrison as any)[resource] = ((room.regions[regionId].garrison as any)[resource] || 0) + amount;
 
     localResult.utbytte.push({ resource, amount: -amount });
-    localResult.message = `Forsterket garnisonen med ${amount} ${resource === 'swords' ? 'våpen' : 'rustninger'}.`;
+    localResult.message = `Forsterket garnisonen med ${amount} ${resource === 'siege_sword' ? 'våpen' : 'rustninger'}.`;
     return true;
 };
 

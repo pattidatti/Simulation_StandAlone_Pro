@@ -6,6 +6,7 @@
 ## Medium Priority
 - [ ] 
 ## Low Priority
+- [ ] Sjekke at systemene for å bytte baroner og konge faktisk eksisterer og at de virker skikkelig. 
 - [ ] Dart i vertshuset (andre etasje)
 - [ ] Husmannsplass mangler bilder når man har oppgradert 1-5. 
 - [ ] Mulighet for å kjøpe større antall i markedet. Oppdatere UI på marked. 
