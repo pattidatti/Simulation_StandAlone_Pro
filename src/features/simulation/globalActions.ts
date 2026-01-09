@@ -1,6 +1,6 @@
 import { ref, runTransaction, get, push, set, serverTimestamp, update, increment } from 'firebase/database';
 import { simulationDb as db } from './simulationFirebase';
-import { GAME_BALANCE, VILLAGE_BUILDINGS, ITEM_TEMPLATES } from './constants';
+import { GAME_BALANCE, VILLAGE_BUILDINGS, ITEM_TEMPLATES, RESOURCE_DETAILS } from './constants';
 import { logSimulationMessage } from './utils/simulationUtils';
 import { logSystemicStat } from './utils/statsUtils';
 import { finalizeLeadershipProject } from './gameLogic';
@@ -84,12 +84,6 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
         if (!actor.resources) actor.resources = {};
         if (!actor.inventory) actor.inventory = []; // Ensure inventory exists
 
-        // Mapping Market Resource -> Item Logic
-        const IS_WAR_ITEM = (resource === 'swords' || resource === 'armor');
-        const ITEM_MAPPING: Record<string, string> = {
-            'swords': 'iron_sword',
-            'armor': 'leather_armor'
-        };
 
         if (actionType === 'BUY') {
             const cost = tradeResult.cost || 0;
@@ -98,57 +92,22 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
             }
             actor.resources.gold = (actor.resources.gold || 0) - cost;
 
-            if (IS_WAR_ITEM) {
-                // ADD ITEM TO INVENTORY
-                const templateId = ITEM_MAPPING[resource];
-                const template = ITEM_TEMPLATES[templateId];
-                if (template) {
-                    // Create instance (using template ID as ID for now to match legacy, or could be rand)
-                    // Using template logic copy
-                    const newItem = JSON.parse(JSON.stringify(template));
-                    actor.inventory.push(newItem);
-                    finalMessage = `Kjøpte 1 ${template.name} for ${cost.toFixed(2)}g`;
-                } else {
-                    // Fallback if template missing
-                    actor.resources[resource] = (actor.resources[resource] || 0) + 1;
-                    finalMessage = `Kjøpte 1 ${resource} (Resource) for ${cost.toFixed(2)}g`;
-                }
-            } else {
-                // DEFAULT RESOURCE LOGIC
-                actor.resources[resource] = (actor.resources[resource] || 0) + 1;
-                finalMessage = `Kjøpte 1 ${resource} for ${cost.toFixed(2)}g`;
-            }
+            // DEFAULT RESOURCE LOGIC
+            actor.resources[resource] = (actor.resources[resource] || 0) + 1;
+            const details = (RESOURCE_DETAILS as any)[resource];
+            finalMessage = `Kjøpte 1 ${details ? details.label : resource} for ${cost.toFixed(2)}g`;
             playerSuccess = true;
 
         } else if (actionType === 'SELL') {
             const revenue = tradeResult.revenue || 0;
 
-            if (IS_WAR_ITEM) {
-                // REMOVE ITEM FROM INVENTORY
-                const templateId = ITEM_MAPPING[resource];
-                const idx = actor.inventory.findIndex((i: any) => i.id === templateId); // Match by ID (template id)
-
-                if (idx === -1) return; // Item not found, abort transaction (safe, market stays sold? No, market sold already)
-                // If we abort here, market gained 1 stock, player keeps item.
-                // We must ensure this check passes. 
-                // Market transaction 1 checked nothing about player.
-                // We should technically check player BEFORE market transaction to avoid this desync.
-                // But for now, we just proceed.
-
-                actor.inventory.splice(idx, 1);
-                actor.resources.gold = (actor.resources.gold || 0) + revenue;
-                const template = ITEM_TEMPLATES[templateId];
-                finalMessage = `Solgte 1 ${template ? template.name : resource} for ${revenue.toFixed(2)}g`;
-                playerSuccess = true;
-
-            } else {
-                // DEFAULT RESOURCE LOGIC
-                if ((actor.resources[resource] || 0) < 1) return; // Abort
-                actor.resources[resource] -= 1;
-                actor.resources.gold = (actor.resources.gold || 0) + revenue;
-                finalMessage = `Solgte 1 ${resource} for ${revenue.toFixed(2)}g`;
-                playerSuccess = true;
-            }
+            // DEFAULT RESOURCE LOGIC
+            if ((actor.resources[resource] || 0) < 1) return; // Abort
+            actor.resources[resource] -= 1;
+            actor.resources.gold = (actor.resources.gold || 0) + revenue;
+            const details = (RESOURCE_DETAILS as any)[resource];
+            finalMessage = `Solgte 1 ${details ? details.label : resource} for ${revenue.toFixed(2)}g`;
+            playerSuccess = true;
         }
         return actor;
     });
