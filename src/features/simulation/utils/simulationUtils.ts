@@ -1,4 +1,4 @@
-import { ref, runTransaction } from 'firebase/database';
+import { ref, runTransaction, push } from 'firebase/database';
 import { simulationDb as db } from '../simulationFirebase';
 import { GAME_BALANCE, SEASONS, WEATHER } from '../constants';
 import { ITEM_TEMPLATES } from '../data/equipment';
@@ -70,6 +70,22 @@ export const getBestToolForAction = (type: string, equipment: (EquipmentItem | u
 export const logSimulationMessage = async (pin: string, message: string) => {
     const messagesRef = ref(db, `simulation_rooms/${pin}/messages`);
 
+    const newMsg: SimulationMessage = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        content: message,
+        timestamp: Date.now(),
+        type: 'SYSTEM'
+    };
+
+    // 1. ARCHIVE LOG (Persistent, uncapped) - Done outside transaction for safety
+    try {
+        const archiveRef = ref(db, `simulation_archives/${pin}/full_log`);
+        push(archiveRef, newMsg);
+    } catch (e) {
+        console.error("Critical: Archive log failed:", e);
+    }
+
+    // 2. LIVE FEED (Capped at 50 for performance)
     await runTransaction(messagesRef, (currentMessages) => {
         let newMessages: SimulationMessage[] = [];
 
@@ -79,16 +95,8 @@ export const logSimulationMessage = async (pin: string, message: string) => {
             newMessages = Object.values(currentMessages) as SimulationMessage[];
         }
 
-        const newMsg: SimulationMessage = {
-            id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            content: message,
-            timestamp: Date.now(),
-            type: 'SYSTEM'
-        };
-
         newMessages.push(newMsg);
 
-        // Cap at 50 messages
         if (newMessages.length > 50) {
             newMessages = newMessages.sort((a, b) => a.timestamp - b.timestamp).slice(newMessages.length - 50);
         }
@@ -104,7 +112,8 @@ export const logSimulationMessage = async (pin: string, message: string) => {
 export const calculateYield = (
     actor: {
         skills?: Record<string, { level: number }>,
-        equipment?: Partial<Record<string, { stats?: { yieldBonus?: number }, relevantActions?: string[], id: string }>>
+        equipment?: Partial<Record<string, { stats?: { yieldBonus?: number }, relevantActions?: string[], id: string }>>,
+        activeBuffs?: Buff[]
     },
     baseYield: number,
     skillType: SkillType,
@@ -193,7 +202,7 @@ export const calculateYield = (
     let buffYieldMult = 1.0;
     if (actor.activeBuffs && actor.activeBuffs.length > 0) {
         const now = Date.now();
-        const yieldBuff = actor.activeBuffs.find(b => b.type === 'YIELD_BONUS' && b.expiresAt > now);
+        const yieldBuff = actor.activeBuffs.find((b: Buff) => b.type === 'YIELD_BONUS' && b.expiresAt > now);
         if (yieldBuff) {
             buffYieldMult += yieldBuff.value;
         }

@@ -46,6 +46,10 @@
         "simulation_server_metadata": {
             ".read": "auth != null",
             ".write": "auth != null"
+        },
+        "simulation_archives": {
+            ".read": "auth != null",
+            ".write": "auth != null"
         }
     }
 }
