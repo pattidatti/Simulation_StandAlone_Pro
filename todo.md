@@ -7,6 +7,7 @@
 - [ ] 
 
 ## Low Priority
+- [ ] Kan ikke reparerer alle items i smien. 
 - [] Beleiringsrustning har feil bakenforliggende item/ressurs på markedet. Når jeg kjøper får jeg lærrustning. Kanskje det er feil med beleiringssverdet også?
 - [] Vi må ha jucy screenshake og timestop på minigames slik at de får skikkelig vekt. 
 - [] går ikke an å legge inn beleiringssverd og rustning i krigsrommet som baron. Ser den ikke at jeg har i inventory?

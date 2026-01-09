@@ -4,20 +4,21 @@ import { simulationDb as db } from '../simulationFirebase';
 import type { SimulationPlayer, SimulationRoom } from '../simulationTypes';
 import { useSimulation } from '../SimulationContext';
 import { GameMap } from '../GameMap';
-// ULTRATHINK: Lazy Load Heavy Components for Code Splitting
-const SimulationMarket = React.lazy(() => import('./SimulationMarket').then(module => ({ default: module.SimulationMarket })));
-const SimulationVault = React.lazy(() => import('./SimulationVault').then(module => ({ default: module.SimulationVault })));
-const SimulationSkills = React.lazy(() => import('./SimulationSkills').then(module => ({ default: module.SimulationSkills })));
-const SimulationProduction = React.lazy(() => import('./SimulationProduction').then(module => ({ default: module.SimulationProduction })));
-const SimulationActivity = React.lazy(() => import('./SimulationActivity').then(module => ({ default: module.SimulationActivity })));
-const SimulationDiplomacy = React.lazy(() => import('./SimulationDiplomacy').then(module => ({ default: module.SimulationDiplomacy })));
-const SimulationHierarchy = React.lazy(() => import('./SimulationHierarchy').then(module => ({ default: module.SimulationHierarchy })));
-const SimulationProfile = React.lazy(() => import('./SimulationProfile').then(module => ({ default: module.SimulationProfile })));
-const SimulationSettings = React.lazy(() => import('./SimulationSettings').then(module => ({ default: module.SimulationSettings })));
-const PoliticalHub = React.lazy(() => import('./ui/PoliticalHub').then(module => ({ default: module.PoliticalHub })));
-const SimulationWarRoom = React.lazy(() => import('./SimulationWarRoom').then(module => ({ default: module.SimulationWarRoom })));
-const SiegeEngine = React.lazy(() => import('./SiegeEngine').then(module => ({ default: module.SiegeEngine })));
-const ApothecaryWindow = React.lazy(() => import('./ApothecaryWindow').then(module => ({ default: module.ApothecaryWindow })));
+import { safeLazy } from '../utils/lazyUtils';
+// ULTRATHINK: Lazy Load Heavy Components for Code Splitting (Safe for Chunk Errors)
+const SimulationMarket = safeLazy(() => import('./SimulationMarket').then(module => ({ default: module.SimulationMarket })));
+const SimulationVault = safeLazy(() => import('./SimulationVault').then(module => ({ default: module.SimulationVault })));
+const SimulationSkills = safeLazy(() => import('./SimulationSkills').then(module => ({ default: module.SimulationSkills })));
+const SimulationProduction = safeLazy(() => import('./SimulationProduction').then(module => ({ default: module.SimulationProduction })));
+const SimulationActivity = safeLazy(() => import('./SimulationActivity').then(module => ({ default: module.SimulationActivity })));
+const SimulationDiplomacy = safeLazy(() => import('./SimulationDiplomacy').then(module => ({ default: module.SimulationDiplomacy })));
+const SimulationHierarchy = safeLazy(() => import('./SimulationHierarchy').then(module => ({ default: module.SimulationHierarchy })));
+const SimulationProfile = safeLazy(() => import('./SimulationProfile').then(module => ({ default: module.SimulationProfile })));
+const SimulationSettings = safeLazy(() => import('./SimulationSettings').then(module => ({ default: module.SimulationSettings })));
+const PoliticalHub = safeLazy(() => import('./ui/PoliticalHub').then(module => ({ default: module.PoliticalHub })));
+const SimulationWarRoom = safeLazy(() => import('./SimulationWarRoom').then(module => ({ default: module.SimulationWarRoom })));
+const SiegeEngine = safeLazy(() => import('./SiegeEngine').then(module => ({ default: module.SiegeEngine })));
+const ApothecaryWindow = safeLazy(() => import('./ApothecaryWindow').then(module => ({ default: module.ApothecaryWindow })));
 
 import { SimulationMusicWindow } from './ui/SimulationMusicWindow';
 import { AnimatePresence } from 'framer-motion';
