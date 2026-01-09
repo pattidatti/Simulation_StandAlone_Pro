@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { SimulationPlayer } from '../simulationTypes';
 import { Clock, Check } from 'lucide-react';
-import { RESOURCE_DETAILS } from '../data/items';
+import { RESOURCE_DETAILS, REFINERY_RECIPES, ITEM_TEMPLATES } from '../constants';
 import { useSimulationActions } from '../hooks/useSimulationActions';
 
 interface SimulationProcessHUDProps {
@@ -79,7 +79,7 @@ export const SimulationProcessHUD: React.FC<SimulationProcessHUDProps> = ({ play
 
     // Filter relevant processes (Crops, Coop, Mill, etc)
     const trackedProcesses = activeProcesses.filter(p => {
-        const isStandard = p.type === 'CROP' || p.type === 'COOP' || p.type === 'MILL' || p.type === 'WELL';
+        const isStandard = p.type === 'CROP' || p.type === 'COOP' || p.type === 'MILL' || p.type === 'WELL' || p.type === 'CRAFT';
         if (!isStandard) return false;
 
         // Special: WELL disappears 10s after readyAt
@@ -164,6 +164,23 @@ export const SimulationProcessHUD: React.FC<SimulationProcessHUDProps> = ({ play
                     label = 'Brønnen fyller seg';
                     icon = <span className="text-xl">💧</span>;
                     readyLabel = 'Brønnen er klar!';
+                } else if (process.type === 'CRAFT') {
+                    const recipe = (REFINERY_RECIPES as any)[process.itemId];
+                    const template = ITEM_TEMPLATES[process.itemId];
+
+                    if (recipe) {
+                        icon = <span className="text-xl">{recipe.icon || '🧪'}</span>;
+                        label = recipe.label ? `Lager ${recipe.label}...` : 'Håndverk pågår...';
+                        readyLabel = recipe.label ? `${recipe.label} klar!` : 'Håndverk ferdig!';
+                    } else if (template) {
+                        icon = <span className="text-xl">{template.icon || '📦'}</span>;
+                        label = `Lager ${template.name}...`;
+                        readyLabel = `${template.name} ferdig!`;
+                    } else {
+                        icon = <span className="text-xl">⚙️</span>;
+                        label = 'Håndverk pågår...';
+                        readyLabel = 'Håndverk ferdig!';
+                    }
                 } else {
                     // CROP / Resource
                     if (resourceInfo) {

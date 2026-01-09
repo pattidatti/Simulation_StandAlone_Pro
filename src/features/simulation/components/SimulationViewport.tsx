@@ -17,6 +17,7 @@ const SimulationSettings = React.lazy(() => import('./SimulationSettings').then(
 const PoliticalHub = React.lazy(() => import('./ui/PoliticalHub').then(module => ({ default: module.PoliticalHub })));
 const SimulationWarRoom = React.lazy(() => import('./SimulationWarRoom').then(module => ({ default: module.SimulationWarRoom })));
 const SiegeEngine = React.lazy(() => import('./SiegeEngine').then(module => ({ default: module.SiegeEngine })));
+const ApothecaryWindow = React.lazy(() => import('./ApothecaryWindow').then(module => ({ default: module.ApothecaryWindow })));
 
 import { SimulationMusicWindow } from './ui/SimulationMusicWindow';
 import { AnimatePresence } from 'framer-motion';
@@ -105,8 +106,12 @@ export const SimulationViewport: React.FC<SimulationViewportProps> = ({ player, 
                     <div className="absolute inset-0 z-20 pointer-events-none flex flex-col items-center justify-center">
 
                         {activeTab === 'PRODUCTION' && (
-                            <div className="pointer-events-auto w-full h-full md:max-w-4xl md:h-auto md:max-h-[85vh] overflow-hidden">
-                                <SimulationProduction player={player} room={room} onAction={onAction} pin={pin || ''} />
+                            <div className="pointer-events-auto w-full h-full md:max-w-6xl md:h-auto md:max-h-[90vh] overflow-hidden">
+                                {useSimulation().productionContext?.buildingId === 'apothecary' ? (
+                                    <ApothecaryWindow player={player} room={room} onAction={onAction} pin={pin || ''} />
+                                ) : (
+                                    <SimulationProduction player={player} room={room} onAction={onAction} pin={pin || ''} />
+                                )}
                             </div>
                         )}
 

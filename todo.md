@@ -7,13 +7,15 @@
 - [ ] 
 
 ## Low Priority
+- [] Beleiringsrustning har feil bakenforliggende item/ressurs på markedet. Når jeg kjøper får jeg lærrustning. Kanskje det er feil med beleiringssverdet også?
+- [] Vi må ha jucy screenshake og timestop på minigames slik at de får skikkelig vekt. 
+- [] går ikke an å legge inn beleiringssverd og rustning i krigsrommet som baron. Ser den ikke at jeg har i inventory?
 - [ ] Krigsrommet 
 - [] UI på oppgradering av bygninger må være mye mer tydelig. Hvilket nivå man er på, hva man kan oppgradere, hva man har oppgradert, hva man kan oppgradere til og kjempetydelig når man har nådd max nivå. 
 - [ ] Sjekke produksjonsbygningenes oppgraderinger. Har alt ekstra funksjoner, er den nye større fordeler av å oppgradere på alle bygningene?
-- [x] Må kunne legge til beleiringssverd og rustning i forsvarsverket som baron og konge. Sjekke at funksjonene fungerer. 
 - [ ] Kan bør kunne bestemme hvor mye man vil bidra med på oppgraderinger. 
 - [ ] Sjekke at produksjonsbygningene er individuelle per ragion. 
-- [] Opprette ny kanal i chat kalt Feedback (Tilgjengelig for alle). 
+- [ ] Opprette ny kanal i chat kalt Feedback (Tilgjengelig for alle). 
 - [ ] PUblic leaderboard. 
 - [ ] Spise omelett krever stamina? 
 - [ ] Honning har ingen funksjon.  

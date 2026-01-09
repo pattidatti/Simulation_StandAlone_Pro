@@ -124,10 +124,14 @@ export const handleRefine = (ctx: ActionContext) => {
         }
 
         if (canAfford) {
-            // SPEED BONUS: 25% faster per level above requirement
+            // SPEED BONUS: 25% faster per level above requirement + PERFORMANCE BONUS
+            let performance = action.performance || 0.0;
             const levelDiff = Math.max(0, buildLevel - (recipe.requiredLevel || 1));
-            const speedMod = 1 - (levelDiff * 0.25); // Level 2 (+1) = 75% duration, Level 3 (+2) = 50% duration
-            const finalDuration = recipe.duration ? Math.max(recipe.duration * 0.1, recipe.duration * speedMod) : 0;
+            const levelSpeedMod = levelDiff * 0.25;
+            const perfSpeedMod = performance * 0.5; // Max 50% extra speed from performance
+
+            const totalSpeedMod = 1 - Math.min(0.9, levelSpeedMod + perfSpeedMod);
+            const finalDuration = recipe.duration ? Math.max(recipe.duration * 0.1, recipe.duration * totalSpeedMod) : 0;
 
             // Check if this is a timed process
             if (recipe.duration) {
@@ -171,7 +175,7 @@ export const handleRefine = (ctx: ActionContext) => {
             });
             actor.status.stamina -= finalStaminaCost;
 
-            const performance = action.performance || 0.5;
+            performance = action.performance !== undefined ? action.performance : 0.5;
             const baseOutput = recipe.output?.amount || recipe.outputAmount || 1;
 
             // YIELD BONUS: +20% yield per level above requirement

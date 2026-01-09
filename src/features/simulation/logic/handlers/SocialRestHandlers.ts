@@ -368,114 +368,131 @@ export const handleConsume = (ctx: ActionContext) => {
     const itemId = action.itemId;
     const isResource = action.isResource; // Flag passed from UI
 
-    // --- RESOURCE CONSUMPTION (Stacks) ---
-    if (isResource) {
-        const currentAmount = (actor.resources as any)[itemId] || 0;
-        if (currentAmount < 1) {
+    // --- INVENTORY / RESOURCE CONSUMPTION ---
+    const isRes = !!isResource;
+    const invArray = (Array.isArray(actor.inventory) ? actor.inventory : Object.values(actor.inventory || {})) as EquipmentItem[];
+
+    // 1. Verify existence and consume
+    if (isRes) {
+        if (!(actor.resources as any)[itemId] || (actor.resources as any)[itemId] < 1) {
             localResult.success = false;
             localResult.message = "Du har ikke mer igjen.";
             return false;
         }
+        (actor.resources as any)[itemId]--;
+        localResult.utbytte.push({ resource: itemId, amount: -1 });
+    } else {
+        const idx = invArray.findIndex(i => i.id === itemId);
+        if (idx === -1) {
+            localResult.success = false;
+            localResult.message = "Fant ikke gjenstanden.";
+            return false;
+        }
+        actor.inventory = invArray.filter((_, i) => i !== idx);
+    }
 
-        // Logic for specific resources
-        if (itemId === 'omelette') {
-            if (!actor.activeBuffs) actor.activeBuffs = [];
+    // 2. Apply Effects
+    if (!actor.activeBuffs) actor.activeBuffs = [];
+    const now = Date.now();
+
+    switch (itemId) {
+        case 'bread':
+            actor.status.stamina = Math.min(100, (actor.status.stamina || 0) + 20);
+            localResult.message = "Spiste Brød. (+20 Stamina)";
+            localResult.utbytte.push({ resource: 'stamina', amount: 20 });
+            break;
+
+        case 'omelette':
             actor.activeBuffs = actor.activeBuffs.filter(b => b.type !== 'STAMINA_SAVE');
             actor.activeBuffs.push({
-                id: Math.random().toString(36).substr(2, 9),
+                id: 'buff_omelette_' + now,
                 type: 'STAMINA_SAVE',
-                value: 0.2, // 20%
+                value: 0.2,
                 label: 'Lett til beins',
                 description: 'Reduserer stamina-kostnad med 20%.',
-                expiresAt: Date.now() + 900000, // 15 mins
+                expiresAt: now + 900000,
                 sourceItem: 'omelette'
             });
-            (actor.resources as any)['omelette']--;
             localResult.message = "Spiste Omelett. (20% stamina-spare buff)";
-            localResult.utbytte.push({ resource: 'omelette', amount: -1 });
-            logSystemicStat(room.pin, 'consumed', 'omelette', 1);
-            return true;
-        }
+            break;
 
-        if (itemId === 'bread') {
-            const staminaGain = 20;
-            actor.status.stamina = Math.min(100, (actor.status.stamina || 0) + staminaGain);
-            (actor.resources as any)['bread']--;
-            localResult.message = `Spiste Brød. (+${staminaGain} Stamina)`;
-            localResult.utbytte.push({ resource: 'stamina', amount: staminaGain });
-            localResult.utbytte.push({ resource: 'bread', amount: -1 });
-            logSystemicStat(room.pin, 'consumed', 'bread', 1);
-            return true;
-        }
+        case 'minor_stamina_potion':
+            actor.status.stamina = Math.min(100, (actor.status.stamina || 0) + 30);
+            localResult.message = "Drakk Liten Stamina-brygg. (+30 Stamina)";
+            localResult.utbytte.push({ resource: 'stamina', amount: 30 });
+            break;
 
-        localResult.success = false;
-        localResult.message = "Kan ikke spises (ukjent ressurs).";
-        return false;
+        case 'herbal_balm':
+            actor.activeBuffs = actor.activeBuffs.filter(b => b.type !== 'SPEED_BONUS');
+            actor.activeBuffs.push({
+                id: 'buff_balm_' + now,
+                type: 'SPEED_BONUS',
+                value: 0.15,
+                label: 'Lett på foten',
+                description: 'Øker sankehastighet med 15%.',
+                expiresAt: now + 600000,
+                sourceItem: 'herbal_balm'
+            });
+            localResult.message = "Brukte Urtebalsam. (+15% Arbeidshastighet)";
+            break;
+
+        case 'focus_brew':
+            actor.activeBuffs = actor.activeBuffs.filter(b => b.type !== 'STAMINA_SAVE');
+            actor.activeBuffs.push({
+                id: 'buff_focus_' + now,
+                type: 'STAMINA_SAVE',
+                value: 0.2,
+                label: 'Skjerpet Fokus',
+                description: 'Reduserer stamina-kostnad med 20% i 15 min.',
+                expiresAt: now + 900000,
+                sourceItem: 'focus_brew'
+            });
+            localResult.message = "Drakk Fokus-brygg. (Bedre fokus!)";
+            break;
+
+        case 'strength_tincture':
+            actor.activeBuffs = actor.activeBuffs.filter(b => b.type !== 'STRENGTH_BONUS');
+            actor.activeBuffs.push({
+                id: 'buff_strength_' + now,
+                type: 'STRENGTH_BONUS',
+                value: 10,
+                label: 'Kjempestyrke',
+                description: 'Øker angrepskraft med 10.',
+                expiresAt: now + 600000,
+                sourceItem: 'strength_tincture'
+            });
+            localResult.message = "Drakk Styrke-tinktur. (+10 Angrep)";
+            break;
+
+        case 'masters_draught':
+            actor.activeBuffs = actor.activeBuffs.filter(b => b.type !== 'YIELD_BONUS');
+            actor.activeBuffs.push({
+                id: 'buff_master_' + now,
+                type: 'YIELD_BONUS',
+                value: 0.5,
+                label: 'Mesterhånd',
+                description: 'Øker utbytte fra alle sankeoppgaver med 50%.',
+                expiresAt: now + 1200000,
+                sourceItem: 'masters_draught'
+            });
+            localResult.message = "Drakk Mester-drikk. (Føler deg som en mester!)";
+            break;
+
+        case 'elixir_of_life':
+            actor.status.stamina = 100;
+            actor.status.hp = Math.min(100, (actor.status.hp || 100) + 50);
+            localResult.message = "Drakk Livseliksir. Full Stamina og +50 HP!";
+            localResult.utbytte.push({ resource: 'stamina', amount: 100 });
+            break;
+
+        default:
+            localResult.success = false;
+            localResult.message = `Kan ikke bruke ${itemId}.`;
+            return false;
     }
 
-    // --- INVENTORY ITEM CONSUMPTION (Unique items) ---
-    if (!actor.inventory) {
-        localResult.success = false;
-        localResult.message = "Ryggsekk er tom.";
-        return false;
-    }
-
-    const itemIndex = actor.inventory.findIndex(i => i.id === itemId);
-
-    if (itemIndex === -1) {
-        localResult.success = false;
-        localResult.message = "Fant ikke gjenstanden.";
-        return false;
-    }
-
-    const item = actor.inventory[itemIndex];
-
-    // MVP Logic: Hardcode effect for Omelette (Legacy Item support)
-    // Check if ID is 'omelette' or starts with 'omelette_' (for unique instances)
-    if (item.id === 'omelette' || item.id.startsWith('omelette_')) {
-        if (!actor.activeBuffs) actor.activeBuffs = [];
-
-        // Remove existing buff of same type if exists (refresh)
-        actor.activeBuffs = actor.activeBuffs.filter(b => b.type !== 'STAMINA_SAVE');
-
-        actor.activeBuffs.push({
-            id: Math.random().toString(36).substr(2, 9),
-            type: 'STAMINA_SAVE',
-            value: 0.2, // 20%
-            label: 'Lett til beins',
-            description: 'Reduserer stamina-kostnad med 20%.',
-            expiresAt: Date.now() + 900000, // 15 mins
-            sourceItem: 'omelette'
-        });
-
-        // Remove item
-        actor.inventory.splice(itemIndex, 1);
-
-        localResult.message = "Spiste Omelett (Gjenstand).";
-        localResult.utbytte.push({ resource: 'omelette', amount: -1 }); // Tracking
-        logSystemicStat(room.pin, 'consumed', 'omelette', 1);
-        return true;
-    }
-
-    // Bread: Instant Stamina (Legacy Item support)
-    if (item.id === 'bread' || item.id.startsWith('bread_')) {
-        const staminaGain = 20;
-        actor.status.stamina = Math.min(100, (actor.status.stamina || 0) + staminaGain);
-
-        // Remove item
-        actor.inventory.splice(itemIndex, 1);
-
-        localResult.message = `Spiste Brød (Gjenstand). (+${staminaGain} Stamina)`;
-        localResult.utbytte.push({ resource: 'stamina', amount: staminaGain });
-        localResult.utbytte.push({ resource: 'stamina', amount: staminaGain });
-        localResult.utbytte.push({ resource: 'bread', amount: -1 });
-        logSystemicStat(room.pin, 'consumed', 'bread', 1);
-        return true;
-    }
-
-    localResult.success = false;
-    localResult.message = "Kan ikke spises.";
-    return false;
+    logSystemicStat(room.pin, 'consumed', itemId, 1);
+    return true;
 };
 export const handleMountHorse = (ctx: ActionContext) => {
     const { actor, action, localResult, trackXp } = ctx;

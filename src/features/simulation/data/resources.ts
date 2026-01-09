@@ -19,7 +19,13 @@ export const RESOURCE_DETAILS: Record<string, { label: string, icon: string }> =
     cloth: { label: 'Stoff', icon: '📜' },
     glass: { label: 'Glass', icon: '🥛' },
     egg: { label: 'Egg', icon: '🥚' },
-    omelette: { label: 'Omelett', icon: '🍳' }
+    omelette: { label: 'Omelett', icon: '🍳' },
+    minor_stamina_potion: { label: 'Liten Stamina-brygg', icon: '🧪' },
+    herbal_balm: { label: 'Urtebalsam', icon: '🌿' },
+    focus_brew: { label: 'Fokus-brygg', icon: '🧪' },
+    strength_tincture: { label: 'Styrke-tinktur', icon: '🍶' },
+    masters_draught: { label: 'Mester-drikk', icon: '🧪' },
+    elixir_of_life: { label: 'Livseliksir', icon: '🏺' }
 };
 
 export const INITIAL_RESOURCES: Record<Role, Resources> = {

@@ -189,8 +189,18 @@ export const calculateYield = (
         }
     }
 
-    // 6. Multipliers (Season, Weather, Law, Upgrade, Region)
-    const multiplier = (modifiers.season || 1) * (modifiers.weather || 1) * (modifiers.law || 1) * (modifiers.upgrades || 1) * regionalMod;
+    // 6. Buff Multipliers
+    let buffYieldMult = 1.0;
+    if (actor.activeBuffs && actor.activeBuffs.length > 0) {
+        const now = Date.now();
+        const yieldBuff = actor.activeBuffs.find(b => b.type === 'YIELD_BONUS' && b.expiresAt > now);
+        if (yieldBuff) {
+            buffYieldMult += yieldBuff.value;
+        }
+    }
+
+    // 7. Multipliers (Season, Weather, Law, Upgrade, Region, Buffs)
+    const multiplier = (modifiers.season || 1) * (modifiers.weather || 1) * (modifiers.law || 1) * (modifiers.upgrades || 1) * regionalMod * buffYieldMult;
     total = Math.floor(total * multiplier);
 
     // 5. Minigame Performance

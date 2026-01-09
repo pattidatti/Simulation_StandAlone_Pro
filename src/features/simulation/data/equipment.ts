@@ -52,5 +52,13 @@ export const ITEM_TEMPLATES: Record<string, ItemTemplate> = {
 
     // Consumables
     omelette: { id: 'omelette', name: 'Omelett', icon: '🍳', type: 'CONSUMABLE', durability: 1, maxDurability: 1, level: 1, description: 'En næringsrik frokost. Gir buff: "Lett til beins" (20% mindre stamina kostnad i 15 min).', stats: {}, relevantActions: ['CONSUME'] },
-    bread: { id: 'bread', name: 'Brød', icon: '🍞', type: 'CONSUMABLE', durability: 1, maxDurability: 1, level: 1, description: 'Ferskt brød fra bakeriet. Gjenoppretter +20 Stamina.', stats: {}, relevantActions: ['CONSUME'] }
+    bread: { id: 'bread', name: 'Brød', icon: '🍞', type: 'CONSUMABLE', durability: 1, maxDurability: 1, level: 1, description: 'Ferskt brød fra bakeriet. Gjenoppretter +20 Stamina.', stats: {}, relevantActions: ['CONSUME'] },
+
+    // Potions & Elixirs
+    minor_stamina_potion: { id: 'minor_stamina_potion', name: 'Liten Stamina-brygg', icon: '🧪', type: 'CONSUMABLE', durability: 1, maxDurability: 1, level: 1, description: 'Gjenoppretter 30 Stamina umiddelbart.', stats: {}, relevantActions: ['CONSUME'] },
+    herbal_balm: { id: 'herbal_balm', name: 'Urtebalsam', icon: '🌿', type: 'CONSUMABLE', durability: 1, maxDurability: 1, level: 1, description: 'Øker sankehastighet med 15% i 10 minutter.', stats: {}, relevantActions: ['CONSUME'] },
+    focus_brew: { id: 'focus_brew', name: 'Fokus-brygg', icon: '🧪', type: 'CONSUMABLE', durability: 1, maxDurability: 1, level: 2, description: 'Reduserer stamina-kostnad med 20% i 15 minutter.', stats: {}, relevantActions: ['CONSUME'] },
+    strength_tincture: { id: 'strength_tincture', name: 'Styrke-tinktur', icon: '🍶', type: 'CONSUMABLE', durability: 1, maxDurability: 1, level: 2, description: 'Øker angrepskraft med 10 i 10 minutter.', stats: {}, relevantActions: ['CONSUME'] },
+    masters_draught: { id: 'masters_draught', name: 'Mester-drikk', icon: '🧪', type: 'CONSUMABLE', durability: 1, maxDurability: 1, level: 3, description: 'Mesterens hemmelighet. Gir +50% utbytte i 20 minutter.', stats: {}, relevantActions: ['CONSUME'] },
+    elixir_of_life: { id: 'elixir_of_life', name: 'Livseliksir', icon: '🏺', type: 'CONSUMABLE', durability: 1, maxDurability: 1, level: 3, description: 'En legendarisk eliksir. Gjenoppretter 100 Stamina og 50 HP.', stats: {}, relevantActions: ['CONSUME'] }
 };

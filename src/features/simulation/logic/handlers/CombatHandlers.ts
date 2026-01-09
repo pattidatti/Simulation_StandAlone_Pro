@@ -25,6 +25,15 @@ export const handleRaid = (ctx: ActionContext) => {
         if (targetBaron.upgrades?.includes('fence')) targetPower += 10;
         if (actor.upgrades?.includes('stables')) roll += 0.1;
 
+        // Apply Strength Buffs
+        if (actor.activeBuffs && actor.activeBuffs.length > 0) {
+            const now = Date.now();
+            const strengthBuff = actor.activeBuffs.find(b => b.type === 'STRENGTH_BONUS' && b.expiresAt > now);
+            if (strengthBuff) {
+                roll += (strengthBuff.value / 100); // e.g. +10 strength = +0.1 to roll
+            }
+        }
+
         if (actor.equipment?.MAIN_HAND) damageTool('MAIN_HAND', GAME_BALANCE.DURABILITY.LOSS_COMBAT_WEAPON || 5);
         if (actor.equipment?.BODY) damageTool('BODY', GAME_BALANCE.DURABILITY.LOSS_COMBAT_ARMOR || 5);
 

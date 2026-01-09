@@ -73,6 +73,11 @@ export function useSimulationActions(
                 if (rid === 'cloth' || rid === 'weave') actualType = 'WEAVE';
                 if (rid === 'plank') actualType = 'SAWMILL';
 
+                // Apothecary Minigame
+                if (['minor_stamina_potion', 'herbal_balm', 'focus_brew', 'strength_tincture', 'masters_draught', 'elixir_of_life'].includes(rid)) {
+                    actualType = 'MIX';
+                }
+
                 // IF recipe has duration, skip minigame
                 // We don't have the recipe object easily here, but we can check rid === 'flour'
                 if (rid === 'flour') {
@@ -126,7 +131,10 @@ export function useSimulationActions(
         try {
             const result = await Promise.race([performAction(pin, player.id, action), timeoutPromise]) as any;
 
-            if (!isSilentAction) {
+            // Only show results if not silent, EXCEPT for CONSUME which should show a result popup
+            const SHOW_RESULT = !isSilentAction || actionType === 'CONSUME';
+
+            if (SHOW_RESULT) {
                 if (result.data) {
                     setActionResult(result.data);
                 } else if (!result.success) {

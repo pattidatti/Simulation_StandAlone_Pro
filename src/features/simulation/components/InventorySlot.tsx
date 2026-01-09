@@ -43,6 +43,17 @@ export const InventorySlot: React.FC<InventorySlotProps> = ({
     layoutId,
     isTrashMode
 }) => {
+    const isConsumable = React.useMemo(() => {
+        if (item) {
+            const displayItem: any = typeof item === 'string' ? (ITEM_TEMPLATES as any)[item] : item;
+            return displayItem?.type === 'CONSUMABLE';
+        }
+        if (resource) {
+            const template = (ITEM_TEMPLATES as any)[resource.id];
+            return template?.type === 'CONSUMABLE';
+        }
+        return false;
+    }, [item, resource]);
 
     const getContent = () => {
         if (item) {
@@ -148,6 +159,7 @@ export const InventorySlot: React.FC<InventorySlotProps> = ({
                 ${isEmpty || !getContent() ? 'bg-white/5 border-white/5 border-dashed' : 'bg-white/10 border-white/10 hover:bg-slate-800/80 hover:border-indigo-500/30'}
                 ${isEquipped ? 'ring-2 ring-indigo-500 border-indigo-500/50 bg-indigo-500/20 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : ''}
                 ${isTrashMode && !isEmpty && getContent() ? 'hover:border-red-500/50 hover:bg-red-500/10 cursor-alias' : 'cursor-grab active:cursor-grabbing'}
+                ${isConsumable && !isTrashMode && !isEmpty && !isEquipped ? 'shadow-[inset_0_0_15px_rgba(16,185,129,0.2)] border-emerald-500/20' : ''}
                 group overflow-hidden will-change-transform
             `}
         >

@@ -111,7 +111,7 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ content, position, isT
                 {(displayData.type === 'CONSUMABLE' && !isTrashMode) && (
                     <div className="mt-4 text-center">
                         <span className="inline-block text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 animate-pulse shadow-lg shadow-emerald-500/10">
-                            Trykk for å spise
+                            Trykk for å bruke
                         </span>
                     </div>
                 )}

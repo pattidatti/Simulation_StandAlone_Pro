@@ -130,9 +130,9 @@ export const VILLAGE_BUILDINGS: Record<string, { id: string, name: string, icon:
         locationId: 'village',
         description: 'Fremstiller medisin og salver.',
         levels: {
-            1: { requirements: {}, unlocks: ['CRAFT_MEDICINE'], bonus: 'Basis urter' },
-            2: { requirements: { plank: 20, wood: 50, gold: 150 }, unlocks: ['CRAFT_POISON'], bonus: 'Kunnskap om gift' },
-            3: { requirements: { plank: 50, glass: 20, gold: 500 }, unlocks: ['CRAFT_ELIXIR'], bonus: 'Livseliksir' }
+            1: { requirements: {}, unlocks: ['REFINE_minor_stamina_potion', 'REFINE_herbal_balm'], bonus: 'Basis urter' },
+            2: { requirements: { wood: 100, stone: 50, gold: 250 }, unlocks: ['REFINE_focus_brew', 'REFINE_strength_tincture'], bonus: 'Gift og Tinkturer' },
+            3: { requirements: { plank: 100, glass: 50, gold: 1000 }, unlocks: ['REFINE_masters_draught', 'REFINE_elixir_of_life'], bonus: 'Mesterverk & Eliksirer' }
         }
     },
     watchtower: {
@@ -200,7 +200,14 @@ export const REFINERY_RECIPES: Record<string, any> = {
     mead: { label: 'Mjød', icon: '🍺', input: { honey: 5 }, outputResource: 'stamina', outputAmount: 20, buildingId: 'tavern', stamina: 5, xp: 5, skill: 'CRAFTING' },
     cloth: { label: 'Lin-stoff', icon: '🧶', input: { wool: 5 }, outputResource: 'cloth', outputAmount: 1, buildingId: 'weavery', stamina: 15, xp: 10, skill: 'CRAFTING' },
     glass: { label: 'Glass', icon: '🥛', input: { stone: 10, wood: 5 }, outputResource: 'glass', outputAmount: 1, buildingId: 'smeltery', requiredLevel: 3, stamina: 25, xp: 15, skill: 'CRAFTING' },
-    elixir: { label: 'Livseliksir', icon: '🧪', input: { honey: 10, glass: 1 }, outputResource: 'stamina', outputAmount: 100, buildingId: 'apothecary', requiredLevel: 3, stamina: 30, xp: 25, skill: 'CRAFTING' }
+
+    // Apothecary Recipes
+    minor_stamina_potion: { label: 'Liten Stamina-brygg', icon: '🧪', input: { honey: 2, glass: 1 }, outputResource: 'minor_stamina_potion', outputAmount: 1, buildingId: 'apothecary', requiredLevel: 1, stamina: 20, xp: 15, skill: 'CRAFTING', duration: 30000 },
+    herbal_balm: { label: 'Urtebalsam', icon: '🌿', input: { wood: 5, honey: 3 }, outputResource: 'herbal_balm', outputAmount: 1, buildingId: 'apothecary', requiredLevel: 1, stamina: 20, xp: 15, skill: 'CRAFTING', duration: 45000 },
+    focus_brew: { label: 'Fokus-brygg', icon: '🧪', input: { honey: 5, glass: 1, grain: 10 }, outputResource: 'focus_brew', outputAmount: 1, buildingId: 'apothecary', requiredLevel: 2, stamina: 30, xp: 30, skill: 'CRAFTING', duration: 60000 },
+    strength_tincture: { label: 'Styrke-tinktur', icon: '🍶', input: { iron_ore: 5, honey: 5, glass: 1 }, outputResource: 'strength_tincture', outputAmount: 1, buildingId: 'apothecary', requiredLevel: 2, stamina: 40, xp: 40, skill: 'CRAFTING', duration: 90000 },
+    masters_draught: { label: 'Mester-drikk', icon: '🧪', input: { gold: 100, honey: 10, glass: 2 }, outputResource: 'masters_draught', outputAmount: 1, buildingId: 'apothecary', requiredLevel: 3, stamina: 60, xp: 100, skill: 'CRAFTING', duration: 180000 },
+    elixir_of_life: { label: 'Livseliksir', icon: '🏺', input: { gold: 250, honey: 20, glass: 5 }, outputResource: 'elixir_of_life', outputAmount: 1, buildingId: 'apothecary', requiredLevel: 3, stamina: 100, xp: 250, skill: 'CRAFTING', duration: 300000 }
 };
 
 export const CRAFTING_RECIPES: Record<string, any> = {
