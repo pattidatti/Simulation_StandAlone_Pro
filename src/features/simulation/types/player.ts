@@ -113,6 +113,18 @@ export interface SimulationPlayer {
         inventory: Partial<Resources>;
         durability: number;
         upgrades: string[];
+        customization?: {
+            chassis: string;
+            wheels: string;
+            cover: string;
+            lanterns: string;
+            flag: string;
+            skin: string;
+            companion: string;
+            trail: string;
+            decor: string;
+            unlocked: string[];
+        };
     };
     online?: boolean;
     hasSeenIntro?: boolean;

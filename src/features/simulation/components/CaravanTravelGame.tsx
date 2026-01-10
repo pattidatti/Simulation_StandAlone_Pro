@@ -3,20 +3,33 @@ import { CaravanSVG } from './CaravanSVG';
 import { motion } from 'framer-motion';
 
 interface CaravanTravelGameProps {
-    onComplete: (success: boolean) => void;
+    onComplete: (success: boolean, data?: { durability: number }) => void;
     targetRegionId: string;
     caravanLevel: number;
     upgrades: string[];
+    initialDurability?: number;
+    maxDurability?: number;
+    customization?: any;
+    resolvedHorseSkin?: string;
 }
 
 /**
  * CaravanTravelGame - An atmospheric side-scrolling experience representing the journey between regions.
  * Features high-contrast silhouettes and "Central Europe" aesthetics.
  */
-export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete, targetRegionId, caravanLevel, upgrades = [] }) => {
+export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete, targetRegionId, caravanLevel, upgrades = [], initialDurability = 100, maxDurability = 100, customization, resolvedHorseSkin }) => {
+    // ... (rest of the component)
+
+    // ... inside render ...
+
+    // ... (rest of the component)
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [progress, setProgress] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
+
+    // New State for Durability UI
+    const [currentDurability, setCurrentDurability] = useState(initialDurability);
+    const [damageFlash, setDamageFlash] = useState(false);
 
     // Game State Refs (avoid re-renders for game loop)
     const gameState = useRef({
@@ -27,7 +40,10 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
         obstacles: [] as { x: number, typ: 'ROCK' | 'BANDIT' | 'MUD' }[],
         lastObstacleTime: 0,
         shake: 0,
-        penaltyTimer: 0
+        penaltyTimer: 0,
+        durability: initialDurability,
+        isBroken: false,
+        hasFinished: false
     });
 
     // Parallax Layer configuration
@@ -40,9 +56,9 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
     // Handle Input
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.code === 'Space' && !gameState.current.isJumping && !isFinished) {
+            if (e.code === 'Space' && !gameState.current.isJumping && !isFinished && !gameState.current.isBroken) {
                 gameState.current.isJumping = true;
-                gameState.current.jumpHeight = 10; // Initial velocity
+                gameState.current.jumpHeight = 12; // Tuned: Higher jump (was 10)
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -62,7 +78,7 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
         // UPGRADES LOGIC
         const hasHeavyAxles = upgrades.includes('heavy_axles');
         const hasGuardPost = upgrades.includes('guard_post');
-        const hasSilkChests = upgrades.includes('silk_chests'); // Maybe reduces penalty?
+        const hasSilkChests = upgrades.includes('silk_chests');
 
         const baseSpeed = 1.2 + (caravanLevel * 0.2) + (hasHeavyAxles ? 0.3 : 0);
 
@@ -73,11 +89,10 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
 
             const state = gameState.current;
 
-            if (!isFinished) {
+            if (!isFinished && !state.isBroken) {
                 // Determine current speed (penalty logic)
                 let currentSpeed = baseSpeed;
                 if (state.penaltyTimer > 0) {
-                    // Silk chests absorb shock, reducing the slowdown impact
                     const penaltyMod = hasSilkChests ? 0.6 : 0.3;
                     currentSpeed *= penaltyMod;
                     state.penaltyTimer -= deltaTime;
@@ -89,14 +104,15 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
                 const newProgress = Math.min(1, state.distance / totalDistance);
                 setProgress(newProgress);
 
-                if (newProgress >= 1) {
+                if (newProgress >= 1 && !state.hasFinished) {
+                    state.hasFinished = true;
                     setIsFinished(true);
-                    setTimeout(() => onComplete(true), 3000);
+                    setTimeout(() => onComplete(true, { durability: state.durability }), 3000);
                 }
 
-                // JUMP PHYSICS
+                // JUMP PHYSICS (Tuned)
                 if (state.isJumping) {
-                    state.jumpHeight -= 0.6; // Gravity
+                    state.jumpHeight -= 0.45; // Tuned: Lower gravity (was 0.6) for floatier feel
                     if (state.jumpHeight < 0 && state.jumpHeight > -10) {
                         // Falling
                     } else if (state.jumpHeight <= -10) {
@@ -110,15 +126,13 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
                 if (state.shake > 0) state.shake *= 0.9;
 
                 // SPAWN OBSTACLES
-                // Chance to spawn increases with distance?
                 if (time - state.lastObstacleTime > 2000 + Math.random() * 3000) {
                     const typeRoll = Math.random();
                     let type: 'ROCK' | 'BANDIT' | 'MUD' = 'ROCK';
 
-                    if (typeRoll > 0.8 && !hasGuardPost) type = 'BANDIT'; // Guard post prevents bandits
+                    if (typeRoll > 0.8 && !hasGuardPost) type = 'BANDIT';
                     else if (typeRoll > 0.5) type = 'MUD';
 
-                    // Only spawn if not finished
                     if (type !== 'BANDIT' || !hasGuardPost) {
                         state.obstacles.push({ x: canvas.width + 100, typ: type });
                         state.lastObstacleTime = time;
@@ -128,25 +142,39 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
                 // UPDATE OBSTACLES & COLLISION
                 for (let i = state.obstacles.length - 1; i >= 0; i--) {
                     const obs = state.obstacles[i];
-                    obs.x -= deltaTime * state.speed * 0.8; // Move relative to camera speed
+                    obs.x -= deltaTime * state.speed * 0.8;
 
                     // Collision Check
-                    // Caravan is approx at left: 15% (canvas.width * 0.15) to w=200
                     const carX = canvas.width * 0.15;
                     const carW = 200;
 
                     if (obs.x < carX + carW - 50 && obs.x > carX + 50) {
-                        // Hit box overlap
+                        let hit = false;
                         if (obs.typ === 'BANDIT') {
-                            // Always hit unless... well bandits aren't jumpable usually.
+                            hit = true; // Bandits always hit (unless guard post prevented spawn)
                             state.penaltyTimer = 1000;
                             state.shake = 20;
-                            state.obstacles.splice(i, 1); // Remove
+                            // Damage
+                            state.durability = Math.max(0, state.durability - 25);
                         } else if ((obs.typ === 'ROCK' || obs.typ === 'MUD') && !state.isJumping) {
-                            // Hit!
+                            hit = true;
                             state.penaltyTimer = 800;
                             state.shake = 10;
+                            // Damage
+                            state.durability = Math.max(0, state.durability - 10);
+                        }
+
+                        if (hit) {
                             state.obstacles.splice(i, 1);
+                            setCurrentDurability(state.durability);
+                            setDamageFlash(true);
+                            setTimeout(() => setDamageFlash(false), 200);
+
+                            // Check failure
+                            if (state.durability <= 0) {
+                                state.isBroken = true;
+                                setTimeout(() => onComplete(false, { durability: 0 }), 3000);
+                            }
                         }
                     }
 
@@ -170,7 +198,7 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
             ctx.fillStyle = skyGradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw Stars (Atmospheric)
+            // Draw Stars
             ctx.fillStyle = 'rgba(255,255,255,0.2)';
             for (let i = 0; i < 50; i++) {
                 const sX = (i * 137) % canvas.width;
@@ -185,7 +213,6 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
                 ctx.moveTo(0, canvas.height);
 
                 for (let x = 0; x <= canvas.width + 10; x += 10) {
-                    // Generate silhouette wave using trig
                     const waveX = x + (state.distance * layer.speed);
                     const y = canvas.height - layer.height +
                         Math.sin(waveX * layer.freq) * layer.amplitude +
@@ -197,37 +224,35 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
                 ctx.fill();
             });
 
-            // The Road (Flat silhouette at bottom)
+            // The Road
             ctx.fillStyle = '#020617';
             ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
 
             // Draw Obstacles
             state.obstacles.forEach(obs => {
-                // Floor Y = canvas.height - 60
                 const floorY = canvas.height - 60;
                 if (obs.typ === 'ROCK') {
-                    ctx.fillStyle = '#64748b'; // Slate 500
+                    ctx.fillStyle = '#64748b';
                     ctx.beginPath();
                     ctx.arc(obs.x, floorY - 15, 20, 0, Math.PI * 2);
                     ctx.fill();
                 } else if (obs.typ === 'BANDIT') {
-                    ctx.fillStyle = '#e11d48'; // Rose 600
-                    ctx.fillRect(obs.x, floorY - 60, 30, 60); // Simple rect
-                    // Eyes
+                    ctx.fillStyle = '#e11d48';
+                    ctx.fillRect(obs.x, floorY - 60, 30, 60);
                     ctx.fillStyle = '#fff';
                     ctx.fillRect(obs.x + 5, floorY - 50, 5, 5);
                     ctx.fillRect(obs.x + 15, floorY - 50, 5, 5);
                 } else if (obs.typ === 'MUD') {
-                    ctx.fillStyle = '#78350f'; // Amber 900
+                    ctx.fillStyle = '#78350f';
                     ctx.beginPath();
                     ctx.ellipse(obs.x, floorY - 5, 40, 10, 0, 0, Math.PI * 2);
                     ctx.fill();
                 }
             });
 
-            // Speed lines (Motion feel)
-            if (!isFinished) {
-                ctx.strokeStyle = `rgba(255,255,255,${state.speed > baseSpeed * 0.5 ? 0.05 : 0.01})`; // Fade lines if slow
+            // Speed lines
+            if (!isFinished && !state.isBroken) {
+                ctx.strokeStyle = `rgba(255,255,255,${state.speed > baseSpeed * 0.5 ? 0.05 : 0.01})`;
                 ctx.lineWidth = 1;
                 for (let i = 0; i < 10; i++) {
                     const lX = (state.distance * 2 + i * 150) % canvas.width;
@@ -239,7 +264,7 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
                 }
             }
 
-            ctx.restore(); // Undo shake
+            ctx.restore();
 
             animationFrame = requestAnimationFrame(render);
         };
@@ -260,8 +285,12 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
                     className="w-full h-full object-cover"
                 />
 
+                {/* Damage Flash Overlay */}
+                {damageFlash && (
+                    <div className="absolute inset-0 bg-rose-500/30 animate-pulse pointer-events-none" />
+                )}
+
                 {/* The Caravan Logic Positioning */}
-                {/* Visual Jump Offset */}
                 <div
                     className="absolute left-[15%] bottom-[70px] w-48 transition-transform duration-100 ease-out"
                     style={{
@@ -271,13 +300,20 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
                     <CaravanSVG
                         level={caravanLevel}
                         upgrades={upgrades}
-                        isMoving={!isFinished}
+                        customization={customization}
+                        resolvedHorseSkin={resolvedHorseSkin}
+                        isMoving={!isFinished && !gameState.current.isBroken}
                         className="w-full drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)]"
                     />
 
-                    {/* The Lantern Glow (Additional CSS layer for intensity) */}
-                    {!isFinished && (
+                    {/* The Lantern Glow */}
+                    {!isFinished && !gameState.current.isBroken && (
                         <div className="absolute top-1/2 right-0 w-8 h-8 bg-amber-400/20 blur-xl animate-pulse rounded-full" />
+                    )}
+
+                    {/* Smoke if broken */}
+                    {gameState.current.isBroken && (
+                        <div className="absolute top-0 right-1/2 w-12 h-24 bg-gray-500/50 blur-xl animate-pulse -translate-y-full" />
                     )}
                 </div>
 
@@ -286,23 +322,38 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
                     Trykk [MELLOMROM] for å hoppe
                 </div>
 
-                {/* Regional Progress Indicator */}
-                <div className="absolute top-12 left-1/2 -translate-x-1/2 w-full max-w-md px-12">
+                {/* HUD: Progress & Health */}
+                <div className="absolute top-12 left-1/2 -translate-x-1/2 w-full max-w-md px-12 z-10">
                     <div className="flex justify-between items-end mb-2">
                         <div className="text-left">
                             <h2 className="text-white font-black uppercase italic tracking-tighter text-3xl">Mitt-Europa</h2>
                             <p className="text-slate-500 font-bold uppercase text-[9px] tracking-widest leading-none">Vegen mot {regionName}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col items-end">
                             <span className="text-amber-400 font-black italic text-xl">{Math.floor(progress * 100)}%</span>
                         </div>
                     </div>
-                    <div className="h-0.5 w-full bg-slate-800/50 rounded-full overflow-hidden backdrop-blur-md">
+                    {/* Progress Bar */}
+                    <div className="h-1 w-full bg-slate-800/50 rounded-full overflow-hidden backdrop-blur-md mb-4">
                         <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${progress * 100}%` }}
                             className="h-full bg-gradient-to-r from-amber-600 to-amber-400"
                         />
+                    </div>
+
+                    {/* Durability Bar */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase text-slate-400 w-12 text-right">Helse</span>
+                        <div className="flex-1 h-3 bg-slate-900 border border-slate-700 rounded-sm overflow-hidden relative">
+                            <motion.div
+                                className={`h-full ${currentDurability < maxDurability * 0.3 ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                                animate={{ width: `${(currentDurability / maxDurability) * 100}%` }}
+                            />
+                        </div>
+                        <span className={`text-[10px] font-bold ${currentDurability < maxDurability * 0.3 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                            {Math.round(currentDurability)} / {maxDurability}
+                        </span>
                     </div>
                 </div>
 
@@ -331,6 +382,31 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
                         </div>
                         <div className="h-px w-24 bg-slate-800 mx-auto" />
                         <p className="text-slate-500 font-bold uppercase text-xs tracking-widest">Handelsruten er etablert</p>
+                    </div>
+                </motion.div>
+            )}
+
+            {/* FAILURE OVERLAY */}
+            {gameState.current.isBroken && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="absolute inset-0 flex items-center justify-center bg-rose-950/90 backdrop-blur-2xl"
+                >
+                    <div className="text-center space-y-6">
+                        <motion.div
+                            initial={{ scale: 0.5, rotate: 20 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            className="text-8xl"
+                        >
+                            💥
+                        </motion.div>
+                        <div className="space-y-2">
+                            <h3 className="text-6xl font-black text-rose-500 italic uppercase tracking-tighter">HAVARI</h3>
+                            <p className="text-rose-200 font-black uppercase tracking-[0.5em] text-sm">Vognen er ødelagt</p>
+                        </div>
+                        <div className="h-px w-24 bg-rose-800 mx-auto" />
+                        <p className="text-rose-300 font-bold uppercase text-xs tracking-widest">Reisen avbrutt • Reparer vognen</p>
                     </div>
                 </motion.div>
             )}

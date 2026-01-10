@@ -240,12 +240,24 @@ export const SimulationPlayer: React.FC = () => {
                             skills={player.skills}
                             selectedMethod={activeMinigameMethod || undefined}
                             action={activeMinigameAction}
-                            onComplete={(score) => {
+                            onComplete={(score, data) => {
                                 if (activeMinigame === 'TRAVEL_START') {
-                                    handleAction({
-                                        type: 'TRAVEL_COMPLETE',
-                                        targetRegionId: activeMinigameAction?.targetRegionId
-                                    });
+                                    if (score > 0) {
+                                        // Success
+                                        console.log('[SimulationPlayer] Minigame Complete. Data:', data);
+                                        handleAction({
+                                            type: 'TRAVEL_COMPLETE',
+                                            targetRegionId: activeMinigameAction?.targetRegionId,
+                                            finalDurability: data?.durability
+                                        });
+                                    } else {
+                                        // Failure (Broken)
+                                        handleAction({
+                                            type: 'TRAVEL_FAILED',
+                                            targetRegionId: activeMinigameAction?.targetRegionId,
+                                            finalDurability: 0 // Force 0 if failed
+                                        });
+                                    }
                                 } else {
                                     handleAction({ ...(activeMinigameAction || {}), performance: score, method: activeMinigameMethod });
                                 }

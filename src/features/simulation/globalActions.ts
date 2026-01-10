@@ -1479,15 +1479,25 @@ export const handleGlobalStartTravel = async (pin: string, playerId: string, act
 };
 
 export const handleGlobalCompleteTravel = async (pin: string, playerId: string, action: any) => {
-    const { targetRegionId } = action;
+    const { targetRegionId, finalDurability } = action;
     const playerRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
     const playerSnap = await get(playerRef);
     if (!playerSnap.exists()) return { success: false, error: "Spiller finnes ikke" };
     const player = playerSnap.val() as SimulationPlayer;
 
+    let savedDurability = 0;
+
     await runTransaction(playerRef, (p: any) => {
         if (!p) return;
         p.regionId = targetRegionId;
+
+        // Persist Durability from Minigame
+        if (typeof finalDurability === 'number') {
+            if (!p.caravan) p.caravan = { level: 1, inventory: {}, durability: 100, upgrades: [] };
+            p.caravan.durability = Math.max(0, finalDurability);
+            savedDurability = p.caravan.durability;
+        }
+
         return p;
     });
 
@@ -1495,6 +1505,6 @@ export const handleGlobalCompleteTravel = async (pin: string, playerId: string, 
     await update(ref(db, `simulation_rooms/${pin}/public_profiles/${playerId}`), { regionId: targetRegionId });
 
     const regionName = targetRegionId === 'capital' ? 'Hovedstaden' : (targetRegionId === 'region_vest' ? 'Vestfjella' : 'Østlandet');
-    logSimulationMessage(pin, `[VEIEN] ${player.name} har ankommet ${regionName}.`);
+    logSimulationMessage(pin, `[VEIEN] ${player.name} har ankommet ${regionName}. (Slitasje: ${Math.round(savedDurability)})`);
     return { success: true, data: { success: true, message: `Ankommet ${regionName}!`, utbytte: [], xp: [{ skill: 'TRADING', amount: 25 }], durability: [] } };
 };

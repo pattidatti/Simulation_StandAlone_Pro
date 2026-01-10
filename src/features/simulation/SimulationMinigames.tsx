@@ -23,7 +23,7 @@ import { CaravanTravelGame } from './components/CaravanTravelGame';
 
 interface MinigameProps {
     type: ActionType;
-    onComplete: (score: number) => void;
+    onComplete: (score: number, data?: any) => void;
     onCancel: () => void;
 
     // Context
@@ -401,12 +401,20 @@ export const MinigameOverlay: React.FC<MinigameProps> = ({ type, onComplete, onC
                             return <ArcheryGame onComplete={onComplete} speedMultiplier={environmentMods.speedMultiplier} />;
 
                         case 'TRAVEL_START':
+                            const caravanLevel = player?.caravan?.level || 1;
+                            const levelConfig = GAME_BALANCE.CARAVAN.LEVELS.find(l => l.level === caravanLevel) || GAME_BALANCE.CARAVAN.LEVELS[0];
+                            const maxDurability = levelConfig.durability;
+
                             return (
                                 <CaravanTravelGame
-                                    onComplete={() => onComplete(1)}
+                                    onComplete={(success, data) => onComplete(success ? 1 : 0, data)}
                                     targetRegionId={action?.targetRegionId || 'capital'}
-                                    caravanLevel={player?.caravan?.level || 1}
+                                    caravanLevel={caravanLevel}
                                     upgrades={player?.caravan?.upgrades || []}
+                                    initialDurability={player?.caravan?.durability || maxDurability}
+                                    maxDurability={maxDurability}
+                                    customization={player?.caravan?.customization}
+                                    resolvedHorseSkin={player?.horseCustomization?.skinId}
                                 />
                             );
 
