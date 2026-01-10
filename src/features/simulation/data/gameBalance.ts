@@ -40,13 +40,13 @@ export const GAME_BALANCE = {
         NO_TOOL_PENALTY: 0.75,
     },
     YIELD: {
-        WORK_GRAIN: 12,
-        CHOP_WOOD: 8,
-        MINE_ORE: 6,
-        QUARRY_STONE: 10,
+        WORK_GRAIN: 10,
+        CHOP_WOOD: 6,
+        MINE_ORE: 5,
+        QUARRY_STONE: 8,
         FORAGE_BREAD: 1,
-        PLOW_BONUS: 5,
-        SUMMER_WOOD_BONUS: 3
+        PLOW_BONUS: 4,
+        SUMMER_WOOD_BONUS: 2
     },
     DURABILITY: {
         MAX: 100,
