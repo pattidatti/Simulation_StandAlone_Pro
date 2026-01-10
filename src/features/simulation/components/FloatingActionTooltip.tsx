@@ -398,7 +398,7 @@ export const FloatingActionTooltip: React.FC<FloatingActionTooltipProps> = ({ po
                                                 <button
                                                     onClick={() => {
                                                         if (action.id === 'JOIN_ROLE') {
-                                                            setWarningState({ isOpen: true, action: { ...action, locationId: poi.id } });
+                                                            setWarningState({ isOpen: true, action: { ...action, type: action.id, locationId: poi.id } });
                                                         } else {
                                                             onAction({ ...action, type: action.id, locationId: poi.id });
                                                         }
@@ -622,7 +622,8 @@ export const FloatingActionTooltip: React.FC<FloatingActionTooltipProps> = ({ po
                     }
                     setWarningState({ isOpen: false, action: null });
                 }}
-                roleName={warningState.action?.targetRole === 'SOLDIER' ? 'Soldat' : (warningState.action?.targetRole || 'Ukjent')}
+                roleId={warningState.action?.targetRole || ''}
+                cost={warningState.action?.cost}
             />
         </>
     );

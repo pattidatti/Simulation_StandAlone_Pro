@@ -22,7 +22,7 @@ export const performAction = async (pin: string, playerId: string, action: any):
         return await performGlobalAction(pin, playerId, action) as any;
     }
 
-    if (action.type.startsWith('RACK_')) {
+    if (actionType && actionType.startsWith('RACK_')) {
         return await handleWeaponRackAction(pin, playerId, action);
     }
 
