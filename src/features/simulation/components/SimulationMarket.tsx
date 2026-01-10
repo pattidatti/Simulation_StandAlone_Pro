@@ -2,7 +2,6 @@ import React from 'react';
 import type { SimulationPlayer } from '../simulationTypes';
 import { RESOURCE_DETAILS, INITIAL_MARKET } from '../constants';
 import { useSimulation } from '../SimulationContext';
-import { GameCard } from '../ui/GameCard';
 import { GameButton } from '../ui/GameButton';
 import { ResourceIcon } from '../ui/ResourceIcon';
 import { Badge } from '../ui/Badge';
@@ -154,7 +153,7 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                                                     type="number"
                                                     value={qty}
                                                     onChange={(e) => updateQty(parseInt(e.target.value))}
-                                                    className="w-8 bg-transparent text-center font-black text-game-gold border-none outline-none focus:ring-0 tabular-nums text-sm p-0"
+                                                    className="w-14 bg-transparent text-center font-black text-game-gold border-none outline-none focus:ring-0 tabular-nums text-sm p-0"
                                                 />
                                                 <button onClick={() => updateQty(qty + 1)} className="w-6 h-6 flex items-center justify-center text-white/30 hover:text-white font-bold" type="button">+</button>
                                             </div>
