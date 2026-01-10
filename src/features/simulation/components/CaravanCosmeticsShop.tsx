@@ -44,42 +44,43 @@ export const CaravanCosmeticsShop: React.FC<CaravanCosmeticsShopProps> = ({ play
     };
 
     return (
-        <div className="flex h-full p-8 pt-0 gap-8">
-            {/* Category Navigation Rail */}
-            <div className="w-20 pt-4 flex flex-col gap-3 overflow-y-auto no-scrollbar pb-8">
-                {CATEGORIES.map(cat => (
-                    <button
-                        key={cat.id}
-                        onClick={() => setSelectedCategory(cat.id)}
-                        className={`relative group flex flex-col items-center justify-center p-3 rounded-xl transition-all ${selectedCategory === cat.id
-                            ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-black shadow-lg shadow-amber-500/20'
-                            : 'bg-slate-900 border border-white/5 text-slate-500 hover:text-white hover:border-white/10'
-                            }`}
-                    >
-                        <span className="text-2xl mb-1 filter drop-shadow-sm">{cat.icon}</span>
-                        <span className="text-[8px] uppercase font-black tracking-widest opacity-80">{cat.label}</span>
+        <div className="flex h-full p-6 pt-0 gap-8 relative">
+            {/* Category Navigation Rail - Vertical List with Large Text */}
+            <div className="w-56 flex flex-col relative z-10 h-full border-r border-white/5 pr-6">
+                <div className="flex-1 flex flex-col gap-2 overflow-y-auto no-scrollbar mask-scroll pb-2">
+                    {CATEGORIES.map(cat => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setSelectedCategory(cat.id)}
+                            className={`relative group shrink-0 h-14 flex items-center px-4 gap-4 rounded-xl transition-all duration-200 ${selectedCategory === cat.id
+                                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-lg shadow-amber-500/20 z-10 scale-[1.02]'
+                                : 'bg-transparent text-slate-400 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            <span className={`text-2xl filter transition-all ${selectedCategory === cat.id ? 'scale-110 drop-shadow-sm' : 'grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100'}`}>
+                                {cat.icon}
+                            </span>
+                            <span className={`text-xs uppercase font-black tracking-widest leading-none ${selectedCategory === cat.id ? 'opacity-100' : 'opacity-70'}`}>{cat.label}</span>
 
-                        {/* Active Indicator */}
-                        {selectedCategory === cat.id && (
-                            <motion.div
-                                layoutId="activeTab"
-                                className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full"
-                            />
-                        )}
-                    </button>
-                ))}
+                            {/* Active Indicator Pulse */}
+                            {selectedCategory === cat.id && (
+                                <div className="absolute inset-0 rounded-xl border border-white/20 pointer-events-none" />
+                            )}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            {/* Item Grid */}
-            <div className="flex-1 pt-4 pb-8 overflow-y-auto no-scrollbar">
+            {/* Item List - Vertical Layout */}
+            <div className="flex-1 pt-0 pb-6 overflow-y-auto no-scrollbar mask-scroll-content">
                 <AnimatePresence mode="popLayout">
                     <motion.div
                         key={selectedCategory}
-                        initial={{ opacity: 0, x: 20 }}
+                        initial={{ opacity: 0, x: 10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.2 }}
-                        className="grid grid-cols-2 gap-4"
+                        exit={{ opacity: 0, x: -10 }}
+                        transition={{ duration: 0.15 }}
+                        className="flex flex-col gap-2.5"
                     >
                         {items.map(item => {
                             const isUnlocked = unlocked.includes(item.id);
@@ -93,78 +94,73 @@ export const CaravanCosmeticsShop: React.FC<CaravanCosmeticsShopProps> = ({ play
 
                             let disabledReason = '';
                             if (!isUnlocked) {
-                                if (!levelOk) disabledReason = `Krever Nivå ${item.reqLevel}`;
-                                else if (!canAfford) disabledReason = 'Ikke nok gull';
+                                if (!levelOk) disabledReason = `Lvl ${item.reqLevel}`;
+                                else if (!canAfford) disabledReason = 'Mangler Gull';
                             }
                             if (isLinkedHorse && !hasLinkedHorse) {
-                                disabledReason = 'Krever hest i stall';
+                                disabledReason = 'Ingen Hest';
                             }
 
                             return (
                                 <motion.div
                                     key={item.id}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className={`relative p-1 rounded-2xl transition-all group overflow-hidden ${isEquipped
-                                        ? 'bg-gradient-to-br from-amber-400 to-amber-600 shadow-[0_0_20px_rgba(251,191,36,0.2)]'
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className={`relative p-[1px] rounded-xl transition-all group overflow-hidden ${isEquipped
+                                        ? 'bg-gradient-to-r from-amber-400 to-amber-600 shadow-md shadow-amber-500/10'
                                         : 'bg-slate-800'
                                         }`}
                                 >
-                                    <div className="bg-[#0B0F19] rounded-xl h-full p-4 flex flex-col gap-4 relative z-10">
+                                    <div className="bg-[#0B0F19] rounded-[11px] h-16 pr-4 flex items-center gap-5 relative z-10 pl-3">
 
-                                        {/* Tag / Status */}
-                                        <div className="flex justify-between items-start">
-                                            {isEquipped ? (
-                                                <span className="bg-amber-400/10 text-amber-400 text-[9px] font-black uppercase px-2 py-0.5 rounded border border-amber-400/20">Utstyrt</span>
-                                            ) : isUnlocked ? (
-                                                <span className="bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase px-2 py-0.5 rounded border border-emerald-500/20">Eies</span>
-                                            ) : (
-                                                <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-950 border border-slate-800">
-                                                    <span className="text-[10px] text-amber-400">💰</span>
-                                                    <span className="text-[11px] font-black text-amber-400 uppercase tracking-wide">{item.cost}</span>
-                                                </div>
-                                            )}
+                                        {/* Icon */}
+                                        <div className={`w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-xl bg-slate-900 border border-white/5 ${isEquipped ? 'shadow-[0_0_10px_rgba(251,191,36,0.1)]' : ''}`}>
+                                            {CATEGORIES.find(c => c.id === selectedCategory)?.icon}
                                         </div>
 
-                                        {/* Content */}
-                                        <div className="flex items-center gap-4">
-                                            {/* Icon Placeholder (Better than nothing) */}
-                                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl bg-slate-900 border border-white/5 ${isEquipped ? 'shadow-[0_0_15px_rgba(251,191,36,0.1)]' : ''}`}>
-                                                {/* Using category icon as fallback for item preview for now */}
-                                                {CATEGORIES.find(c => c.id === selectedCategory)?.icon}
-                                            </div>
+                                        {/* Details */}
+                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                            <h4 className={`font-black uppercase text-sm truncate leading-none mb-1.5 ${isEquipped ? 'text-white' : 'text-slate-300'}`}>{item.name.replace('Vogn: ', '')}</h4>
 
-                                            <div>
-                                                <h4 className={`font-black uppercase text-sm leading-tight ${isEquipped ? 'text-white' : 'text-slate-200'}`}>{item.name}</h4>
-                                                {item.reqLevel && <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Låses opp på Nivå {item.reqLevel}</p>}
+                                            {/* Requirements / Price */}
+                                            <div className="flex items-center gap-2">
+                                                {item.reqLevel && !isUnlocked && (
+                                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest ">Lvl {item.reqLevel}</span>
+                                                )}
+                                                {!isUnlocked && (
+                                                    <span className="text-xs text-amber-500 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{item.cost}g</span>
+                                                )}
+                                                {isUnlocked && !isEquipped && (
+                                                    <span className="text-xs text-emerald-500 font-bold uppercase tracking-widest">Eies</span>
+                                                )}
                                             </div>
                                         </div>
 
                                         {/* Actions */}
-                                        <div className="mt-auto pt-2">
+                                        <div className="flex-shrink-0 w-28">
                                             {isUnlocked ? (
                                                 <button
                                                     onClick={() => onEquip(item.id)}
                                                     disabled={isEquipped || (isLinkedHorse && !hasLinkedHorse)}
-                                                    className={`w-full py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${isEquipped
-                                                        ? 'bg-white/5 text-slate-500 cursor-default'
+                                                    className={`w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${isEquipped
+                                                        ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 cursor-default shadow-[0_0_10px_rgba(245,158,11,0.1)]'
                                                         : (isLinkedHorse && !hasLinkedHorse)
                                                             ? 'bg-slate-800 text-red-500 cursor-not-allowed'
                                                             : 'bg-white text-black hover:bg-amber-400 hover:scale-[1.02]'
                                                         }`}
                                                 >
-                                                    {isEquipped ? 'Aktiv' : (isLinkedHorse && !hasLinkedHorse ? 'Mangler Hest' : 'Velg')}
+                                                    {isEquipped ? 'VALGT' : (isLinkedHorse && !hasLinkedHorse ? 'MANGLER HEST' : 'VELG')}
                                                 </button>
                                             ) : (
                                                 <button
                                                     onClick={() => handleBuyClick(item)}
                                                     disabled={!!disabledReason}
-                                                    className={`w-full py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${disabledReason
-                                                        ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                                                        : 'bg-amber-400 text-black hover:bg-amber-300 hover:scale-[1.02] shadow-lg shadow-amber-900/20'
+                                                    className={`w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${disabledReason
+                                                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                                                        : 'bg-amber-400 text-black hover:bg-amber-300 hover:scale-[1.02] shadow-lg shadow-amber-900/10'
                                                         }`}
                                                 >
-                                                    {disabledReason || 'Kjøp'}
+                                                    {disabledReason || 'KJØP'}
                                                 </button>
                                             )}
                                         </div>
@@ -183,6 +179,14 @@ export const CaravanCosmeticsShop: React.FC<CaravanCosmeticsShopProps> = ({ play
                 .no-scrollbar {
                     -ms-overflow-style: none;
                     scrollbar-width: none;
+                }
+                .mask-scroll {
+                     mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+                    -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+                }
+                .mask-scroll-content {
+                    mask-image: linear-gradient(to bottom, black 95%, transparent 100%);
+                    -webkit-mask-image: linear-gradient(to bottom, black 95%, transparent 100%);
                 }
             `}</style>
         </div>

@@ -414,7 +414,7 @@ export const MinigameOverlay: React.FC<MinigameProps> = ({ type, onComplete, onC
                                     initialDurability={player?.caravan?.durability || maxDurability}
                                     maxDurability={maxDurability}
                                     customization={player?.caravan?.customization}
-                                    resolvedHorseSkin={player?.horseCustomization?.skinId}
+                                    horseCustomization={player?.horseCustomization}
                                 />
                             );
 

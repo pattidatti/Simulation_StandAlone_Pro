@@ -344,6 +344,10 @@ export const handleEquipCaravanCosmetic = (ctx: ActionContext) => {
         case 'DECOR': actor.caravan.customization.decor = cosmeticId; break;
     }
 
+    // Defensive: Ensure structure is preserved
+    if (typeof actor.caravan.inventory === 'undefined') actor.caravan.inventory = {};
+    if (typeof actor.caravan.upgrades === 'undefined') actor.caravan.upgrades = [];
+
     localResult.message = `Utstyrte ${item.name}.`;
     return true;
 };

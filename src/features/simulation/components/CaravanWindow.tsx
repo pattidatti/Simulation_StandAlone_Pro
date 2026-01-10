@@ -64,7 +64,7 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
             animate={{ opacity: 1, scale: 1 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
         >
-            <div className="relative w-full max-w-5xl h-[750px] bg-[#0B0F19] rounded-[2rem] overflow-hidden flex shadow-2xl border border-white/5">
+            <div className="relative w-full max-w-7xl h-[750px] bg-[#0B0F19] rounded-[2rem] overflow-hidden flex shadow-2xl border border-white/5">
 
                 {/* --- LEFT PANEL: THE SHOWROOM --- */}
                 <div className="w-[38%] relative flex flex-col pointer-events-none">
@@ -83,10 +83,10 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                                     Karavane
                                 </h1>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className="px-2 py-0.5 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-[10px] font-black uppercase rounded">
+                                    <span className="px-2 py-0.5 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-xs font-black uppercase rounded">
                                         Nivå {caravan.level}
                                     </span>
-                                    <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+                                    <span className="text-slate-500 text-xs font-bold uppercase tracking-widest">
                                         {levelConfig.name}
                                     </span>
                                 </div>
@@ -97,7 +97,7 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                         <div className="space-y-3 bg-black/20 p-4 rounded-xl border border-white/5 backdrop-blur-sm pointer-events-auto">
                             {/* Capacity */}
                             <div className="space-y-1">
-                                <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
                                     <span>Lastkapasitet</span>
                                     <span className={currentCargoAmount >= capacity ? 'text-rose-400' : 'text-white'}>
                                         {currentCargoAmount} / {capacity}
@@ -114,7 +114,7 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
 
                             {/* Durability */}
                             <div className="space-y-1">
-                                <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
                                     <span>Tilstand</span>
                                     <span className={caravan.durability < levelConfig.durability * 0.3 ? 'text-rose-500' : 'text-emerald-400'}>
                                         {Math.round(caravan.durability)} / {levelConfig.durability}
@@ -133,7 +133,7 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                             {caravan.durability < levelConfig.durability && (
                                 <button
                                     onClick={handleRepair}
-                                    className="w-full mt-2 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center gap-2 group"
+                                    className="w-full mt-2 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-black uppercase transition-all flex items-center justify-center gap-2 group"
                                 >
                                     <span>🔧 Reparer</span>
                                     <span className="opacity-50 group-hover:opacity-100">
@@ -150,7 +150,7 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                             level={caravan.level}
                             upgrades={caravan.upgrades}
                             customization={player.caravan?.customization}
-                            resolvedHorseSkin={player.horseCustomization?.skinId}
+                            horseCustomization={player.horseCustomization}
                             className="w-full max-w-[340px] drop-shadow-[0_50px_60px_rgba(0,0,0,0.6)] z-10"
                         />
                         {/* Ground Reflection/Shadow */}
@@ -168,12 +168,12 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                                 <button
                                     key={tab}
                                     onClick={() => setSelectedTab(tab)}
-                                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selectedTab === tab
+                                    className={`px-5 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${selectedTab === tab
                                         ? 'bg-amber-400 text-black shadow-lg shadow-amber-400/20'
                                         : 'text-slate-500 hover:text-white hover:bg-white/5'
                                         }`}
                                 >
-                                    {tab === 'CARGO' ? 'Last' : tab === 'UPGRADES' ? 'Outfitter' : tab === 'STYLE' ? 'Style' : 'Reise'}
+                                    {tab === 'CARGO' ? 'Last' : tab === 'UPGRADES' ? 'Oppgraderinger' : tab === 'STYLE' ? 'Style' : 'Reise'}
                                 </button>
                             ))}
                         </div>
@@ -204,7 +204,7 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                                         <div className="grid grid-cols-2 gap-6">
                                             {/* Inventory to Caravan */}
                                             <div className="space-y-4">
-                                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
                                                     <span>Ditt Lager</span>
                                                     <div className="h-px bg-slate-800 flex-1" />
                                                 </h3>
@@ -220,12 +220,12 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                                                                     </div>
                                                                     <div>
                                                                         <div className="text-xs font-bold text-white uppercase group-hover:text-amber-400 transition-colors">{details?.label || res}</div>
-                                                                        <div className="text-[10px] text-slate-500 font-bold">Antall: {amt}</div>
+                                                                        <div className="text-xs text-slate-500 font-bold">Antall: {amt}</div>
                                                                     </div>
                                                                 </div>
                                                                 <button
                                                                     onClick={() => handleLoad(res as ResourceType)}
-                                                                    className="px-3 py-1.5 bg-slate-800 text-white hover:bg-amber-400 hover:text-black text-[10px] font-black uppercase rounded-lg transition-all"
+                                                                    className="px-3 py-1.5 bg-slate-800 text-white hover:bg-amber-400 hover:text-black text-xs font-black uppercase rounded-lg transition-all"
                                                                 >
                                                                     ➔
                                                                 </button>
@@ -237,7 +237,7 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
 
                                             {/* Caravan to Inventory */}
                                             <div className="space-y-4">
-                                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
                                                     <span>Karavane-Lass</span>
                                                     <div className="h-px bg-slate-800 flex-1" />
                                                 </h3>
@@ -253,12 +253,12 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                                                                     </div>
                                                                     <div>
                                                                         <div className="text-xs font-bold text-amber-200 uppercase">{details?.label || res}</div>
-                                                                        <div className="text-[10px] text-amber-400/60 font-bold">Lastet: {amt}</div>
+                                                                        <div className="text-xs text-amber-400/60 font-bold">Lastet: {amt}</div>
                                                                     </div>
                                                                 </div>
                                                                 <button
                                                                     onClick={() => handleUnload(res as ResourceType)}
-                                                                    className="px-3 py-1.5 bg-slate-900 text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 text-[10px] font-black uppercase rounded-lg transition-all"
+                                                                    className="px-3 py-1.5 bg-slate-900 text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 text-xs font-black uppercase rounded-lg transition-all"
                                                                 >
                                                                     Loss
                                                                 </button>
@@ -269,7 +269,7 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                                                         <div className="h-24 flex items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
                                                             <div className="text-center">
                                                                 <div className="text-2xl opacity-20 mb-1">📦</div>
-                                                                <div className="text-slate-600 text-[10px] font-bold uppercase">Tomt Lasterom</div>
+                                                                <div className="text-slate-600 text-xs font-bold uppercase">Tomt Lasterom</div>
                                                             </div>
                                                         </div>
                                                     )}
@@ -289,7 +289,7 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                                         className="space-y-8"
                                     >
                                         <div className="space-y-4">
-                                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Neste Nivå</h3>
+                                            <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Neste Nivå</h3>
                                             {(() => {
                                                 const next = GAME_BALANCE.CARAVAN.LEVELS.find(l => l.level === caravan.level + 1);
                                                 if (!next) return <p className="text-xs text-emerald-400 font-bold uppercase italic bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">Maks nivå nådd!</p>;
@@ -301,7 +301,7 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                                                             </div>
                                                             <div>
                                                                 <h4 className="text-white font-black uppercase italic text-lg group-hover:text-indigo-300 transition-colors">{next.name}</h4>
-                                                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                                                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
                                                                     Kapasitet: <span className="text-indigo-400">{next.capacity}</span> • Fart: <span className="text-indigo-400">{next.speed}x</span>
                                                                 </p>
                                                             </div>
@@ -318,7 +318,7 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                                         </div>
 
                                         <div className="space-y-4">
-                                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Spesialmoduler</h3>
+                                            <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Spesialmoduler</h3>
                                             <div className="grid grid-cols-2 gap-4">
                                                 {Object.entries(GAME_BALANCE.CARAVAN.UPGRADES).map(([key, up]: [string, any]) => {
                                                     const owned = (caravan.upgrades || []).includes(up.id);
@@ -334,13 +334,13 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                                                                     </div>
                                                                     <h4 className={`font-black text-xs uppercase ${owned ? 'text-emerald-400' : 'text-white'}`}>{up.name}</h4>
                                                                 </div>
-                                                                {owned && <span className="text-[9px] font-black text-emerald-950 bg-emerald-400 px-2 py-0.5 rounded uppercase">Eies</span>}
+                                                                {owned && <span className="text-xs font-black text-emerald-950 bg-emerald-400 px-2 py-0.5 rounded uppercase">Eies</span>}
                                                             </div>
-                                                            <p className="text-slate-500 text-[10px] font-bold uppercase leading-relaxed mb-4 h-8">{up.benefit}</p>
+                                                            <p className="text-slate-500 text-xs font-bold uppercase leading-relaxed mb-4 h-8">{up.benefit}</p>
                                                             {!owned && (
                                                                 <button
                                                                     onClick={() => handleUpgrade('MODULE', key.toLowerCase())}
-                                                                    className="w-full py-2 bg-slate-800 text-white text-[10px] font-black uppercase rounded-lg hover:bg-slate-700 border border-slate-700 transition-colors"
+                                                                    className="w-full py-2 bg-slate-800 text-white text-xs font-black uppercase rounded-lg hover:bg-slate-700 border border-slate-700 transition-colors"
                                                                 >
                                                                     Kjøp for {up.cost}g
                                                                 </button>
@@ -380,7 +380,7 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                                         className="space-y-6"
                                     >
                                         <div className="bg-amber-400/10 p-4 border border-amber-400/20 rounded-xl">
-                                            <p className="text-[10px] text-amber-200 font-bold uppercase flex items-center gap-2">
+                                            <p className="text-xs text-amber-200 font-bold uppercase flex items-center gap-2">
                                                 <span>🗺️</span> Reisen krever 20⚡ Stamina og 1🍞 Brød-niste.
                                             </p>
                                         </div>
@@ -402,9 +402,9 @@ export const CaravanWindow: React.FC<CaravanWindowProps> = ({ player, onAction, 
                                                         <div>
                                                             <div className="flex items-center gap-3">
                                                                 <h4 className={`font-black uppercase italic text-xl transition-colors ${isTarget ? 'text-indigo-300' : 'text-white group-hover:text-amber-400'}`}>{regName}</h4>
-                                                                {isTarget && <span className="bg-indigo-500 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase animate-pulse">Destinasjon</span>}
+                                                                {isTarget && <span className="bg-indigo-500 text-white text-xs font-black px-2 py-0.5 rounded uppercase animate-pulse">Destinasjon</span>}
                                                             </div>
-                                                            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1 group-hover:text-slate-400">Klikk for å starte reisen</p>
+                                                            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1 group-hover:text-slate-400">Klikk for å starte reisen</p>
                                                         </div>
                                                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform ${isTarget ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-500 group-hover:bg-amber-400 group-hover:text-black'}`}>
                                                             ➔

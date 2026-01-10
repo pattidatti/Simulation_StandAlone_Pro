@@ -66,6 +66,9 @@ export const FloatingActionTooltip: React.FC<FloatingActionTooltipProps> = ({ po
             // if (a.id === 'REST' && poi.id === 'village_square' && (player.role === 'KING' || player.role === 'BARON')) return false; // UNLOCKED FOR ALL
             if (a.id === 'FEAST' && player.role !== 'KING' && player.role !== 'BARON') return false;
 
+            // Hide "Join Role" button if player already has that role
+            if (a.id === 'JOIN_ROLE' && player.role === a.targetRole) return false;
+
             // Building level filtering
             const ALWAYS_AVAILABLE = ['OPEN_CRAFTING', 'CRAFT', 'REFINE', 'MARKET_VIEW', 'OPEN_GARRISON', 'OPEN_TAVERN_MENU', 'OPEN_WEAPON_RACK', 'OPEN_DICE_GAME', 'OPEN_RESOURCE_GAME'];
 

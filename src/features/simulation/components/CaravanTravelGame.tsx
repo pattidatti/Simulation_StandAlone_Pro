@@ -10,14 +10,14 @@ interface CaravanTravelGameProps {
     initialDurability?: number;
     maxDurability?: number;
     customization?: any;
-    resolvedHorseSkin?: string;
+    horseCustomization?: any;
 }
 
 /**
  * CaravanTravelGame - An atmospheric side-scrolling experience representing the journey between regions.
  * Features high-contrast silhouettes and "Central Europe" aesthetics.
  */
-export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete, targetRegionId, caravanLevel, upgrades = [], initialDurability = 100, maxDurability = 100, customization, resolvedHorseSkin }) => {
+export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete, targetRegionId, caravanLevel, upgrades = [], initialDurability = 100, maxDurability = 100, customization, horseCustomization }) => {
     // ... (rest of the component)
 
     // ... inside render ...
@@ -80,7 +80,8 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
         const hasGuardPost = upgrades.includes('guard_post');
         const hasSilkChests = upgrades.includes('silk_chests');
 
-        const baseSpeed = 1.2 + (caravanLevel * 0.2) + (hasHeavyAxles ? 0.3 : 0);
+        // Speed Tuning: Base 1.0. Level 1 = 1.1. Level 5 = 1.5. Heavy Axles = +0.15. Max = 1.65 (approx 50% boost from L1).
+        const baseSpeed = 1.0 + (caravanLevel * 0.1) + (hasHeavyAxles ? 0.15 : 0);
 
         const render = (time: number) => {
             if (!lastTime) lastTime = time;
@@ -301,7 +302,7 @@ export const CaravanTravelGame: React.FC<CaravanTravelGameProps> = ({ onComplete
                         level={caravanLevel}
                         upgrades={upgrades}
                         customization={customization}
-                        resolvedHorseSkin={resolvedHorseSkin}
+                        horseCustomization={horseCustomization}
                         isMoving={!isFinished && !gameState.current.isBroken}
                         className="w-full drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)]"
                     />

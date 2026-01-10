@@ -10,3 +10,4 @@ export * from './data/items';
 export * from './data/production';
 export * from './data/roles';
 export * from './data/world';
+export * from './data/cosmetics';
