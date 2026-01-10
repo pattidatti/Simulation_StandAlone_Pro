@@ -6,23 +6,23 @@
 ## Medium Priority
 - [ ] 
 ## Low Priority
-- [ ] Sjekke at systemene for å bytte baroner og konge faktisk eksisterer og at de virker skikkelig. 
+- [x] Sjekke at systemene for å bytte baroner og konge faktisk eksisterer og at de virker skikkelig. 
 - [ ] Dart i vertshuset (andre etasje)
 - [x] Husmannsplass viser ikke riktige bilder når man har oppgradert 1-5, hverken ute eller inne i stugo. Vi bruker map_peasant_farm og map_stugo_interior . Undersøk 
-- [ ] Mulighet for å kjøpe større antall i markedet. Oppdatere UI på marked. 
+- [x] Mulighet for å kjøpe større antall i markedet. Oppdatere UI på marked. 
 - [] Vi må ha jucy screenshake og timestop på minigames slik at de får skikkelig vekt. 
-- [] går ikke an å legge inn beleiringssverd og rustning i krigsrommet som baron. Ser den ikke at jeg har i inventory?
+-  x] går ikke an å legge inn beleiringssverd og rustning i krigsrommet som baron. Ser den ikke at jeg har i inventory?
 - [ ] Krigsrommet 
-- [] UI på oppgradering av bygninger må være mye mer tydelig. Hvilket nivå man er på, hva man kan oppgradere, hva man har oppgradert, hva man kan oppgradere til og kjempetydelig når man har nådd max nivå. 
+- x] UI på oppgradering av bygninger må være mye mer tydelig. Hvilket nivå man er på, hva man kan oppgradere, hva man har oppgradert, hva man kan oppgradere til og kjempetydelig når man har nådd max nivå. 
 - [ ] Sjekke produksjonsbygningenes oppgraderinger. Har alt ekstra funksjoner, er den nye større fordeler av å oppgradere på alle bygningene?
 - [ ] Kan bør kunne bestemme hvor mye man vil bidra med på oppgraderinger. 
 - [ ] Sjekke at produksjonsbygningene er individuelle per ragion. 
 - [ ] Opprette ny kanal i chat kalt Feedback (Tilgjengelig for alle). 
 - [ ] PUblic leaderboard. 
 - [ ] Spise omelett krever stamina? 
-- [ ] Honning har ingen funksjon.  
+- [x] Honning har ingen funksjon.  
 - [] SMelte jernbarre minigame funkerer dårlig. 
-- [ ] Legge inn timer på honning, altfor OP. Holder at det er en timer på POI, ikke oppe til venstre. 
+- [x] Legge inn timer på honning, altfor OP. Holder at det er en timer på POI, ikke oppe til venstre. 
 ## Completed
 - [x] Initialized todo.md
 - [x] Oppgraderinger av bygninger virker ikke, går ikke an å bidra. Spesielt husmannsplass

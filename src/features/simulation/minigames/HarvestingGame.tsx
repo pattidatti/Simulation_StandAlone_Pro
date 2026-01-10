@@ -122,7 +122,9 @@ export const HarvestingGame: React.FC<{
         <div className={`p-8 text-center min-h-[600px] relative flex flex-col items-center justify-center overflow-hidden ${shake ? 'animate-shake' : ''} `} style={{ backgroundImage: bg, backgroundSize: 'cover', backgroundPosition: 'center' }}>
             <div className={`absolute inset-0 bg-black/70 z-0 transition-all duration-75 ${isHitStopping ? 'bg-indigo-900/50 mix-blend-hard-light' : ''}`} />
             <div className={`relative z-10 w-full flex flex-col items-center transition-all duration-75 ${isHitStopping ? 'scale-105 brightness-150 contrast-125' : ''}`}>
-                <h2 className="text-4xl font-black text-white mb-8 drop-shadow-lg tracking-tighter uppercase">{isMining ? 'Gruvedrift' : isQuarrying ? 'Steinhugger' : isForaging ? 'Sanking' : 'Kornhøsting'}</h2>
+                <h2 className="text-4xl font-black text-white mb-8 drop-shadow-lg tracking-tighter uppercase">
+                    {isMining ? 'Gruvedrift' : isQuarrying ? 'Steinhugger' : isForaging ? 'Sanking' : resourceName?.toLowerCase().includes('lin') ? 'Linhøsting' : 'Kornhøsting'}
+                </h2>
                 {!isFinished ? (
                     <>
                         <div className="mb-4 text-xs font-black text-amber-500 uppercase tracking-widest">{resourceName}</div>

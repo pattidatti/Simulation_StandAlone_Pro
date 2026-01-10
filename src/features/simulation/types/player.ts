@@ -126,6 +126,20 @@ export interface SimulationPlayer {
             unlocked: string[];
         };
     };
+    boat?: {
+        stage: number;        // 0-4
+        hullType: string;     // e.g., 'oak_standard'
+        stamina: number;      // Actual boat stamina/fuel
+        durability: number;
+        upgrades: string[];
+        customization?: {
+            color: string;
+            flagId: string;
+            figurehead: string;
+            unlocked: string[];
+        };
+        position?: { x: number, y: number, rotation: number };
+    };
     online?: boolean;
     hasSeenIntro?: boolean;
     lastActive: number;

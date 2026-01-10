@@ -16,10 +16,12 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
     // Determine which project to show based on region and role
     // ULTRATHINK: Barons and Kings should always prioritize the Throne Room at the world capital
     const projectsInRegion = (viewingRegionId === 'capital' || player.role === 'BARON' || player.role === 'KING')
-        ? ['throne_room', 'manor_ost', 'manor_vest']
-        : viewingRegionId === 'region_ost'
-            ? ['manor_ost']
-            : ['manor_vest'];
+        ? ['throne_room', 'manor_ost', 'manor_vest', 'wharf']
+        : viewingRegionId === 'dock_hub'
+            ? ['wharf']
+            : viewingRegionId === 'region_ost'
+                ? ['manor_ost']
+                : ['manor_vest'];
 
     const [selectedProjectId, setSelectedProjectId] = useState(projectsInRegion[0]);
 
@@ -45,7 +47,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                         Det er ingen storslåtte prosjekter i dette området som krever din hjelp akkurat nå.
                         Prøv å dra til hovedstaden eller et av baroniene.
                     </p>
-                    <button onClick={onClose} className="mt-8 px-8 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400">Lukk vindu</button>
+                    <button onClick={onClose} className="mt-8 px-8 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[11px] font-black uppercase tracking-widest text-slate-400">Lukk vindu</button>
                 </div>
             </SimulationMapWindow>
         );
@@ -89,7 +91,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                             <button
                                 key={id}
                                 onClick={() => setSelectedProjectId(id)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeProjectId === id ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                                className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${activeProjectId === id ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
                             >
                                 {VILLAGE_BUILDINGS[id]?.name || id}
                             </button>
@@ -101,7 +103,10 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                 <div className="relative h-48 rounded-3xl overflow-hidden mb-8 group border border-white/5">
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent z-10" />
                     <img
-                        src={`${import.meta.env.BASE_URL}images/simulation/${activeProjectId === 'throne_room' ? 'throne_room_epic.png' : 'castle_construction_epic.png'}`}
+                        src={`${import.meta.env.BASE_URL}antigravity/brain/07597a3b-439f-498d-aa43-1b02768f5015/${activeProjectId === 'throne_room' ? 'maritime_shipyard_blueprint_bg_1768089214778.png' :
+                                activeProjectId === 'wharf' ? 'maritime_wharf_upgrade_epic_1768089228676.png' :
+                                    'maritime_wharf_upgrade_epic_1768089228676.png'
+                            }`}
                         alt={projectDef.name}
                         className="w-full h-48 object-cover rounded-2xl mb-6 shadow-2xl border border-white/10"
                     />
@@ -117,7 +122,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                         </div>
                         {/* Diagnostic Badge */}
                         <div className="bg-white/5 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 opacity-40">
-                            <span className="text-white/60 font-bold text-[8px] uppercase tracking-tighter">DB Nivå: {project.level || 0} / Max: {Object.keys(projectDef.levels || {}).length}</span>
+                            <span className="text-white/60 font-bold text-[11px] uppercase tracking-tighter">DB Nivå: {project.level || 0} / Max: {Object.keys(projectDef.levels || {}).length}</span>
                         </div>
                     </div>
                 </div>
@@ -126,7 +131,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                     {/* Progress & Actions */}
                     <div className="space-y-6">
                         <section>
-                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Mangler for ferdigstillelse</h4>
+                            <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-4">Mangler for ferdigstillelse</h4>
                             <div className="space-y-4">
                                 {Object.entries(requirements).map(([res, target]) => {
                                     const current = project.progress?.[res] || 0;
@@ -142,7 +147,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                                                     <span className="text-xl">{(RESOURCE_DETAILS as any)[res]?.icon || '📦'}</span>
                                                     <div>
                                                         <span className="text-sm font-bold text-white tracking-tight italic">{(RESOURCE_DETAILS as any)[res]?.label || res}</span>
-                                                        <p className="text-[10px] text-slate-500 font-medium">Beholdning: <span className="text-slate-300">{typeof playerHas === 'number' ? playerHas.toLocaleString() : playerHas}</span></p>
+                                                        <p className="text-[11px] text-slate-500 font-medium">Beholdning: <span className="text-slate-300">{typeof playerHas === 'number' ? playerHas.toLocaleString() : playerHas}</span></p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
@@ -164,7 +169,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => handleContribute(res, Math.min(10, playerHas || 1))}
-                                                        className={`flex-1 py-2 rounded-xl text-[10px] font-black text-white transition-all uppercase border
+                                                        className={`flex-1 py-2 rounded-xl text-[11px] font-black text-white transition-all uppercase border
                                                             ${isDone ? 'bg-white/5 border-white/10 opacity-50' : 'bg-white/5 hover:bg-white/10 border-white/10'}
                                                         `}
                                                     >
@@ -172,7 +177,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                                                     </button>
                                                     <button
                                                         onClick={() => handleContribute(res, Math.min(50, playerHas || 1))}
-                                                        className={`flex-1 py-2 rounded-xl text-[10px] font-black text-white transition-all uppercase
+                                                        className={`flex-1 py-2 rounded-xl text-[11px] font-black text-white transition-all uppercase
                                                             ${isDone ? 'bg-indigo-600/20 text-indigo-300/50 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500'}
                                                         `}
                                                     >
@@ -182,7 +187,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                                             )}
                                             {playerHas <= 0 && !isDone && (
                                                 <div className="py-2 text-center bg-black/20 rounded-xl border border-white/5">
-                                                    <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Du mangler {(RESOURCE_DETAILS as any)[res]?.label || res}</span>
+                                                    <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">Du mangler {(RESOURCE_DETAILS as any)[res]?.label || res}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -195,7 +200,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                     {/* Leaderboard & Rewards */}
                     <div className="space-y-8">
                         <section className="bg-slate-900/50 border border-white/5 rounded-[2rem] p-6">
-                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 px-2">Toppbidragsytere</h4>
+                            <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-6 px-2">Toppbidragsytere</h4>
                             <div className="space-y-2">
                                 {sortedContributors.length === 0 ? (
                                     <div className="text-center py-8 text-slate-500 text-xs italic">Ingen bidrag enda. Bli den første!</div>
@@ -203,7 +208,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                                     sortedContributors.slice(0, 5).map((contributor, idx) => (
                                         <div key={contributor.id} className={`flex items-center justify-between p-3 rounded-xl ${idx === 0 ? 'bg-amber-500/10 border border-amber-500/20' : 'hover:bg-white/5 transition-colors'}`}>
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${idx === 0 ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
+                                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black ${idx === 0 ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
                                                     {idx + 1}
                                                 </div>
                                                 <span className={`text-sm font-bold ${idx === 0 ? 'text-white' : 'text-slate-300'}`}>{contributor.name}</span>
@@ -217,7 +222,7 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
 
                         <section className="bg-indigo-600/10 border border-indigo-500/20 rounded-[2rem] p-6 relative overflow-hidden">
                             <div className="absolute -top-4 -right-4 w-24 h-24 bg-indigo-500/10 blur-2xl rounded-full" />
-                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4">Gevinst</h4>
+                            <h4 className="text-[11px] font-black text-indigo-400 uppercase tracking-widest mb-4">Gevinst</h4>
                             <div className="flex items-center gap-4">
                                 <span className="text-4xl">{selectedProjectId === 'throne_room' ? '👑' : '🏰'}</span>
                                 <div>

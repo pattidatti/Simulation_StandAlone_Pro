@@ -23,6 +23,9 @@ import { WorldMapEvents } from './components/WorldMap/WorldMapEvents';
 import { WorldMapKingdomPins } from './components/WorldMap/WorldMapKingdomPins';
 import { SimulationContributionModal } from './components/SimulationContributionModal';
 import { RackSvg } from './components/WeaponRackWindow';
+import { DockView } from './components/DockView';
+import { ShipyardWindow } from './components/ShipyardWindow';
+import { SailingMinigame } from './components/SailingMinigame';
 
 interface WorldMapProps {
     player: SimulationPlayer;
@@ -68,6 +71,12 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
         setIsTaxationOpen,
         isResourceGameOpen,
         setIsResourceGameOpen,
+        isShipyardOpen,
+        setIsShipyardOpen,
+        isSailingOpen,
+        setIsSailingOpen,
+        isWharfUpgradeOpen,
+        setIsWharfUpgradeOpen,
         direction,
         handlePOIAction
     } = useWorldMapLogic(player, onAction, onOpenMarket);
@@ -152,6 +161,10 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                         : (isNight ? 'map_barony_vest_v2_1610_night' : 'map_barony_vest_v2_1610');
                 }
                 break;
+            case 'dock':
+                // Special case for Dock: High-realism assets handled within DockView or here
+                baseName = `map_dock_${season.toLowerCase()}_${isNight ? 'night' : 'day'}`;
+                break;
             default:
                 baseName = 'map_barony_vest_v2_1610';
         }
@@ -210,6 +223,17 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                             )}
                         </div>
 
+                        {/* HIGH-REALISM DOCK HUB */}
+                        {viewMode === 'dock' && (
+                            <div className="absolute inset-0 z-30">
+                                <DockView
+                                    player={player}
+                                    world={{ season, weather, time: getDayPart(room.world?.gameTick || 0) === 'NIGHT' ? 'Night' : 'Day' }}
+                                    onAction={(actId: string) => handlePOIAction('dock', actId)}
+                                />
+                            </div>
+                        )}
+
                         {/* In-World Elements (Projected into scene) */}
                         {viewMode === 'farm_house' && (
                             <div
@@ -235,7 +259,7 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                                     currentUserId={player.id}
                                 />
                             )}
-                            <WorldMapPOI viewMode={viewMode} viewingRegionId={viewingRegionId} player={player} room={room} onSelect={setSelectedPOI} onEnterHub={setViewMode} onPOIAction={handlePOIAction} />
+                            <WorldMapPOI viewMode={viewMode} viewingRegionId={viewingRegionId} player={player} room={room} onSelect={setSelectedPOI} onEnterHub={setViewMode} onPOIAction={(actId: any) => handlePOIAction(viewMode, actId)} />
                             <WorldMapEvents viewMode={viewMode} viewingRegionId={viewingRegionId} worldEvents={worldEvents} onSelect={setSelectedEvent} />
                         </div>
                     </motion.div>
@@ -328,6 +352,30 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                         room={room}
                         onAction={onAction}
                         onClose={() => setIsTaxationOpen(false)}
+                    />
+                )}
+                {isShipyardOpen && (
+                    <ShipyardWindow
+                        player={player}
+                        room={room}
+                        onClose={() => setIsShipyardOpen(false)}
+                        onContribute={(stage, res) => onAction({ type: 'CONTRIBUTE_TO_BOAT', stage, resources: res })}
+                    />
+                )}
+                {isSailingOpen && (
+                    <SailingMinigame
+                        player={player}
+                        roomPin={room.pin}
+                        onExit={() => setIsSailingOpen(false)}
+                    />
+                )}
+                {isWharfUpgradeOpen && (
+                    <SimulationContributionModal
+                        player={player}
+                        room={room}
+                        onAction={onAction}
+                        onClose={() => setIsWharfUpgradeOpen(false)}
+                        viewingRegionId={viewingRegionId}
                     />
                 )}
             </AnimatePresence>

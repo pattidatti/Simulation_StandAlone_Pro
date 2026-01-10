@@ -23,6 +23,14 @@ export const GAME_BALANCE = {
         honey: 1,
         cloth: 1,
         wool: 0.5,
+        oak_log: 0.5,
+        oak_lumber: 2,
+        flax: 0.2,
+        linen_canvas: 3,
+        tar: 2,
+        fish_raw: 0.5,
+        silk: 5,
+        spice: 10,
         default: 0.1
     } as Record<string, number>,
     CAREERS: {
@@ -219,5 +227,13 @@ export const ACTION_ICONS: Record<string, string> = {
     EGG: '🥚',
     OMELETTE: '🍳',
     MANPOWER: '💪',
-    FAVOR: '🙏'
+    FAVOR: '🙏',
+    OAK_LOG: '🪵',
+    OAK_LUMBER: '🪵',
+    FLAX: '🌿',
+    LINEN_CANVAS: '📜',
+    TAR: '⚱️',
+    FISH_RAW: '🐟',
+    SILK: '🧶',
+    SPICE: '🧂'
 };

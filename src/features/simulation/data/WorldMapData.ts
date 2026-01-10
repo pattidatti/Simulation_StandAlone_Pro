@@ -88,6 +88,21 @@ export const POINTS_OF_INTEREST: POI[] = [
         roles: ['BARON'],
         actions: [{ id: 'RAID', label: 'Plyndre Nabo', cost: '-40⚡' }]
     },
+    {
+        id: 'dock', label: 'Kaien', icon: '⚓', top: '90%', left: '50%',
+        vest: { top: '90%', left: '40%' },
+        ost: { top: '90%', left: '60%' },
+        roles: ['PEASANT', 'BARON', 'KING', 'SOLDIER', 'MERCHANT'],
+        actions: [], isHub: true
+    },
+    {
+        id: 'flax_field', label: 'Lin-åkeren', icon: '🌿', top: '70%', left: '40%',
+        roles: ['PEASANT', 'BARON', 'KING'], parentId: 'fields',
+        actions: [
+            { id: 'PLANT_FLAX', label: 'Så Lin', cost: '-5 lin -30⚡' },
+            { id: 'HARVEST_FLAX', label: 'Høste Lin', cost: '-40⚡' }
+        ]
+    },
 
     // --- CASTLE LOCAL ---
     {
@@ -462,6 +477,26 @@ export const POINTS_OF_INTEREST: POI[] = [
         ]
     },
 
-
-
+    // --- DOCK LOCAL ---
+    {
+        id: 'dock_view', label: 'Horisonten', icon: '🌅', top: '30%', left: '50%',
+        roles: ['PEASANT', 'BARON', 'KING', 'SOLDIER', 'MERCHANT'], parentId: 'dock',
+        actions: [
+            { id: 'START_SAILING', label: 'Sette seil', cost: 'Båt kreves' }
+        ]
+    },
+    {
+        id: 'shipyard', label: 'Skipsverftet', icon: '🏗️', top: '60%', left: '25%',
+        roles: ['PEASANT', 'BARON', 'KING', 'MERCHANT'], parentId: 'dock',
+        actions: [
+            { id: 'OPEN_SHIPYARD', label: 'Åpne Verftet', cost: 'Bygg båt' }
+        ], isHub: true, isInterior: true
+    },
+    {
+        id: 'dock_administration', label: 'Havnefuten', icon: '📜', top: '40%', left: '75%',
+        roles: ['BARON', 'KING', 'MERCHANT'], parentId: 'dock',
+        actions: [
+            { id: 'OPEN_WHARF_UPGRADE', label: 'Oppgrader Kaien', cost: 'Globalt prosjekt' }
+        ]
+    },
 ];

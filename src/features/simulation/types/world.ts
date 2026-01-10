@@ -25,6 +25,15 @@ export interface SimulationMarket {
     meat: MarketItem;
     siege_sword: MarketItem;
     siege_armor: MarketItem;
+    // Maritime Items
+    oak_log: MarketItem;
+    oak_lumber: MarketItem;
+    flax: MarketItem;
+    linen_canvas: MarketItem;
+    tar: MarketItem;
+    fish_raw: MarketItem;
+    silk: MarketItem;
+    spice: MarketItem;
 }
 
 export interface SimulationRegion {

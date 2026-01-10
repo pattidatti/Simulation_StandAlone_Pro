@@ -28,6 +28,9 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
     const [isConstructionOpen, setIsConstructionOpen] = useState(false);
     const [isTaxationOpen, setIsTaxationOpen] = useState(false);
     const [isResourceGameOpen, setIsResourceGameOpen] = useState(false);
+    const [isShipyardOpen, setIsShipyardOpen] = useState(false);
+    const [isSailingOpen, setIsSailingOpen] = useState(false);
+    const [isWharfUpgradeOpen, setIsWharfUpgradeOpen] = useState(false);
 
     const getViewLevel = useCallback((mode: string): number => {
         if (mode === 'kingdom') return 0;
@@ -57,6 +60,8 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
                 if (isChickenCoopOpen) { setIsChickenCoopOpen(false); return; }
                 if (isTaxationOpen) { setIsTaxationOpen(false); return; }
                 if (isResourceGameOpen) { setIsResourceGameOpen(false); return; }
+                if (isShipyardOpen) { setIsShipyardOpen(false); return; }
+                if (isSailingOpen) { setIsSailingOpen(false); return; }
                 if (dialogNPC) { setDialogNPC(null); return; }
                 if (selectedEvent) { setSelectedEvent(null); return; }
                 if (selectedPOI) { setSelectedPOI(null); return; }
@@ -117,6 +122,24 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
             return;
         }
 
+        if (actId === 'OPEN_SHIPYARD') {
+            setIsShipyardOpen(true);
+            setSelectedPOI(null);
+            return;
+        }
+
+        if (actId === 'START_SAILING') {
+            setIsSailingOpen(true);
+            setSelectedPOI(null);
+            return;
+        }
+
+        if (actId === 'OPEN_WHARF_UPGRADE') {
+            setIsWharfUpgradeOpen(true);
+            setSelectedPOI(null);
+            return;
+        }
+
         const prodCtx = getProductionContext(poiId);
         if (prodCtx && (actId === 'OPEN_CRAFTING' || actId === 'CRAFT' || actId === 'REFINE' || actId.startsWith('REFINE_') || actId.startsWith('CRAFT_') || (CRAFTING_RECIPES as any)[actId] || actId === 'REPAIR')) {
             setProductionContext({ ...prodCtx, initialView: actId === 'REPAIR' ? 'REPAIR' : 'PRODUCE' });
@@ -149,7 +172,7 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
             setUpgradingBuildingId(bId);
         } else if (actId === 'OPEN_DICE_GAME') {
             setIsDiceGameOpen(true);
-        } else if (actId === 'OPEN_RESOURCE_GAME') {
+        } else if (actId === 'OPEN_RESOURCE_GAME' || actId === 'HARVEST_FLAX' || actId === 'PLANT_FLAX') {
             setIsResourceGameOpen(true);
         } else if (actId === 'CHAT_LOCAL') {
             const randomNPC = TAVERN_NPCS[Math.floor(Math.random() * TAVERN_NPCS.length)];
@@ -188,6 +211,12 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
         setIsTaxationOpen,
         isResourceGameOpen,
         setIsResourceGameOpen,
+        isShipyardOpen,
+        setIsShipyardOpen,
+        isSailingOpen,
+        setIsSailingOpen,
+        isWharfUpgradeOpen,
+        setIsWharfUpgradeOpen,
         direction,
         handlePOIAction
     };

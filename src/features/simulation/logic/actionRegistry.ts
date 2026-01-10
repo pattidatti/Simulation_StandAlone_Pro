@@ -2,7 +2,7 @@ import type { ActionRegistry } from './actionTypes';
 import { handleWork, handleChop, handleMiningAction, handleForage, handleHunt, handleGatherWool, handleGatherHoney, handlePlant, handleHarvest, handleFeedChickens, handleCollectEggs, handleMaintainCrop } from './handlers/GatheringHandlers';
 import { handleCraft, handleRefine, handleRepair } from './handlers/CraftingHandlers';
 import { handleEquipItem, handleUnequipItem, handleDiscardItem } from './handlers/InventoryHandlers';
-import { handleTax, handleDraft, handleDecree, handleContribute, handleUpgradeBuilding, handleUpgrade, handleJoinRole } from './handlers/ManagementHandlers';
+import { handleTax, handleDraft, handleDecree, handleContribute, handleUpgradeBuilding, handleUpgrade, handleJoinRole, handleContributeToBoat } from './handlers/ManagementHandlers';
 import { handleStartSiege, handleJoinSiege, handleSiegeAction, handleReinforceGarrison, handleRepairWalls, handleUpgradeFortification } from './handlers/SiegeHandlers';
 import { handleRaid, handlePatrol } from './handlers/CombatHandlers';
 import { handleBuy, handleSell, handleTradeRoute } from './handlers/MarketHandlers';
@@ -48,6 +48,7 @@ export const ACTION_REGISTRY: ActionRegistry = {
     UPGRADE_BUILDING: handleUpgradeBuilding,
     UPGRADE: handleUpgrade,
     JOIN_ROLE: handleJoinRole,
+    CONTRIBUTE_TO_BOAT: handleContributeToBoat,
 
     // Siege
     START_SIEGE: handleStartSiege,

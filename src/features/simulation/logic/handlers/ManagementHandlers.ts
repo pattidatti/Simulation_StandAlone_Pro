@@ -536,3 +536,52 @@ export const handleJoinRole = (ctx: ActionContext) => {
 };
 
 
+
+export const handleContributeToBoat = (ctx: ActionContext) => {
+    const { actor, action, localResult } = ctx;
+    const { stage: targetStage, resources: reqs } = action;
+
+    if (!actor.boat) {
+        actor.boat = { stage: 0, hullType: 'oak_standard', stamina: 100, durability: 100, upgrades: [] };
+    }
+
+    if (actor.boat.stage >= targetStage) {
+        localResult.success = false;
+        localResult.message = "Du har allerede fullført dette trinnet.";
+        return false;
+    }
+
+    // Check if it's the sequential next stage
+    if (targetStage !== actor.boat.stage + 1) {
+        localResult.success = false;
+        localResult.message = "Du må fullføre forrige trinn først.";
+        return false;
+    }
+
+    let canAfford = true;
+    Object.entries(reqs as Resources).forEach(([res, amt]) => {
+        if (((actor.resources as any)[res] || 0) < (amt as number)) canAfford = false;
+    });
+
+    if (!canAfford) {
+        localResult.success = false;
+        localResult.message = "Mangler ressurser for å bygge båten.";
+        return false;
+    }
+
+    Object.entries(reqs as Resources).forEach(([res, amt]) => {
+        (actor.resources as any)[res] -= (amt as number);
+        localResult.utbytte.push({ resource: res as any, amount: -(amt as number) });
+    });
+
+    actor.boat.stage = targetStage;
+    localResult.message = `Båtbygging: Fullførte steg ${targetStage}!`;
+
+    // Grant XP
+    actor.stats.xp += 100;
+    if (actor.skills.CRAFTING) {
+        actor.skills.CRAFTING.xp += 50;
+    }
+
+    return true;
+};

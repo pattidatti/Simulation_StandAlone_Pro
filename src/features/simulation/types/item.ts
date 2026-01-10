@@ -19,6 +19,16 @@ export interface Resources {
     manpower: number;
     egg: number;
     omelette: number;
+    // Maritime Resources
+    oak_log: number;
+    oak_lumber: number;
+    flax: number;
+    linen_canvas: number;
+    tar: number;
+    fish_raw: number;
+    fish_cooked: number;
+    silk: number;
+    spice: number;
 }
 
 export type EquipmentSlot = 'MAIN_HAND' | 'OFF_HAND' | 'HEAD' | 'BODY' | 'FEET' | 'TRINKET' | 'AXE' | 'PICKAXE' | 'SCYTHE' | 'HAMMER' | 'BOW' | 'TRAP' | 'CHISEL' | 'CONSUMABLE';
