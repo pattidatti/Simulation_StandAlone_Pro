@@ -14,13 +14,10 @@ import type { SimulationPlayer } from './simulationTypes';
 
 /* --- MARKET HANDLER --- */
 export const handleGlobalTrade = async (pin: string, playerId: string, action: any) => {
-    const { resource, type: actionType } = action;
-    // Buying/Selling involves two transactions: Market and Player.
-    // We transaction the Market FIRST to lock price/stock.
+    const { resource, type: actionType, amount: requestedAmount } = action;
+    const amount = Math.max(1, Math.floor(requestedAmount || 1));
 
-    // 1. Determine Market Region (Guestimate: Player's region or Capital)
-    // To do this strictly without extensive reads, we assume 'capital' or read the player first.
-    // Reading player is safe (non-blocking).
+    // Buying/Selling involves two transactions: Market and Player.
     const playerRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
     const playerSnap = await get(playerRef);
     if (!playerSnap.exists()) return { success: false, error: "Player not found" };
@@ -37,32 +34,34 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
     // TRANSACTION 1: MARKET
     await runTransaction(marketItemRef, (item: any) => {
         if (!item) {
-            // Lazy init item from INITIAL_MARKET
             const initialItem = (INITIAL_MARKET as any)[resource];
-            if (!initialItem) return; // Abort if unknown resource
+            if (!initialItem) return;
             item = JSON.parse(JSON.stringify(initialItem));
         }
 
         if (actionType === 'BUY') {
-            if (item.stock <= 0) return; // Out of stock
+            if (item.stock < amount) return; // Out of stock
             tradeResult.price = item.price;
-            tradeResult.cost = item.price;
-            tradeResult.amount = 1;
+            tradeResult.cost = item.price * amount;
+            tradeResult.amount = amount;
 
             // Mutate
-            item.stock -= 1;
-            item.price += item.price * (GAME_BALANCE.MARKET.PRICE_IMPACT_BUY || 0.005);
+            item.stock -= amount;
+            // Compound price impact: price * (1 + impact)^amount
+            const impact = GAME_BALANCE.MARKET.PRICE_IMPACT_BUY || 0.005;
+            item.price = item.price * Math.pow(1 + impact, amount);
             tradeResult.success = true;
         } else if (actionType === 'SELL') {
             tradeResult.price = item.price;
-            // Sell Price logic
-            const sellPrice = item.price * (GAME_BALANCE.MARKET.SELL_RATIO || 0.8);
-            tradeResult.revenue = sellPrice;
-            tradeResult.amount = 1;
+            const sellPricePerUnit = item.price * (GAME_BALANCE.MARKET.SELL_RATIO || 0.8);
+            tradeResult.revenue = sellPricePerUnit * amount;
+            tradeResult.amount = amount;
 
             // Mutate
-            item.stock += 1;
-            item.price -= item.price * (GAME_BALANCE.MARKET.PRICE_IMPACT_SELL || 0.005);
+            item.stock += amount;
+            // Compound price impact: price * (1 - impact)^amount
+            const impact = GAME_BALANCE.MARKET.PRICE_IMPACT_SELL || 0.005;
+            item.price = item.price * Math.pow(1 - impact, amount);
             tradeResult.success = true;
         }
 
@@ -70,20 +69,16 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
     });
 
     if (!tradeResult.success) {
-        return { success: false, error: "Handel feilet (Vare mangler eller utsolgt)" };
+        return { success: false, error: "Handel feilet (Vare mangler, utsolgt eller for lite på lager)" };
     }
 
     // TRANSACTION 2: PLAYER
-    // If this fails, the market is slightly desynced (item consumed/sold but no gold change).
-    // In a game jam context, this is acceptable risk compared to Room Lock.
     let playerSuccess = false;
     let finalMessage = "";
 
     await runTransaction(playerRef, (actor: any) => {
         if (!actor) return;
         if (!actor.resources) actor.resources = {};
-        if (!actor.inventory) actor.inventory = []; // Ensure inventory exists
-
 
         if (actionType === 'BUY') {
             const cost = tradeResult.cost || 0;
@@ -91,29 +86,27 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
                 return; // Abort
             }
             actor.resources.gold = (actor.resources.gold || 0) - cost;
+            actor.resources[resource] = (actor.resources[resource] || 0) + amount;
 
-            // DEFAULT RESOURCE LOGIC
-            actor.resources[resource] = (actor.resources[resource] || 0) + 1;
             const details = (RESOURCE_DETAILS as any)[resource];
-            finalMessage = `Kjøpte 1 ${details ? details.label : resource} for ${cost.toFixed(2)}g`;
+            finalMessage = `Kjøpte ${amount} ${details ? details.label : resource} for ${cost.toFixed(1)}g`;
             playerSuccess = true;
 
         } else if (actionType === 'SELL') {
             const revenue = tradeResult.revenue || 0;
+            if ((actor.resources[resource] || 0) < amount) return; // Abort
 
-            // DEFAULT RESOURCE LOGIC
-            if ((actor.resources[resource] || 0) < 1) return; // Abort
-            actor.resources[resource] -= 1;
+            actor.resources[resource] -= amount;
             actor.resources.gold = (actor.resources.gold || 0) + revenue;
+
             const details = (RESOURCE_DETAILS as any)[resource];
-            finalMessage = `Solgte 1 ${details ? details.label : resource} for ${revenue.toFixed(2)}g`;
+            finalMessage = `Solgte ${amount} ${details ? details.label : resource} for ${revenue.toFixed(1)}g`;
             playerSuccess = true;
         }
         return actor;
     });
 
     if (playerSuccess) {
-        // Log to global messages (fire and forget)
         logSimulationMessage(pin, `[${new Date().toLocaleTimeString()}] ${player.name}: ${finalMessage}`);
         return {
             success: true,
@@ -121,13 +114,13 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
                 success: true,
                 timestamp: Date.now(),
                 message: finalMessage,
-                utbytte: actionType === 'BUY' ? [{ resource, amount: 1 }] : [{ resource: 'gold', amount: tradeResult.revenue }],
+                utbytte: actionType === 'BUY' ? [{ resource, amount: amount }] : [{ resource: 'gold', amount: tradeResult.revenue }],
                 xp: [],
                 durability: []
             }
         };
     } else {
-        return { success: false, error: "Transaksjon avbrutt (Mangler ressurser)" };
+        return { success: false, error: "Transaksjon avbrutt (Mangler ressurser eller gull)" };
     }
 };
 
