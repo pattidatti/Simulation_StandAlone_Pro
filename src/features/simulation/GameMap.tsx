@@ -98,12 +98,12 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                     : (isNight ? 'map_farm_fields_night' : 'map_farm_fields');
                 break;
             case 'peasant_farm': {
-                const level = world?.settlement?.buildings?.farm_house?.level || 1;
+                const level = player.buildings?.farm_house?.level || 1;
                 baseName = level > 1 ? `map_peasant_farm_lvl${level}` : 'map_peasant_farm';
                 break;
             }
             case 'farm_house': {
-                const level = world?.settlement?.buildings?.farm_house?.level || 1;
+                const level = player.buildings?.farm_house?.level || 1;
                 baseName = level > 1 ? `map_stugo_interior_lvl${level}` : 'map_stugo_interior';
                 break;
             }

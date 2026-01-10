@@ -8,7 +8,7 @@
 ## Low Priority
 - [ ] Sjekke at systemene for å bytte baroner og konge faktisk eksisterer og at de virker skikkelig. 
 - [ ] Dart i vertshuset (andre etasje)
-- [ ] Husmannsplass mangler bilder når man har oppgradert 1-5. 
+- [ ] Husmannsplass viser ikke riktige bilder når man har oppgradert 1-5, hverken ute eller inne i stugo. Vi bruker map_peasant_farm og map_stugo_interior . Undersøk 
 - [ ] Mulighet for å kjøpe større antall i markedet. Oppdatere UI på marked. 
 - [ ] Bryne må ha 100 i holdbarhet. 
 - [ ] Kan ikke reparerer alle items i smien. 

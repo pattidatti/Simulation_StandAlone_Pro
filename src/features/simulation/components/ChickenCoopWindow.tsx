@@ -50,6 +50,9 @@ export const ChickenCoopWindow: React.FC<ChickenCoopWindowProps> = ({ player, ac
     const totalTime = currentProcess ? currentProcess.readyAt - currentProcess.startedAt : 1;
     const progress = currentProcess ? 1 - (timeLeft / totalTime) : 0;
 
+    const farmLevel = player.buildings?.farm_house?.level || 1;
+    const bgBaseName = farmLevel > 1 ? `map_peasant_farm_lvl${farmLevel}` : 'map_peasant_farm';
+
     return (
         <SimulationMapWindow
             title="Hønsehuset"
@@ -61,7 +64,7 @@ export const ChickenCoopWindow: React.FC<ChickenCoopWindowProps> = ({ player, ac
                 {/* Scene */}
                 <div className="relative w-full h-48 bg-slate-900/50 rounded-2xl overflow-hidden border border-white/10 flex items-center justify-center">
                     <img
-                        src={`${import.meta.env.BASE_URL}map_peasant_farm.png`}
+                        src={`${import.meta.env.BASE_URL}${bgBaseName}.png`}
                         className="absolute inset-0 w-full h-full object-cover opacity-30 grayscale"
                         alt="Coop Background"
                     />
