@@ -5,7 +5,7 @@ import { useSimulation } from '../SimulationContext';
 import { GameButton } from '../ui/GameButton';
 import { ResourceIcon } from '../ui/ResourceIcon';
 import { Badge } from '../ui/Badge';
-import { ShoppingBag, Ship } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 import { SimulationMapWindow } from './ui/SimulationMapWindow';
 import { handleCareerChange } from '../globalActions';
 import { GAME_BALANCE } from '../data/gameBalance';
@@ -21,7 +21,7 @@ interface SimulationMarketProps {
     pin: string;
 }
 
-export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ player, market, regions, allMarkets, onAction, pin }) => {
+export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ player, market, regions, onAction, pin }) => {
 
     const { actionLoading, setActiveTab, viewingRegionId } = useSimulation();
     const [isWarningOpen, setIsWarningOpen] = React.useState(false);
@@ -35,6 +35,7 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                 onAction={onAction}
                 onClose={() => setActiveTab('MAP')}
                 viewingRegionId={viewingRegionId || player.regionId}
+                pin={pin}
             />
         );
     }
@@ -215,69 +216,7 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                     </div>
                 </div>
 
-                {/* MERCHANT: FOREIGN TRADE NETWORK */}
-                {player.role === 'MERCHANT' && (
-                    <div className="mt-4 space-y-2">
-                        <div className="flex items-center gap-2 px-2 py-0.5 bg-blue-500/5 rounded-lg w-fit">
-                            <Ship className="w-4 h-4 text-blue-400" />
-                            <h3 className="text-sm font-black text-white uppercase tracking-tighter">Handelsnettverk</h3>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                            {Object.values(regions || {})
-                                .concat([{ id: 'capital', name: 'Kongeriket' } as any])
-                                .filter((r: any) => r.id !== player.regionId && r.id !== undefined)
-                                .map((region: any) => {
-                                    const targetMarket = allMarkets?.[region.id];
-                                    if (!targetMarket) return null;
-
-                                    return (
-                                        <div key={region.id} className="bg-slate-900/40 border border-white/5 rounded-xl p-3 backdrop-blur-md hover:border-blue-500/30 transition-colors group">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h4 className="text-xs font-black text-white uppercase tracking-tight truncate">{region.name}</h4>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                {['grain', 'wood', 'iron_ore', 'iron_ingot', 'siege_sword', 'siege_armor'].map(res => {
-                                                    const item = (targetMarket as any)[res];
-                                                    if (!item) return null;
-                                                    const foreignPrice = item.price;
-                                                    const details = (RESOURCE_DETAILS as any)[res] || { label: res, icon: '📦' };
-
-                                                    return (
-                                                        <div key={res} className="flex justify-between items-center bg-black/40 p-1.5 rounded-lg border border-white/5">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-lg">{details.icon}</span>
-                                                                <span className="text-[9px] font-black text-white uppercase truncate max-w-[40px]">{details.label}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-game-gold font-black text-[10px]">{foreignPrice.toFixed(0)}g</span>
-                                                                <div className="flex gap-0.5">
-                                                                    <button
-                                                                        onClick={() => onAction({ type: 'TRADE_ROUTE', targetRegionId: region.id, resource: res, action: 'IMPORT' })}
-                                                                        disabled={!!actionLoading}
-                                                                        className="px-1 py-0.5 bg-emerald-600/20 text-emerald-400 text-[8px] font-black rounded"
-                                                                    >
-                                                                        I
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => onAction({ type: 'TRADE_ROUTE', targetRegionId: region.id, resource: res, action: 'EXPORT' })}
-                                                                        disabled={!!actionLoading}
-                                                                        className="px-1 py-0.5 bg-rose-600/20 text-rose-400 text-[8px] font-black rounded"
-                                                                    >
-                                                                        E
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                        </div>
-                    </div>
-                )}
             </div>
 
             <SimulationRoleWarningModal

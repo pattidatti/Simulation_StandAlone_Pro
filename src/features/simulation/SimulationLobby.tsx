@@ -113,6 +113,7 @@ export const SimulationLobby: React.FC = () => {
                     name: name,
                     role: role,
                     regionId: regionId,
+                    homeRegionId: regionId, // Set Home Region on creation
                     resources: INITIAL_RESOURCES[role] || INITIAL_RESOURCES.PEASANT,
                     skills: INITIAL_SKILLS[role] || INITIAL_SKILLS.PEASANT,
                     stats: { xp: 0, level: 1, reputation: 50, contribution: 0 },

@@ -1279,6 +1279,17 @@ export const handleAbdicate = async (pin: string, playerId: string) => {
     // 1. Demote Player
     await runTransaction(playerRef, (p: any) => {
         if (!p) return;
+
+        // Exile Logic: If King, must leave Capital. If Baron, stays in region.
+        if (p.role === 'KING') {
+            const exileRegion = Math.random() > 0.5 ? 'region_ost' : 'region_vest';
+            p.homeRegionId = exileRegion;
+            p.regionId = exileRegion; // Physically move them too? Yes, to make sense.
+        } else {
+            // Baron just becomes a peasant in their own region
+            p.homeRegionId = p.regionId;
+        }
+
         p.role = 'PEASANT';
         if (p.status) p.status.legitimacy = 0; // Reset legitimacy
         success = true;
@@ -1287,7 +1298,17 @@ export const handleAbdicate = async (pin: string, playerId: string) => {
 
     if (success) {
         // 2. Update Public Profile
-        await update(ref(db, `simulation_rooms/${pin}/public_profiles/${playerId}`), { role: 'PEASANT' });
+        // Note: We need to know where they ended up. Since we randomized inside transaction, we should probably fetch or just update blindly if we knew. 
+        // Actually, to be accurate, let's just fetch the new state quickly or rely on the fact that we can't easily know the random result here without reading back.
+        // Let's do a quick read-back to ensure public profile matches 100%.
+        const updatedPlayerSnap = await get(playerRef);
+        const updatedPlayer = updatedPlayerSnap.val();
+
+        await update(ref(db, `simulation_rooms/${pin}/public_profiles/${playerId}`), {
+            role: 'PEASANT',
+            regionId: updatedPlayer.regionId,
+            homeRegionId: updatedPlayer.homeRegionId
+        });
 
         // 3. Vacate Region Ruler
         if (regionId && regionId !== 'capital') {
@@ -1405,6 +1426,7 @@ export const handleClaimEmptyThrone = async (pin: string, playerId: string, regi
         p.resources.gold -= cost;
         p.role = newRole;
         p.regionId = regionId;
+        p.homeRegionId = regionId; // Set new Home Region
         if (p.status) p.status.legitimacy = 50;
         success = true;
         return p;
@@ -1418,7 +1440,8 @@ export const handleClaimEmptyThrone = async (pin: string, playerId: string, regi
         });
         await update(ref(db, `simulation_rooms/${pin}/public_profiles/${playerId}`), {
             role: newRole,
-            regionId
+            regionId,
+            homeRegionId: regionId
         });
 
         const title = isCapital ? 'Konge' : 'Baron';

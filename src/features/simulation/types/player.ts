@@ -70,6 +70,7 @@ export interface SimulationPlayer {
     name: string;
     role: Role;
     regionId: string;
+    homeRegionId?: string;
     resources: Resources;
     stats: PlayerStats;
     status: PlayerStatus;
