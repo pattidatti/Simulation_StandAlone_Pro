@@ -105,9 +105,15 @@ export const SimulationWarRoom: React.FC<SimulationWarRoomProps> = ({ player, re
                                 <div className="flex justify-between text-[10px] text-slate-300">
                                     <span>Kostnad:</span>
                                     <div className="flex gap-3">
-                                        <span className="flex items-center gap-1">{(fort.level || 1) * 5000} <ResourceIcon resource="gold" size="sm" /></span>
-                                        <span className="flex items-center gap-1">{(fort.level || 1) * 100} <ResourceIcon resource="stone" size="sm" /></span>
-                                        <span className="flex items-center gap-1">{(fort.level || 1) * 100} <ResourceIcon resource="wood" size="sm" /></span>
+                                        <span className={`flex items-center gap-1 ${(player.resources.gold || 0) < (fort.level || 1) * 5000 ? 'text-red-500 font-bold' : ''}`}>
+                                            {(fort.level || 1) * 5000} <ResourceIcon resource="gold" size="sm" />
+                                        </span>
+                                        <span className={`flex items-center gap-1 ${(player.resources.stone || 0) < (fort.level || 1) * 100 ? 'text-red-500 font-bold' : ''}`}>
+                                            {(fort.level || 1) * 100} <ResourceIcon resource="stone" size="sm" />
+                                        </span>
+                                        <span className={`flex items-center gap-1 ${(player.resources.wood || 0) < (fort.level || 1) * 100 ? 'text-red-500 font-bold' : ''}`}>
+                                            {(fort.level || 1) * 100} <ResourceIcon resource="wood" size="sm" />
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -115,7 +121,12 @@ export const SimulationWarRoom: React.FC<SimulationWarRoomProps> = ({ player, re
                         <GameButton
                             variant="primary"
                             className="w-full mt-4 bg-amber-600 hover:bg-amber-500 border-amber-400 py-3"
-                            disabled={!!actionLoading || (player.resources.gold || 0) < (fort.level || 1) * 5000}
+                            disabled={
+                                !!actionLoading ||
+                                (player.resources.gold || 0) < (fort.level || 1) * 5000 ||
+                                (player.resources.stone || 0) < (fort.level || 1) * 100 ||
+                                (player.resources.wood || 0) < (fort.level || 1) * 100
+                            }
                             onClick={() => onAction({ type: 'UPGRADE_FORTIFICATION' })}
                         >
                             Oppgrader Festning
