@@ -3,7 +3,7 @@ import { simulationDb as db } from './simulationFirebase';
 import { calculateStaminaCost, logSimulationMessage } from './utils/simulationUtils';
 import { ACTION_COSTS, GAME_BALANCE, INITIAL_RESOURCES, INITIAL_SKILLS } from './constants';
 import { ACTION_REGISTRY } from './logic/actionRegistry';
-import { handleGlobalContribution, handleGlobalTax, handleGlobalTrade, handleSetTax } from './globalActions';
+import { handleGlobalContribution, handleGlobalTax, handleGlobalTrade, handleSetTax, handleGlobalStartTravel, handleGlobalCompleteTravel } from './globalActions';
 import { handleWeaponRackAction } from './logic/WeaponRackHandlers';
 import { logSystemicStat } from './utils/statsUtils';
 import type { SkillType, EquipmentSlot, ActionType, Resources } from './simulationTypes';
@@ -12,7 +12,7 @@ import { addXp, recordCharacterLife } from './logic/playerLogic';
 import { performSiegeTransaction } from './logic/handlers/SiegeActions';
 
 /* --- ACTIONS CLASSIFICATION --- */
-const GLOBAL_ACTIONS = ['RAID', 'TAX', 'TAX_PEASANTS', 'TAX_ROYAL', 'TRADE', 'TRADE_ROUTE', 'CONTRIBUTE_TO_UPGRADE', 'BUY', 'SELL', 'CONTRIBUTE', 'CONSTRUCT', 'UPGRADE_BUILDING', 'START_SIEGE', 'JOIN_SIEGE', 'SIEGE_ACTION', 'REINFORCE_GARRISON', 'REPAIR_WALLS', 'SET_TAX', 'UPGRADE_FORTIFICATION'];
+const GLOBAL_ACTIONS = ['MARKET_BUY', 'MARKET_SELL', 'RAID', 'TAX', 'TAX_PEASANTS', 'TAX_ROYAL', 'TRADE', 'TRADE_ROUTE', 'CONTRIBUTE_TO_UPGRADE', 'BUY', 'SELL', 'CONTRIBUTE', 'CONSTRUCT', 'UPGRADE_BUILDING', 'START_SIEGE', 'JOIN_SIEGE', 'SIEGE_ACTION', 'REINFORCE_GARRISON', 'REPAIR_WALLS', 'SET_TAX', 'UPGRADE_FORTIFICATION', 'TRAVEL_START', 'TRAVEL_COMPLETE'];
 
 export const performAction = async (pin: string, playerId: string, action: any): Promise<{ success: boolean, data?: { success: boolean, timestamp: number, message: string, utbytte: any[], xp: any[], durability: any[] }, error?: any }> => {
     const actionType = typeof action === 'string' ? action : action.type;
@@ -257,7 +257,7 @@ async function performGlobalAction(pin: string, playerId: string, action: any) {
     const actionType = typeof action === 'string' ? action : action.type;
 
     try {
-        if (actionType === 'BUY' || actionType === 'SELL' || actionType === 'TRADE_ROUTE') {
+        if (actionType === 'BUY' || actionType === 'SELL' || actionType === 'TRADE_ROUTE' || actionType === 'MARKET_BUY' || actionType === 'MARKET_SELL') {
             return await handleGlobalTrade(pin, playerId, action);
         }
 
@@ -275,6 +275,14 @@ async function performGlobalAction(pin: string, playerId: string, action: any) {
 
         if (actionType === 'SET_TAX') {
             return await handleSetTax(pin, playerId, action);
+        }
+
+        if (actionType === 'TRAVEL_START') {
+            return await handleGlobalStartTravel(pin, playerId, action);
+        }
+
+        if (actionType === 'TRAVEL_COMPLETE') {
+            return await handleGlobalCompleteTravel(pin, playerId, action);
         }
 
         return { success: false, error: "Global handling not available." };

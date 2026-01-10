@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Settings, Map, MessageSquare, LayoutGrid, Scroll, Package, Menu, X } from 'lucide-react';
+import { Settings, Map, MessageSquare, LayoutGrid, Scroll, Package, Menu, X, Truck } from 'lucide-react';
 import { useSimulation } from '../SimulationContext';
 import { useAudio } from '../SimulationAudioContext';
 import type { SimulationPlayer, SimulationRoom } from '../simulationTypes';
@@ -310,6 +310,16 @@ export const SimHeader: React.FC<SimulationHeaderProps> = ({ room, player, onAct
 
                 {/* SETTINGS */}
                 <ButtonIcon icon={Settings} onClick={() => setActiveTab('SETTINGS')} title="Innstillinger" />
+
+                {/* MERCHANT CARAVAN */}
+                {player.role === 'MERCHANT' && (
+                    <ButtonIcon
+                        icon={Truck}
+                        onClick={() => onAction?.({ type: 'OPEN_CARAVAN' })}
+                        title="Karavane"
+                        className="text-amber-400 border border-amber-400/20 bg-amber-100/5 hover:bg-amber-400/20"
+                    />
+                )}
 
                 {/* MOBILE MENU TOGGLE */}
                 <button

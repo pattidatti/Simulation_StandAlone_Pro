@@ -10,6 +10,7 @@ import { SimulationMapWindow } from './ui/SimulationMapWindow';
 import { handleCareerChange } from '../globalActions';
 import { GAME_BALANCE } from '../data/gameBalance';
 import { SimulationRoleWarningModal } from './SimulationRoleWarningModal';
+import { MercantileDashboard } from './MercantileDashboard';
 
 interface SimulationMarketProps {
     player: SimulationPlayer;
@@ -22,8 +23,21 @@ interface SimulationMarketProps {
 
 export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ player, market, regions, allMarkets, onAction, pin }) => {
 
-    const { actionLoading, setActiveTab } = useSimulation();
+    const { actionLoading, setActiveTab, viewingRegionId } = useSimulation();
     const [isWarningOpen, setIsWarningOpen] = React.useState(false);
+
+    // MERCHANTS: Use specialized Dashboard
+    if (player.role === 'MERCHANT') {
+        return (
+            <MercantileDashboard
+                player={player}
+                market={market || {}}
+                onAction={onAction}
+                onClose={() => setActiveTab('MAP')}
+                viewingRegionId={viewingRegionId || player.regionId}
+            />
+        );
+    }
 
     // Dynamic Title based on region
     const regionName = player.regionId === 'capital'

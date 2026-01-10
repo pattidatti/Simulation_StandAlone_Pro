@@ -42,7 +42,7 @@ export function useSimulationActions(
             'WORK', 'CHOP', 'CRAFT', 'DEFEND', 'EXPLORE',
             'MINE', 'QUARRY', 'PATROL', 'FORAGE', 'REFINE',
             'SMELT', 'BAKE', 'WEAVE', 'MIX', 'PLANT', 'HARVEST',
-            'GATHER_WOOL', 'HUNT', 'SAWMILL', 'MOUNT_HORSE'
+            'GATHER_WOOL', 'HUNT', 'SAWMILL', 'MOUNT_HORSE', 'TRAVEL_START'
         ];
 
 

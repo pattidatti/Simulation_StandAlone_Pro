@@ -121,7 +121,7 @@ export const SimulationViewport: React.FC<SimulationViewportProps> = ({ player, 
                             <div className="pointer-events-auto w-full h-full md:max-w-5xl md:h-[90vh] overflow-hidden">
                                 <SimulationMarket
                                     player={player}
-                                    market={room.markets?.[player.regionId || 'capital'] || room.market}
+                                    market={room.markets?.[viewingRegionId || player.regionId || 'capital'] || room.market}
                                     regions={room.regions}
                                     allMarkets={room.markets}
                                     onAction={onAction}

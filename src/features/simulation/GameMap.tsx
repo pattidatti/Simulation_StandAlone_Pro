@@ -193,11 +193,21 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                                 src={bgPaths.src}
                                 placeholderSrc={bgPaths.placeholder}
                                 alt="Map View"
-                                className="w-full h-full"
+                                className={`w-full h-full ${viewingRegionId !== player.regionId ? 'grayscale-[0.8] sepia-[0.2] brightness-125 contrast-125' : ''}`}
                                 disableMotion={true}
                             />
                             {/* Weather Overlay */}
                             <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${weather === 'Fog' ? 'opacity-100 backdrop-blur-sm bg-white/10' : 'opacity-0'}`} />
+
+                            {/* SPYGLASS OVERLAY */}
+                            {viewingRegionId !== player.regionId && (
+                                <div className="absolute inset-0 pointer-events-none border-[20px] border-indigo-500/10 shadow-[inset_0_0_100px_rgba(79,70,229,0.3)] z-50 flex items-start justify-center pt-8">
+                                    <div className="bg-indigo-600/20 backdrop-blur-md border border-indigo-400/30 px-6 py-2 rounded-full flex items-center gap-3">
+                                        <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse" />
+                                        <span className="text-[10px] font-black text-indigo-200 uppercase tracking-[0.2em]">Remote View</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* In-World Elements (Projected into scene) */}
@@ -218,7 +228,12 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
 
                         <div className="absolute inset-0 pointer-events-none">
                             {viewMode === 'kingdom' && (
-                                <WorldMapKingdomPins players={players || {}} setViewingRegionId={setViewingRegionId} setViewMode={setViewMode} />
+                                <WorldMapKingdomPins
+                                    players={players || {}}
+                                    setViewingRegionId={setViewingRegionId}
+                                    setViewMode={setViewMode}
+                                    currentUserId={player.id}
+                                />
                             )}
                             <WorldMapPOI viewMode={viewMode} viewingRegionId={viewingRegionId} player={player} room={room} onSelect={setSelectedPOI} onEnterHub={setViewMode} onPOIAction={handlePOIAction} />
                             <WorldMapEvents viewMode={viewMode} viewingRegionId={viewingRegionId} worldEvents={worldEvents} onSelect={setSelectedEvent} />

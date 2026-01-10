@@ -107,6 +107,12 @@ export interface SimulationPlayer {
         unlockedTrophies: string[];
     };
     roleStats?: Partial<Record<Role, RoleStats>>;
+    caravan?: {
+        level: number;
+        inventory: Partial<Resources>;
+        durability: number;
+        upgrades: string[];
+    };
     online?: boolean;
     hasSeenIntro?: boolean;
     lastActive: number;

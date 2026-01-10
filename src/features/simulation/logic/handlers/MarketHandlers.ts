@@ -96,7 +96,31 @@ export const handleSell = (ctx: ActionContext) => {
     // Self-healing: Create market if missing
     if (!market) {
         if (!room.markets) room.markets = {};
-        market = JSON.parse(JSON.stringify(INITIAL_MARKET));
+
+        // ULTRATHINK: Generate Regional Variance
+        const base = JSON.parse(JSON.stringify(INITIAL_MARKET));
+        const varianceMap: Record<string, { discount: string[], premium: string[] }> = {
+            'region_vest': { discount: ['iron_ore', 'stone', 'swords'], premium: ['grain', 'bread', 'cloth'] }, // Mountainous
+            'region_ost': { discount: ['grain', 'bread', 'wool', 'meat'], premium: ['iron_ore', 'tools', 'wood'] }, // Plains
+            'capital': { discount: ['luxury_goods', 'glass'], premium: ['raw_materials', 'wood', 'stone'] } // City
+        };
+
+        const variance = varianceMap[marketKey] || { discount: [], premium: [] };
+
+        Object.keys(base).forEach(key => {
+            if (variance.discount.includes(key)) {
+                base[key].price *= 0.6; // 40% cheaper
+                base[key].stock *= 1.5; // More abundance
+            }
+            if (variance.premium.includes(key)) {
+                base[key].price *= 1.4; // 40% more expensive
+                base[key].stock *= 0.7; // Scarce
+            }
+            // Add slight randomness (±10%) so it feels organic
+            base[key].price *= (0.9 + Math.random() * 0.2);
+        });
+
+        market = base;
         room.markets[marketKey] = market;
     }
 

@@ -6,9 +6,33 @@ interface WorldMapKingdomPinsProps {
     players: Record<string, SimulationPlayer>;
     setViewingRegionId: (id: string) => void;
     setViewMode: (mode: string) => void;
+    currentUserId: string;
 }
 
-export const WorldMapKingdomPins: React.FC<WorldMapKingdomPinsProps> = ({ players, setViewingRegionId, setViewMode }) => {
+export const WorldMapKingdomPins: React.FC<WorldMapKingdomPinsProps> = ({ players, setViewingRegionId, setViewMode, currentUserId }) => {
+    const player = players[currentUserId];
+    const role = player?.role;
+
+    const handleRegionClick = (regionId: string) => {
+        if (!player) return;
+
+        // Allow home region always
+        if (player.regionId === regionId) {
+            setViewingRegionId(regionId);
+            setViewMode('global');
+            return;
+        }
+
+        // Merchants and Kings can Spy
+        if (role === 'MERCHANT' || role === 'KING') {
+            setViewingRegionId(regionId);
+            setViewMode('global');
+            return;
+        }
+
+        alert("Du kan ikke se inn i andre regioner. Du må reise dit med Karavanen!");
+    };
+
     const playersArr = Object.values(players || {});
     const baronVest = playersArr.find(p => p.role === 'BARON' && (p.regionId === 'region_vest' || p.regionId?.includes('vest')));
     const baronOst = playersArr.find(p => p.role === 'BARON' && (p.regionId === 'region_ost' || p.regionId?.includes('ost')));
@@ -22,10 +46,7 @@ export const WorldMapKingdomPins: React.FC<WorldMapKingdomPinsProps> = ({ player
                 className="absolute top-[35%] left-[50%] -translate-x-1/2 -translate-y-1/2 z-30 group pointer-events-auto"
             >
                 <button
-                    onClick={() => {
-                        setViewingRegionId('capital');
-                        setViewMode('global');
-                    }}
+                    onClick={() => handleRegionClick('capital')}
                     className="flex flex-col items-center hover:scale-110 transition-transform"
                 >
                     <div className="text-6xl drop-shadow-[0_0_15px_rgba(255,215,0,0.8)] animate-pulse">🏰</div>
@@ -43,10 +64,7 @@ export const WorldMapKingdomPins: React.FC<WorldMapKingdomPinsProps> = ({ player
                 className="absolute top-[65%] left-[15%] -translate-x-1/2 -translate-y-1/2 z-30 group pointer-events-auto"
             >
                 <button
-                    onClick={() => {
-                        setViewingRegionId('region_vest');
-                        setViewMode('global');
-                    }}
+                    onClick={() => handleRegionClick('region_vest')}
                     className="flex flex-col items-center hover:scale-110 transition-transform"
                 >
                     <div className="text-5xl drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">🏯</div>
@@ -64,10 +82,7 @@ export const WorldMapKingdomPins: React.FC<WorldMapKingdomPinsProps> = ({ player
                 className="absolute top-[65%] left-[85%] -translate-x-1/2 -translate-y-1/2 z-30 group pointer-events-auto"
             >
                 <button
-                    onClick={() => {
-                        setViewingRegionId('region_ost');
-                        setViewMode('global');
-                    }}
+                    onClick={() => handleRegionClick('region_ost')}
                     className="flex flex-col items-center hover:scale-110 transition-transform"
                 >
                     <div className="text-5xl drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">⛩️</div>

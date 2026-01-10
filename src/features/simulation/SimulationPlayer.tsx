@@ -19,6 +19,7 @@ import { SimulationDestinySplash } from './components/SimulationDestinySplash';
 import { ChatSystem } from './components/ChatSystem';
 import { PlayerProfileModal } from './components/PlayerProfileModal';
 import { WeaponRackWindow } from './components/WeaponRackWindow';
+import { CaravanWindow } from './components/CaravanWindow';
 import { Trophy } from 'lucide-react';
 import { INITIAL_RESOURCES, INITIAL_SKILLS, INITIAL_EQUIPMENT } from './constants';
 import { ref, update } from 'firebase/database';
@@ -74,6 +75,8 @@ export const SimulationPlayer: React.FC = () => {
     const [isStablesOpen, setIsStablesOpen] = useState(false);
     const [isTavernOpen, setIsTavernOpen] = useState(false);
     const [isWeaponRackOpen, setIsWeaponRackOpen] = useState(false);
+    const [isCaravanOpen, setIsCaravanOpen] = useState(false);
+    const [caravanTarget, setCaravanTarget] = useState<string | undefined>(undefined);
 
     const handleSimulationAction = (action: any) => {
         const actionType = typeof action === 'string' ? action : action.type;
@@ -87,6 +90,11 @@ export const SimulationPlayer: React.FC = () => {
         }
         if (actionType === 'OPEN_WEAPON_RACK') {
             setIsWeaponRackOpen(true);
+            return;
+        }
+        if (actionType === 'OPEN_CARAVAN') {
+            if (action.targetRegionId) setCaravanTarget(action.targetRegionId);
+            setIsCaravanOpen(true);
             return;
         }
         handleAction(action);
@@ -232,7 +240,16 @@ export const SimulationPlayer: React.FC = () => {
                             skills={player.skills}
                             selectedMethod={activeMinigameMethod || undefined}
                             action={activeMinigameAction}
-                            onComplete={(score) => handleAction({ ...(activeMinigameAction || {}), performance: score, method: activeMinigameMethod })}
+                            onComplete={(score) => {
+                                if (activeMinigame === 'TRAVEL_START') {
+                                    handleAction({
+                                        type: 'TRAVEL_COMPLETE',
+                                        targetRegionId: activeMinigameAction?.targetRegionId
+                                    });
+                                } else {
+                                    handleAction({ ...(activeMinigameAction || {}), performance: score, method: activeMinigameMethod });
+                                }
+                            }}
                             onCancel={() => { setActiveMinigame(null); setActiveMinigameAction(null); setActiveMinigameMethod(null); }}
                             currentSeason={world?.season || 'Spring'}
                             currentWeather={world?.weather || 'Clear'}
@@ -262,6 +279,18 @@ export const SimulationPlayer: React.FC = () => {
                             player={player}
                             onAction={handleAction}
                             onClose={() => setIsWeaponRackOpen(false)}
+                        />
+                    )}
+
+                    {isCaravanOpen && (
+                        <CaravanWindow
+                            player={player}
+                            onAction={handleAction}
+                            onClose={() => {
+                                setIsCaravanOpen(false);
+                                setCaravanTarget(undefined);
+                            }}
+                            preselectedTarget={caravanTarget}
                         />
                     )}
 

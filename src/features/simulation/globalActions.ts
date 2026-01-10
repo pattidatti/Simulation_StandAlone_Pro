@@ -1,6 +1,6 @@
 import { ref, runTransaction, get, push, set, serverTimestamp, update, increment } from 'firebase/database';
 import { simulationDb as db } from './simulationFirebase';
-import { GAME_BALANCE, VILLAGE_BUILDINGS, ITEM_TEMPLATES, RESOURCE_DETAILS, INITIAL_MARKET } from './constants';
+import { GAME_BALANCE, VILLAGE_BUILDINGS, ITEM_TEMPLATES, RESOURCE_DETAILS, INITIAL_MARKET, ACTION_COSTS } from './constants';
 import { logSimulationMessage } from './utils/simulationUtils';
 import { logSystemicStat } from './utils/statsUtils';
 import { finalizeLeadershipProject } from './gameLogic';
@@ -24,6 +24,17 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
     const player = playerSnap.val() as SimulationPlayer;
     const regionId = player.regionId || 'capital';
 
+    // PRE-FLIGHT CHECK: Caravan Capacity
+    if ((actionType === 'BUY' || actionType === 'MARKET_BUY') && action.target === 'CARAVAN') {
+        const caravan = player.caravan || { level: 1, inventory: {}, durability: 100, upgrades: [] };
+        const levelConfig = GAME_BALANCE.CARAVAN.LEVELS.find(l => l.level === caravan.level) || GAME_BALANCE.CARAVAN.LEVELS[0];
+        const currentLoad = Object.values(caravan.inventory || {}).reduce((a: number, b: number) => a + (b || 0), 0);
+
+        if (currentLoad + amount > levelConfig.capacity) {
+            return { success: false, error: `Ikke nok plass i karavanen! (${currentLoad}/${levelConfig.capacity})` };
+        }
+    }
+
     const marketItemRef = ref(db, `simulation_rooms/${pin}/markets/${regionId}/${resource}`);
 
     // Result State
@@ -39,7 +50,7 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
             item = JSON.parse(JSON.stringify(initialItem));
         }
 
-        if (actionType === 'BUY') {
+        if (actionType === 'BUY' || actionType === 'MARKET_BUY') {
             if (item.stock < amount) return; // Out of stock
             tradeResult.price = item.price;
             tradeResult.cost = item.price * amount;
@@ -51,7 +62,7 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
             const impact = GAME_BALANCE.MARKET.PRICE_IMPACT_BUY || 0.005;
             item.price = item.price * Math.pow(1 + impact, amount);
             tradeResult.success = true;
-        } else if (actionType === 'SELL') {
+        } else if (actionType === 'SELL' || actionType === 'MARKET_SELL') {
             tradeResult.price = item.price;
             const sellPricePerUnit = item.price * (GAME_BALANCE.MARKET.SELL_RATIO || 0.8);
             tradeResult.revenue = sellPricePerUnit * amount;
@@ -80,23 +91,41 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
         if (!actor) return;
         if (!actor.resources) actor.resources = {};
 
-        if (actionType === 'BUY') {
+        const targetStorage = action.target || 'BACKPACK';
+        const sourceStorage = action.source || 'BACKPACK';
+
+        if (actionType === 'BUY' || actionType === 'MARKET_BUY') {
             const cost = tradeResult.cost || 0;
             if ((actor.resources.gold || 0) < cost) {
                 return; // Abort
             }
+            // Capacity already checked in pre-flight
             actor.resources.gold = (actor.resources.gold || 0) - cost;
-            actor.resources[resource] = (actor.resources[resource] || 0) + amount;
+
+            if (targetStorage === 'CARAVAN') {
+                if (!actor.caravan) actor.caravan = { level: 1, inventory: {}, durability: 100, upgrades: [] };
+                if (!actor.caravan.inventory) actor.caravan.inventory = {};
+                actor.caravan.inventory[resource] = (actor.caravan.inventory[resource] || 0) + amount;
+            } else {
+                actor.resources[resource] = (actor.resources[resource] || 0) + amount;
+            }
 
             const details = (RESOURCE_DETAILS as any)[resource];
             finalMessage = `Kjøpte ${amount} ${details ? details.label : resource} for ${cost.toFixed(1)}g`;
             playerSuccess = true;
 
-        } else if (actionType === 'SELL') {
+        } else if (actionType === 'SELL' || actionType === 'MARKET_SELL') {
             const revenue = tradeResult.revenue || 0;
-            if ((actor.resources[resource] || 0) < amount) return; // Abort
 
-            actor.resources[resource] -= amount;
+            if (sourceStorage === 'CARAVAN') {
+                const currentStock = actor?.caravan?.inventory?.[resource] || 0;
+                if (currentStock < amount) return; // Abort
+                actor.caravan.inventory[resource] -= amount;
+            } else {
+                if ((actor.resources[resource] || 0) < amount) return; // Abort
+                actor.resources[resource] -= amount;
+            }
+
             actor.resources.gold = (actor.resources.gold || 0) + revenue;
 
             const details = (RESOURCE_DETAILS as any)[resource];
@@ -114,7 +143,7 @@ export const handleGlobalTrade = async (pin: string, playerId: string, action: a
                 success: true,
                 timestamp: Date.now(),
                 message: finalMessage,
-                utbytte: actionType === 'BUY' ? [{ resource, amount: amount }] : [{ resource: 'gold', amount: tradeResult.revenue }],
+                utbytte: (actionType === 'BUY' || actionType === 'MARKET_BUY') ? [{ resource, amount: amount }] : [{ resource: 'gold', amount: tradeResult.revenue }],
                 xp: [],
                 durability: []
             }
@@ -1399,4 +1428,50 @@ export const handleClaimEmptyThrone = async (pin: string, playerId: string, regi
     }
 
     return { success: false, error: "Manglet gull." };
+};
+
+/* --- TRAVEL HANDLERS --- */
+export const handleGlobalStartTravel = async (pin: string, playerId: string, action: any) => {
+    const { targetRegionId } = action;
+    const playerRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
+    const playerSnap = await get(playerRef);
+    if (!playerSnap.exists()) return { success: false, error: "Spiller finnes ikke" };
+    const player = playerSnap.val() as SimulationPlayer;
+
+    if (player.regionId === targetRegionId) return { success: false, error: "Du er allerede i denne regionen." };
+
+    const cost = ACTION_COSTS.TRAVEL_START;
+    if ((player.status.stamina || 0) < (cost?.stamina || 0)) return { success: false, error: "For sliten for reise." };
+    if ((player.resources.bread || 0) < (cost?.bread || 0)) return { success: false, error: "Trenger mer niste (brød) for reisen." };
+
+    await runTransaction(playerRef, (p: any) => {
+        if (!p) return;
+        p.status.stamina -= (cost?.stamina || 0);
+        p.resources.bread -= (cost?.bread || 0);
+        return p;
+    });
+
+    logSimulationMessage(pin, `[VEIEN] ${player.name} har lagt ut på reise mot ${targetRegionId}...`);
+    return { success: true, data: { success: true, message: "Reisen har begynt!", utbytte: [], xp: [], durability: [] } };
+};
+
+export const handleGlobalCompleteTravel = async (pin: string, playerId: string, action: any) => {
+    const { targetRegionId } = action;
+    const playerRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
+    const playerSnap = await get(playerRef);
+    if (!playerSnap.exists()) return { success: false, error: "Spiller finnes ikke" };
+    const player = playerSnap.val() as SimulationPlayer;
+
+    await runTransaction(playerRef, (p: any) => {
+        if (!p) return;
+        p.regionId = targetRegionId;
+        return p;
+    });
+
+    // Update public profile
+    await update(ref(db, `simulation_rooms/${pin}/public_profiles/${playerId}`), { regionId: targetRegionId });
+
+    const regionName = targetRegionId === 'capital' ? 'Hovedstaden' : (targetRegionId === 'region_vest' ? 'Vestfjella' : 'Østlandet');
+    logSimulationMessage(pin, `[VEIEN] ${player.name} har ankommet ${regionName}.`);
+    return { success: true, data: { success: true, message: `Ankommet ${regionName}!`, utbytte: [], xp: [{ skill: 'TRADING', amount: 25 }], durability: [] } };
 };

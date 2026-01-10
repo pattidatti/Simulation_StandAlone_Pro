@@ -95,6 +95,20 @@ export const GAME_BALANCE = {
         LEGITIMACY_SHIELD_MULT: 2.0, // Double cost if Baron has 100 legitimacy
         KING_VOTE_WEIGHT: 15,
         PEASANT_VOTE_WEIGHT: 1
+    },
+    CARAVAN: {
+        LEVELS: [
+            { level: 1, name: 'Håndkjære', capacity: 5, speed: 1.0, cost: 0, durability: 100 },
+            { level: 2, name: 'Enkel vogn', capacity: 15, speed: 1.2, cost: 300, durability: 150 },
+            { level: 3, name: 'Overbygd kjerre', capacity: 40, speed: 1.5, cost: 800, durability: 200 },
+            { level: 4, name: 'Jernkledd konvoi', capacity: 100, speed: 1.8, cost: 2000, durability: 300 },
+            { level: 5, name: 'Storkjøpmannens vogn', capacity: 250, speed: 2.2, cost: 5000, durability: 500 }
+        ],
+        UPGRADES: {
+            SILK_CHESTS: { id: 'silk_chests', name: 'Silkeforede kister', cost: 150, benefit: 'Beskytter luksusvarer' },
+            HEAVY_AXLES: { id: 'heavy_axles', name: 'Forsterkede akslinger', cost: 250, benefit: '+10% fart med full last' },
+            GUARD_POST: { id: 'guard_post', name: 'Vaktpost', cost: 400, benefit: 'Reduserer bandittfare' }
+        }
     }
 };
 
@@ -157,7 +171,11 @@ export const ACTION_COSTS: Record<ActionType, ActionCost> = {
     MAINTAIN_CROP: { stamina: 5 },
     MOUNT_HORSE: { stamina: 5 },
     BUY_HORSE_COSMETIC: { stamina: 0 },
-    SELECT_HORSE_COSMETIC: { stamina: 0 }
+    SELECT_HORSE_COSMETIC: { stamina: 0 },
+    LOAD_CARAVAN: { stamina: 5 },
+    UNLOAD_CARAVAN: { stamina: 5 },
+    UPGRADE_CARAVAN: { stamina: 0 },
+    TRAVEL_START: { stamina: 20, bread: 1 }
 };
 
 export const REPAIR_CONFIG: Record<string, { material: ResourceType, goldCost: number, staminaCost: number, slots: EquipmentSlot[] }> = {

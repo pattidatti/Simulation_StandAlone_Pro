@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, type ReactNode } from 'reac
 import { useParams } from 'react-router-dom';
 
 type TabType = 'MAP' | 'VILLAGE' | 'INVENTORY' | 'MARKET' | 'UPGRADES' | 'SKILLS' | 'DIPLOMACY' | 'HIERARCHY' | 'PROFILE' | 'ACTIVITY' | 'PRODUCTION' | 'SETTINGS' | 'POLITICS' | 'WAR_ROOM' | 'SIEGE';
-type MinigameType = 'WORK' | 'CHOP' | 'CRAFT' | 'MILL' | 'DEFEND' | 'EXPLORE' | 'MINE' | 'QUARRY' | 'PATROL' | 'FORAGE' | 'REFINE' | 'PLANT' | 'HARVEST' | 'SMELT' | 'BAKE' | 'WEAVE' | 'MIX' | 'SAWMILL' | 'GATHER_WOOL' | 'HUNT' | null;
+type MinigameType = 'WORK' | 'CHOP' | 'CRAFT' | 'MILL' | 'DEFEND' | 'EXPLORE' | 'MINE' | 'QUARRY' | 'PATROL' | 'FORAGE' | 'REFINE' | 'PLANT' | 'HARVEST' | 'SMELT' | 'BAKE' | 'WEAVE' | 'MIX' | 'SAWMILL' | 'GATHER_WOOL' | 'HUNT' | 'TRAVEL_START' | null;
 
 interface ProductionContext {
     buildingId: string;

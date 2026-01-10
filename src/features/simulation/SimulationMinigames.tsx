@@ -19,6 +19,7 @@ import { SawingGame } from './minigames/SawingGame';
 import { SmeltingGame } from './minigames/SmeltingGame';
 import { HorseRidingGame } from './minigames/HorseRidingGame';
 import { ArcheryGame } from './minigames/ArcheryGame';
+import { CaravanTravelGame } from './components/CaravanTravelGame';
 
 interface MinigameProps {
     type: ActionType;
@@ -397,8 +398,17 @@ export const MinigameOverlay: React.FC<MinigameProps> = ({ type, onComplete, onC
                             if (selectedMethod === 'trap') {
                                 return <TrappingGame onComplete={onComplete} speedMultiplier={environmentMods.speedMultiplier} variant="land" />;
                             }
-                            // Default Fallback (maybe spear?)
                             return <ArcheryGame onComplete={onComplete} speedMultiplier={environmentMods.speedMultiplier} />;
+
+                        case 'TRAVEL_START':
+                            return (
+                                <CaravanTravelGame
+                                    onComplete={() => onComplete(1)}
+                                    targetRegionId={action?.targetRegionId || 'capital'}
+                                    caravanLevel={player?.caravan?.level || 1}
+                                    upgrades={player?.caravan?.upgrades || []}
+                                />
+                            );
 
                         default:
                             return (

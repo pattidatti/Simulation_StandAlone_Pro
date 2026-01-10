@@ -6,6 +6,7 @@ import { handleTax, handleDraft, handleDecree, handleContribute, handleUpgradeBu
 import { handleStartSiege, handleJoinSiege, handleSiegeAction, handleReinforceGarrison, handleRepairWalls, handleUpgradeFortification } from './handlers/SiegeHandlers';
 import { handleRaid, handlePatrol } from './handlers/CombatHandlers';
 import { handleBuy, handleSell, handleTradeRoute } from './handlers/MarketHandlers';
+import { handleLoadCaravan, handleUnloadCaravan, handleUpgradeCaravan } from './handlers/CaravanHandlers';
 import { handleSleep, handleRest, handlePray, handleChat, handleGamble, handleResourceGamble, handleBuyMeal, handleRetire, handleConsume, handleMountHorse, handleBuyHorseCosmetic, handleSelectHorseCosmetic } from './handlers/SocialRestHandlers';
 
 export const ACTION_REGISTRY: ActionRegistry = {
@@ -86,5 +87,10 @@ export const ACTION_REGISTRY: ActionRegistry = {
 
     // Market
     BUY: handleBuy,
-    SELL: handleSell
+    SELL: handleSell,
+
+    // Caravan
+    LOAD_CARAVAN: handleLoadCaravan,
+    UNLOAD_CARAVAN: handleUnloadCaravan,
+    UPGRADE_CARAVAN: handleUpgradeCaravan
 };
