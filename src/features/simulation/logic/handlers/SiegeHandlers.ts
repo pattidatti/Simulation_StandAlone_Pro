@@ -551,6 +551,7 @@ export const handleRepairWalls = (ctx: ActionContext) => {
     const { amount } = action; // "amount" here means "number of repairs actions"
 
     const regionId = actor.regionId === 'capital' || !actor.regionId ? 'capital' : actor.regionId;
+    if (!room.regions) return false;
     const region = room.regions[regionId];
 
     if (!region.fortification) {
@@ -600,6 +601,7 @@ export const handleUpgradeFortification = (ctx: ActionContext) => {
     const { actor, room, localResult } = ctx;
 
     const regionId = actor.regionId === 'capital' || !actor.regionId ? 'capital' : actor.regionId;
+    if (!room.regions) return false;
     const region = room.regions[regionId];
 
     if (!region.fortification) {

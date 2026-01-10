@@ -3,7 +3,7 @@ import { simulationDb as db } from './simulationFirebase';
 import { calculateStaminaCost, logSimulationMessage } from './utils/simulationUtils';
 import { ACTION_COSTS, GAME_BALANCE, INITIAL_RESOURCES, INITIAL_SKILLS } from './constants';
 import { ACTION_REGISTRY } from './logic/actionRegistry';
-import { handleGlobalContribution, handleGlobalTax, handleGlobalTrade, handleReinforceGarrison, handleRepairWalls, handleSetTax } from './globalActions';
+import { handleGlobalContribution, handleGlobalTax, handleGlobalTrade, handleSetTax } from './globalActions';
 import { handleWeaponRackAction } from './logic/WeaponRackHandlers';
 import { logSystemicStat } from './utils/statsUtils';
 import type { SkillType, EquipmentSlot, ActionType, Resources } from './simulationTypes';
@@ -12,7 +12,7 @@ import { addXp, recordCharacterLife } from './logic/playerLogic';
 import { performSiegeTransaction } from './logic/handlers/SiegeActions';
 
 /* --- ACTIONS CLASSIFICATION --- */
-const GLOBAL_ACTIONS = ['RAID', 'TAX', 'TAX_PEASANTS', 'TAX_ROYAL', 'TRADE', 'TRADE_ROUTE', 'CONTRIBUTE_TO_UPGRADE', 'BUY', 'SELL', 'CONTRIBUTE', 'CONSTRUCT', 'UPGRADE_BUILDING', 'START_SIEGE', 'JOIN_SIEGE', 'SIEGE_ACTION', 'REINFORCE_GARRISON', 'REPAIR_WALLS', 'SET_TAX'];
+const GLOBAL_ACTIONS = ['RAID', 'TAX', 'TAX_PEASANTS', 'TAX_ROYAL', 'TRADE', 'TRADE_ROUTE', 'CONTRIBUTE_TO_UPGRADE', 'BUY', 'SELL', 'CONTRIBUTE', 'CONSTRUCT', 'UPGRADE_BUILDING', 'START_SIEGE', 'JOIN_SIEGE', 'SIEGE_ACTION', 'REINFORCE_GARRISON', 'REPAIR_WALLS', 'SET_TAX', 'UPGRADE_FORTIFICATION'];
 
 export const performAction = async (pin: string, playerId: string, action: any): Promise<{ success: boolean, data?: { success: boolean, timestamp: number, message: string, utbytte: any[], xp: any[], durability: any[] }, error?: any }> => {
     const actionType = typeof action === 'string' ? action : action.type;
@@ -269,16 +269,8 @@ async function performGlobalAction(pin: string, playerId: string, action: any) {
             return await handleGlobalTax(pin, playerId, action);
         }
 
-        if (actionType === 'START_SIEGE' || actionType === 'JOIN_SIEGE' || actionType === 'SIEGE_ACTION') {
+        if (actionType === 'START_SIEGE' || actionType === 'JOIN_SIEGE' || actionType === 'SIEGE_ACTION' || actionType === 'UPGRADE_FORTIFICATION' || actionType === 'REINFORCE_GARRISON' || actionType === 'REPAIR_WALLS') {
             return await performSiegeTransaction(pin, playerId, action);
-        }
-
-        if (actionType === 'REINFORCE_GARRISON') {
-            return await handleReinforceGarrison(pin, playerId, action);
-        }
-
-        if (actionType === 'REPAIR_WALLS') {
-            return await handleRepairWalls(pin, playerId, action);
         }
 
         if (actionType === 'SET_TAX') {

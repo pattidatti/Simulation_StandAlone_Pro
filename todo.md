@@ -8,11 +8,8 @@
 ## Low Priority
 - [ ] Sjekke at systemene for å bytte baroner og konge faktisk eksisterer og at de virker skikkelig. 
 - [ ] Dart i vertshuset (andre etasje)
-- [ ] Husmannsplass viser ikke riktige bilder når man har oppgradert 1-5, hverken ute eller inne i stugo. Vi bruker map_peasant_farm og map_stugo_interior . Undersøk 
+- [x] Husmannsplass viser ikke riktige bilder når man har oppgradert 1-5, hverken ute eller inne i stugo. Vi bruker map_peasant_farm og map_stugo_interior . Undersøk 
 - [ ] Mulighet for å kjøpe større antall i markedet. Oppdatere UI på marked. 
-- [ ] Bryne må ha 100 i holdbarhet. 
-- [ ] Kan ikke reparerer alle items i smien. 
-- [] Beleiringsrustning har feil bakenforliggende item/ressurs på markedet. Når jeg kjøper får jeg lærrustning. Kanskje det er feil med beleiringssverdet også?
 - [] Vi må ha jucy screenshake og timestop på minigames slik at de får skikkelig vekt. 
 - [] går ikke an å legge inn beleiringssverd og rustning i krigsrommet som baron. Ser den ikke at jeg har i inventory?
 - [ ] Krigsrommet 
