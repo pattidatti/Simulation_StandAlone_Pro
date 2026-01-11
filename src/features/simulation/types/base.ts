@@ -4,7 +4,7 @@ export type ActionType = 'WORK' | 'CHOP' | 'FORAGE' | 'MINE' | 'RAID' | 'TAX' | 
 
 export type SkillType = 'FARMING' | 'WOODCUTTING' | 'MINING' | 'CRAFTING' | 'STEWARDSHIP' | 'COMBAT' | 'TRADING' | 'THEOLOGY';
 
-export type ResourceType = 'gold' | 'grain' | 'wood' | 'iron_ore' | 'plank' | 'cloth' | 'iron_ingot';
+export type ResourceType = 'gold' | 'grain' | 'flour' | 'bread' | 'wood' | 'plank' | 'iron_ore' | 'iron_ingot' | 'stone' | 'siege_sword' | 'siege_armor' | 'favor' | 'wool' | 'cloth' | 'honey' | 'meat' | 'glass' | 'manpower' | 'egg' | 'omelette' | 'oak_log' | 'oak_lumber' | 'flax' | 'linen_canvas' | 'tar' | 'fish_raw' | 'fish_cooked' | 'silk' | 'spice';
 
 export type WeatherType = 'Clear' | 'Rain' | 'Storm' | 'Fog';
 

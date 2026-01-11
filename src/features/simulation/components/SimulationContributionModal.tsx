@@ -10,20 +10,27 @@ interface SimulationContributionModalProps {
     onAction: (action: any) => void;
     onClose: () => void;
     viewingRegionId: string;
+    initialProjectId?: string;
 }
 
-export const SimulationContributionModal: React.FC<SimulationContributionModalProps> = ({ player, room, onAction, onClose, viewingRegionId }) => {
-    // Determine which project to show based on region and role
-    // ULTRATHINK: Barons and Kings should always prioritize the Throne Room at the world capital
-    const projectsInRegion = (viewingRegionId === 'capital' || player.role === 'BARON' || player.role === 'KING')
-        ? ['throne_room', 'manor_ost', 'manor_vest', 'wharf']
-        : viewingRegionId === 'dock_hub'
-            ? ['wharf']
-            : viewingRegionId === 'region_ost'
-                ? ['manor_ost']
-                : ['manor_vest'];
+export const SimulationContributionModal: React.FC<SimulationContributionModalProps> = ({ player, room, onAction, onClose, viewingRegionId, initialProjectId }) => {
+    // Determine which projects are available based on region
+    const projectsInRegion = viewingRegionId === 'dock_hub'
+        ? ['wharf']
+        : viewingRegionId === 'region_ost'
+            ? ['manor_ost']
+            : viewingRegionId === 'region_vest'
+                ? ['manor_vest']
+                : (viewingRegionId === 'capital' || player.role === 'BARON' || player.role === 'KING')
+                    ? ['throne_room', 'manor_ost', 'manor_vest', 'wharf']
+                    : ['throne_room'];
 
-    const [selectedProjectId, setSelectedProjectId] = useState(projectsInRegion[0]);
+    // Prioritize initialProjectId if provided and valid for the region (or if globally available)
+    const defaultProject = initialProjectId && (projectsInRegion.includes(initialProjectId) || ['throne_room', 'wharf'].includes(initialProjectId))
+        ? initialProjectId
+        : projectsInRegion[0];
+
+    const [selectedProjectId, setSelectedProjectId] = useState(defaultProject);
 
     // ULTRATHINK: Check if buildings exist in this room. If not, the room might be legacy or corrupted.
     const buildings = room.world?.settlement?.buildings || {};
@@ -104,8 +111,8 @@ export const SimulationContributionModal: React.FC<SimulationContributionModalPr
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent z-10" />
                     <img
                         src={`${import.meta.env.BASE_URL}antigravity/brain/07597a3b-439f-498d-aa43-1b02768f5015/${activeProjectId === 'throne_room' ? 'maritime_shipyard_blueprint_bg_1768089214778.png' :
-                                activeProjectId === 'wharf' ? 'maritime_wharf_upgrade_epic_1768089228676.png' :
-                                    'maritime_wharf_upgrade_epic_1768089228676.png'
+                            activeProjectId === 'wharf' ? 'maritime_wharf_upgrade_epic_1768089228676.png' :
+                                'maritime_wharf_upgrade_epic_1768089228676.png'
                             }`}
                         alt={projectDef.name}
                         className="w-full h-48 object-cover rounded-2xl mb-6 shadow-2xl border border-white/10"

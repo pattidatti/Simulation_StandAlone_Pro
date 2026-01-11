@@ -27,7 +27,8 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
     const [isChickenCoopOpen, setIsChickenCoopOpen] = useState(false);
     const [isConstructionOpen, setIsConstructionOpen] = useState(false);
     const [isTaxationOpen, setIsTaxationOpen] = useState(false);
-    const [isResourceGameOpen, setIsResourceGameOpen] = useState(false);
+    const [isGambleGameOpen, setIsGambleGameOpen] = useState(false);
+    const [isGrainGameOpen, setIsGrainGameOpen] = useState(false);
     const [isShipyardOpen, setIsShipyardOpen] = useState(false);
     const [isSailingOpen, setIsSailingOpen] = useState(false);
     const [isWharfUpgradeOpen, setIsWharfUpgradeOpen] = useState(false);
@@ -60,7 +61,8 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
                 if (isDiceGameOpen) { setIsDiceGameOpen(false); return; }
                 if (isChickenCoopOpen) { setIsChickenCoopOpen(false); return; }
                 if (isTaxationOpen) { setIsTaxationOpen(false); return; }
-                if (isResourceGameOpen) { setIsResourceGameOpen(false); return; }
+                if (isGambleGameOpen) { setIsGambleGameOpen(false); return; }
+                if (isGrainGameOpen) { setIsGrainGameOpen(false); return; }
                 if (isShipyardOpen) { setIsShipyardOpen(false); return; }
                 if (isSailingOpen) { setIsSailingOpen(false); return; }
                 if (isFlaxGameOpen) { setIsFlaxGameOpen(false); return; }
@@ -172,8 +174,8 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
         } else if (actId.startsWith('BUILDING_UPGRADE_')) {
             const bId = actId.replace('BUILDING_UPGRADE_', '');
             setUpgradingBuildingId(bId);
-        } else if (actId === 'OPEN_DICE_GAME') {
-            setIsDiceGameOpen(true);
+        } else if (actId === 'OPEN_RESOURCE_GAME') {
+            setIsGambleGameOpen(true);
         } else if (actId === 'HARVEST' || actId === 'PLANT') {
             const poi = POINTS_OF_INTEREST.find(p => p.id === poiId);
             const isFlaxField = poi?.label?.toLowerCase().includes('lin') || poiId === 'flax_field';
@@ -182,13 +184,11 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
             if (isFlaxField && actId === 'HARVEST') {
                 setIsFlaxGameOpen(true);
             } else if (!isFlaxField && actId === 'HARVEST') {
-                setIsResourceGameOpen(true);
+                setIsGrainGameOpen(true);
             } else {
                 // PLANT or other actions go directly to backend
                 onAction({ type: actId, ...action, locationId: poiId });
             }
-        } else if (actId === 'OPEN_RESOURCE_GAME') {
-            setIsResourceGameOpen(true);
         } else if (actId === 'CHAT_LOCAL') {
             const randomNPC = TAVERN_NPCS[Math.floor(Math.random() * TAVERN_NPCS.length)];
             setDialogNPC(randomNPC);
@@ -224,8 +224,10 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
         setIsConstructionOpen,
         isTaxationOpen,
         setIsTaxationOpen,
-        isResourceGameOpen,
-        setIsResourceGameOpen,
+        isGambleGameOpen,
+        setIsGambleGameOpen,
+        isGrainGameOpen,
+        setIsGrainGameOpen,
         isShipyardOpen,
         setIsShipyardOpen,
         isSailingOpen,

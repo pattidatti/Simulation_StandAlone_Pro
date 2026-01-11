@@ -165,10 +165,51 @@ export const PlayerGrid: React.FC<PlayerGridProps> = React.memo(({
                                     onChange={(e) => setGiveResourceSelection({ ...giveResourceSelection, [p.id]: { resourceId: e.target.value, amount: giveResourceSelection[p.id]?.amount || 10 } })}
                                     className="flex-[2] bg-black/40 border border-white/5 rounded-xl px-2 py-2 text-[10px] font-bold text-amber-300 focus:border-amber-500/50 transition-all cursor-pointer"
                                 >
-                                    <option value="">Velg...</option>
-                                    {Object.entries(RESOURCE_DETAILS).map(([key, detail]) => (
-                                        <option key={key} value={key}>{detail.icon} {detail.label}</option>
-                                    ))}
+                                    <option value="">Velg ressurs...</option>
+
+                                    <optgroup label="BASISVARER" className="bg-slate-900 text-slate-500">
+                                        {['gold', 'grain', 'wood', 'stone', 'iron_ore', 'honey', 'meat', 'wool', 'egg'].map(key => (
+                                            <option key={key} value={key} className="text-white">
+                                                {(RESOURCE_DETAILS as any)[key]?.icon} {(RESOURCE_DETAILS as any)[key]?.label}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+
+                                    <optgroup label="FOREDLET" className="bg-slate-900 text-slate-500">
+                                        {['flour', 'bread', 'plank', 'iron_ingot', 'cloth', 'glass', 'omelette'].map(key => (
+                                            <option key={key} value={key} className="text-white">
+                                                {(RESOURCE_DETAILS as any)[key]?.icon} {(RESOURCE_DETAILS as any)[key]?.label}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+
+                                    <optgroup label="MARITIMT" className="bg-slate-900 text-slate-500">
+                                        {['oak_log', 'oak_lumber', 'flax', 'linen_canvas', 'tar', 'fish_raw', 'fish_cooked', 'silk', 'spice'].map(key => (
+                                            <option key={key} value={key} className="text-white">
+                                                {(RESOURCE_DETAILS as any)[key]?.icon} {(RESOURCE_DETAILS as any)[key]?.label}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+
+                                    <optgroup label="KRIG" className="bg-slate-900 text-slate-500">
+                                        {['siege_sword', 'siege_armor'].map(key => (
+                                            <option key={key} value={key} className="text-white">
+                                                {(RESOURCE_DETAILS as any)[key]?.icon} {(RESOURCE_DETAILS as any)[key]?.label}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+
+                                    <optgroup label="APOTEKER" className="bg-slate-900 text-slate-500">
+                                        {['minor_stamina_potion', 'herbal_balm', 'focus_brew', 'strength_tincture', 'masters_draught', 'elixir_of_life'].map(key => (
+                                            <option key={key} value={key} className="text-white">
+                                                {(RESOURCE_DETAILS as any)[key]?.icon} {(RESOURCE_DETAILS as any)[key]?.label}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+
+                                    <optgroup label="ANNET" className="bg-slate-900 text-slate-500">
+                                        <option value="favor" className="text-white">✨ Gunst</option>
+                                    </optgroup>
                                 </select>
                                 <input
                                     type="number"

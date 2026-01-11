@@ -43,10 +43,14 @@ export const DockView: React.FC<DockViewProps> = ({ player, world, onAction }) =
     const { season, time } = world;
     const canSail = player.boat && player.boat.stage >= 2;
 
-    // Construct the high-realism asset path based on season and time
-    // ULTRATHINK: Fallback to generated high-fidelity asset from artifacts directory
-    const backgroundAsset = `${import.meta.env.BASE_URL}antigravity/brain/07597a3b-439f-498d-aa43-1b02768f5015/maritime_dock_autumn_night_1768089201490.png`;
-    const placeholderAsset = backgroundAsset;
+    // Construct the high-realism asset mapping
+    const seasonKey = season.toLowerCase(); // spring, summer, autumn, winter
+    const timeKey = time.toLowerCase(); // day, night
+
+    const backgroundAsset = `${import.meta.env.BASE_URL}assets/maritime/dock_${seasonKey}_${timeKey}.png`;
+
+    // We'll use a blurred version or a static atmospheric overlay for the ProgressiveImage placeholder if needed,
+    // but for now, we'll use the main asset as it's the 1st person hub view.
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-slate-950 flex flex-col items-center justify-center">
@@ -54,9 +58,8 @@ export const DockView: React.FC<DockViewProps> = ({ player, world, onAction }) =
             <div className="absolute inset-0 z-0">
                 <ProgressiveImage
                     src={backgroundAsset}
-                    placeholderSrc={placeholderAsset}
                     alt={`${season} ${time} Dock View`}
-                    className="w-full h-full object-cover brightness-[0.8] contrast-[1.1]"
+                    className="w-full h-full object-cover brightness-[0.9] contrast-[1.05]"
                     disableMotion={true}
                 />
 
@@ -74,22 +77,23 @@ export const DockView: React.FC<DockViewProps> = ({ player, world, onAction }) =
             <AnimatePresence>
                 {player.boat && player.boat.stage > 0 && (
                     <motion.div
-                        initial={{ y: 100, opacity: 0 }}
+                        initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 100, opacity: 0 }}
-                        className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] z-10 pointer-events-none"
+                        exit={{ y: 20, opacity: 0 }}
+                        className="absolute bottom-[10%] left-[30%] -translate-x-1/2 w-[500px] h-[350px] z-10 pointer-events-none drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
                     >
                         <ModularBoatSVG
                             stage={player.boat.stage}
                             customization={player.boat.customization}
-                            scale={0.8}
+                            scale={0.7}
+                            className="drop-shadow-[0_10px_20px_rgba(0,0,0,0.6)]"
                         />
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* INTERACTIVE HUB OVERLAY */}
-            <div className="relative z-20 w-full h-full flex flex-col justify-between p-8">
+            <div className="relative z-20 w-full h-full flex flex-col justify-between pt-28 px-12 pb-12">
                 {/* Header Info */}
                 <div className="flex justify-between items-start">
                     <motion.div

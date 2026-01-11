@@ -70,8 +70,10 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
         setIsConstructionOpen,
         isTaxationOpen,
         setIsTaxationOpen,
-        isResourceGameOpen,
-        setIsResourceGameOpen,
+        isGambleGameOpen,
+        setIsGambleGameOpen,
+        isGrainGameOpen,
+        setIsGrainGameOpen,
         isShipyardOpen,
         setIsShipyardOpen,
         isSailingOpen,
@@ -331,8 +333,25 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                 {isDiceGameOpen && (
                     <TavernDiceGame playerGold={player.resources?.gold || 0} onClose={() => setIsDiceGameOpen(false)} onPlay={(res: any) => onAction({ type: 'PLAY_DICE', ...res })} />
                 )}
-                {isResourceGameOpen && (
-                    <TavernResourceGame player={player} onClose={() => setIsResourceGameOpen(false)} onPlay={(res: any) => onAction({ type: 'PLAY_RESOURCE_GAME', ...res })} />
+                {isGambleGameOpen && (
+                    <TavernResourceGame player={player} onClose={() => setIsGambleGameOpen(false)} onPlay={(res: any) => onAction({ type: 'PLAY_RESOURCE_GAME', ...res })} />
+                )}
+                {isGrainGameOpen && (
+                    <SimulationMapWindow
+                        title="Kornhøsting"
+                        onClose={() => setIsGrainGameOpen(false)}
+                        maxWidth="max-w-xl"
+                    >
+                        <HarvestingGame
+                            resourceName="Korn"
+                            possibleYield={12}
+                            equipment={Object.values(player.equipment || {}) as any}
+                            onComplete={(performance: number) => {
+                                onAction({ type: 'HARVEST', locationId: 'grain_fields', cropId: 'grain', performance });
+                                setIsGrainGameOpen(false);
+                            }}
+                        />
+                    </SimulationMapWindow>
                 )}
                 {isChickenCoopOpen && (
                     <ChickenCoopWindow player={player} activeProcesses={player.activeProcesses || []} onAction={onAction} onClose={() => setIsChickenCoopOpen(false)} />
@@ -378,7 +397,8 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                         room={room}
                         onAction={onAction}
                         onClose={() => setIsWharfUpgradeOpen(false)}
-                        viewingRegionId={viewingRegionId}
+                        viewingRegionId="dock_hub"
+                        initialProjectId="wharf"
                     />
                 )}
                 {isFlaxGameOpen && (
@@ -391,8 +411,8 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                             resourceName="Lin"
                             possibleYield={12}
                             equipment={Object.values(player.equipment || {}) as any}
-                            onComplete={(score: number) => {
-                                onAction({ type: 'HARVEST', locationId: 'flax_field', cropId: 'flax', score });
+                            onComplete={(performance: number) => {
+                                onAction({ type: 'HARVEST', locationId: 'flax_field', cropId: 'flax', performance });
                                 setIsFlaxGameOpen(false);
                             }}
                         />

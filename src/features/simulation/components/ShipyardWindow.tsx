@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SimulationPlayer, Resources } from '../simulationTypes';
 import { ModularBoatSVG } from './ModularBoatSVG';
-import { Hammer, X, CheckCircle2 } from 'lucide-react';
+import { Hammer, CheckCircle2 } from 'lucide-react';
 import { RequirementList } from './RequirementList';
 
 interface ShipyardWindowProps {
@@ -40,11 +40,6 @@ const BOAT_STAGES = [
 ];
 
 // --- INTERNAL BESPOKE COMPONENTS ---
-const ShipyardBadge: React.FC<{ children: React.ReactNode; active?: boolean }> = ({ children, active }) => (
-    <div className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider ${active ? 'bg-amber-500 text-slate-950' : 'bg-white/5 text-slate-500 border border-white/10'}`}>
-        {children}
-    </div>
-);
 
 const ShipyardButton: React.FC<{ children: React.ReactNode; onClick?: () => void; disabled?: boolean; variant?: 'primary' | 'success' }> = ({ children, onClick, disabled, variant = 'primary' }) => (
     <button
@@ -59,132 +54,159 @@ const ShipyardButton: React.FC<{ children: React.ReactNode; onClick?: () => void
     </button>
 );
 
+import { SimulationMapWindow } from './ui/SimulationMapWindow';
+
+// ... (BOAT_STAGES and internal components kept same)
+
 export const ShipyardWindow: React.FC<ShipyardWindowProps> = ({ player, room, onClose, onContribute }) => {
     const currentBoatStage = player.boat?.stage || 0;
     const nextStage = BOAT_STAGES.find(s => s.stage === currentBoatStage + 1);
 
-    // Check if player can afford
     const hasResources = nextStage ? Object.entries(nextStage.requirements).every(([res, amt]) => {
         return (player.resources[res as keyof Resources] || 0) >= amt;
     }) : false;
 
-    // Convert nextStage requirements to "recipe" format for RequirementList
     const recipeForList = nextStage ? {
         input: nextStage.requirements,
-        stamina: 25 // Constant stamina cost for building
+        stamina: 25
     } : null;
 
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+        <SimulationMapWindow
+            title="Båtbyggeriet"
+            subtitle="Kongelig Skipsverft • Port of Valheim"
+            icon={<Hammer className="text-amber-500" />}
+            onClose={onClose}
+            maxWidth="max-w-6xl"
+            className="p-0" // Remove default padding for bespoke layout
         >
-            <div className="relative w-full max-w-5xl h-[700px] bg-slate-900 border border-white/10 rounded-[40px] shadow-2xl overflow-hidden flex flex-col">
-                {/* Header */}
-                <div className="p-8 pb-4 flex justify-between items-center bg-gradient-to-b from-white/5 to-transparent">
-                    <div>
-                        <ShipyardBadge active={true}>Skipsverftet</ShipyardBadge>
-                        <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase grayscale-[0.2]">Båtbyggeriet</h2>
+            <div className="flex w-full h-[650px] overflow-hidden">
+                {/* Left Side: Visual Blueprint */}
+                <div className="flex-1 p-12 flex flex-col items-center justify-center bg-slate-950/40 border-r border-white/5 relative overflow-hidden">
+                    {/* Blueprint Asset Background */}
+                    <img
+                        src={`${import.meta.env.BASE_URL}assets/maritime/blueprint.png`}
+                        className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-multiply pointer-events-none"
+                        alt="Blueprint Background"
+                    />
+
+                    {/* Architectural Grid Overlay */}
+                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/graphy.png')] opacity-10 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-transparent to-slate-950/50 pointer-events-none" />
+
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="w-full h-[350px] flex items-center justify-center drop-shadow-[0_0_80px_rgba(251,191,36,0.15)] relative z-10"
+                    >
+                        <ModularBoatSVG
+                            stage={currentBoatStage}
+                            customization={player.boat?.customization}
+                            scale={1.3}
+                        />
+                    </motion.div>
+
+                    <div className="mt-12 text-center flex gap-16 relative z-10">
+                        <div className="flex flex-col items-center">
+                            <div className="text-[10px] font-black uppercase text-slate-500 mb-2 tracking-[0.2em]">Konstruksjonsfase</div>
+                            <div className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none flex items-center gap-3">
+                                <span className="text-amber-500">{currentBoatStage}</span>
+                                <div className="w-8 h-px bg-white/20" />
+                                <span className="opacity-40 font-medium text-lg">4</span>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-center border-l border-white/10 pl-16">
+                            <div className="text-[10px] font-black uppercase text-slate-500 mb-2 tracking-[0.2em]">Materialstatus</div>
+                            <div className="text-sm font-bold text-emerald-400 uppercase italic flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                Eik & Tjære
+                            </div>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="w-10 h-10 rounded-full hover:bg-white/10 text-white/40 flex items-center justify-center transition-colors">
-                        <X size={24} />
-                    </button>
                 </div>
 
-                <div className="flex-1 flex overflow-hidden">
-                    {/* Left Side: Visual Blueprint */}
-                    <div className="flex-[1.2] p-8 flex flex-col items-center justify-center bg-slate-950/60 border-r border-white/5 relative overflow-hidden">
-                        {/* Blueprint Asset Background */}
-                        <img
-                            src={`${import.meta.env.BASE_URL}antigravity/brain/07597a3b-439f-498d-aa43-1b02768f5015/maritime_shipyard_blueprint_bg_1768089214778.png`}
-                            className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay pointer-events-none grayscale"
-                            alt="Blueprint Background"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/40 via-transparent to-slate-950/40 pointer-events-none" />
+                {/* Right Side: Construction Logic */}
+                <div className="w-[420px] p-12 bg-slate-900/30 flex flex-col relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
 
-                        <div className="w-full h-[400px] flex items-center justify-center drop-shadow-[0_0_50px_rgba(251,191,36,0.1)]">
-                            <ModularBoatSVG
-                                stage={currentBoatStage}
-                                customization={player.boat?.customization}
-                                scale={1.2}
-                            />
-                        </div>
-
-                        <div className="mt-8 text-center flex gap-12">
-                            <div className="flex flex-col items-center">
-                                <div className="text-[11px] font-black uppercase text-slate-500 mb-1">Status</div>
-                                <div className="text-xl font-black text-white italic uppercase tracking-widest leading-none">
-                                    {currentBoatStage === 4 ? 'Ferdigstilt' : `Fase ${currentBoatStage}/4`}
+                    <AnimatePresence mode="wait">
+                        {nextStage ? (
+                            <motion.div
+                                key={nextStage.stage}
+                                initial={{ x: 30, opacity: 0 }}
+                                animate={{ x: 0, opacity: 1 }}
+                                exit={{ x: -20, opacity: 0 }}
+                                className="h-full flex flex-col relative z-10"
+                            >
+                                <div className="mb-10">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded text-[9px] font-black text-amber-500 uppercase tracking-widest">Aktiv Plan</div>
+                                        <div className="h-px flex-1 bg-amber-500/10" />
+                                    </div>
+                                    <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-tight drop-shadow-md">{nextStage.name}</h3>
+                                    <p className="mt-5 text-slate-400 text-sm leading-relaxed font-medium italic opacity-80">"{nextStage.description}"</p>
                                 </div>
-                            </div>
-                            <div className="flex flex-col items-center opacity-40">
-                                <div className="text-[11px] font-black uppercase text-slate-500 mb-1">Skrog</div>
-                                <div className="text-sm font-bold text-white uppercase italic">Eik</div>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Right Side: Construction Logic */}
-                    <div className="flex-1 p-8 bg-slate-900/50 flex flex-col">
-                        <AnimatePresence mode="wait">
-                            {nextStage ? (
-                                <motion.div
-                                    key={nextStage.stage}
-                                    initial={{ x: 20, opacity: 0 }}
-                                    animate={{ x: 0, opacity: 1 }}
-                                    className="h-full flex flex-col"
-                                >
-                                    <div className="mb-8">
-                                        <div className="text-amber-400 font-black italic text-sm mb-1 uppercase tracking-widest leading-none">Neste Steg</div>
-                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none">{nextStage.name}</h3>
-                                        <p className="mt-4 text-slate-400 text-sm leading-relaxed">{nextStage.description}</p>
+                                <div className="flex-1">
+                                    <div className="flex items-center justify-between mb-5 border-b border-white/5 pb-3">
+                                        <span className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em]">Materialkrav</span>
+                                        <div className="flex gap-1">
+                                            {[1, 2, 3, 4].map(s => (
+                                                <div key={s} className={`w-1.5 h-1.5 rounded-full ${s <= currentBoatStage ? 'bg-amber-500' : 'bg-white/10'}`} />
+                                            ))}
+                                        </div>
                                     </div>
-
-                                    <div className="flex-1">
-                                        <div className="text-[11px] font-black uppercase text-slate-500 mb-4 border-b border-white/5 pb-2">Materialer som kreves</div>
-                                        {recipeForList && (
-                                            <RequirementList
-                                                recipe={recipeForList}
-                                                player={player}
-                                                room={room}
-                                            />
-                                        )}
-                                    </div>
-
-                                    <div className="mt-8">
-                                        {currentBoatStage === 4 ? (
-                                            <ShipyardButton variant="success">
-                                                <CheckCircle2 /> Fartøyet er ferdigstilt
-                                            </ShipyardButton>
-                                        ) : (
-                                            <ShipyardButton
-                                                disabled={!hasResources}
-                                                onClick={() => nextStage && onContribute(nextStage.stage, nextStage.requirements)}
-                                            >
-                                                <Hammer /> {currentBoatStage === 0 ? 'Begynn Bygging' : 'Fullfør Steg'}
-                                            </ShipyardButton>
-                                        )}
-                                        {!hasResources && (
-                                            <p className="text-center text-rose-400 font-bold text-[11px] uppercase mt-3 animate-pulse">
-                                                Mangler materialer i lageret
-                                            </p>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            ) : (
-                                <div className="h-full flex flex-col items-center justify-center text-center">
-                                    <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400 mb-6 border border-emerald-500/30">
-                                        <CheckCircle2 size={48} />
-                                    </div>
-                                    <h3 className="text-2xl font-black text-white italic uppercase">Båten er ferdig!</h3>
-                                    <p className="text-slate-400 mt-2 max-w-xs">Din stolte skute er ferdigstilt og klar for de store havene.</p>
+                                    {recipeForList && (
+                                        <RequirementList
+                                            recipe={recipeForList}
+                                            player={player}
+                                            room={room}
+                                        />
+                                    )}
                                 </div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+
+                                <div className="mt-10">
+                                    <ShipyardButton
+                                        disabled={!hasResources}
+                                        onClick={() => nextStage && onContribute(nextStage.stage, nextStage.requirements)}
+                                        variant={hasResources ? 'primary' : 'primary'}
+                                    >
+                                        <Hammer size={18} />
+                                        {currentBoatStage === 0 ? 'Legg Ned Kjøl' : 'Ferdigstill Seksjon'}
+                                    </ShipyardButton>
+
+                                    {!hasResources && (
+                                        <div className="flex items-center justify-center gap-2 mt-4 text-rose-400/80 font-black text-[10px] uppercase tracking-widest animate-pulse">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                            Ressurser mangler i forrådet
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                className="h-full flex flex-col items-center justify-center text-center p-6"
+                            >
+                                <div className="relative mb-8">
+                                    <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full" />
+                                    <div className="relative w-24 h-24 bg-emerald-500 border-2 border-emerald-400/50 rounded-3xl flex items-center justify-center text-white shadow-[0_20px_50px_rgba(16,185,129,0.3)]">
+                                        <CheckCircle2 size={56} />
+                                    </div>
+                                </div>
+                                <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4">Mesterverk Fullført!</h3>
+                                <p className="text-slate-400 text-sm leading-relaxed max-w-xs italic">Dette skipet er nå det fremste vidunderet i havnen. Klar for dype hav og store erobringer.</p>
+
+                                <div className="mt-12 p-4 bg-white/5 border border-white/10 rounded-2xl w-full">
+                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Skipets Navn</div>
+                                    <div className="text-xl font-black text-amber-500 italic uppercase">Drakkar III</div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
-        </motion.div>
+        </SimulationMapWindow>
     );
 };
