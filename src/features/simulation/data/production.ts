@@ -214,7 +214,7 @@ export const VILLAGE_BUILDINGS: Record<string, { id: string, name: string, icon:
 
 export const REFINERY_RECIPES: Record<string, any> = {
     plank: { label: 'Planker', icon: '🪵', input: { wood: 5 }, outputResource: 'plank', outputAmount: 1, buildingId: 'sawmill', stamina: 10, xp: 5, skill: 'WOODCUTTING' },
-    flour: { label: 'Fint Mel', icon: '🧂', input: { grain: 10 }, outputResource: 'flour', outputAmount: 10, buildingId: 'windmill', stamina: 15, xp: 8, skill: 'FARMING', duration: 120000 },
+    flour: { label: 'Fint Mel', icon: '🧂', input: { grain: 20 }, outputResource: 'flour', outputAmount: 10, buildingId: 'windmill', stamina: 15, xp: 8, skill: 'FARMING', duration: 120000 },
     iron_ingot: { label: 'Jernbarre', icon: '🧱', input: { iron_ore: 5, wood: 2 }, outputResource: 'iron_ingot', outputAmount: 1, buildingId: 'smeltery', stamina: 20, xp: 12, skill: 'CRAFTING' },
     bread: { label: 'Bondebrød', icon: '🍞', input: { flour: 2 }, outputResource: 'bread', outputAmount: 5, buildingId: 'bakery', stamina: 5, xp: 3, skill: 'CRAFTING' },
     pie: { label: 'Kjøttpai', icon: '🥧', input: { flour: 4, meat: 2 }, outputResource: 'bread', outputAmount: 15, buildingId: 'bakery', stamina: 15, xp: 10, skill: 'CRAFTING' },

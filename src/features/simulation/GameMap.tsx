@@ -37,7 +37,7 @@ interface WorldMapProps {
     room: any;
 }
 
-export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, world, worldEvents, players, onAction, onOpenMarket }) => {
+export const GameMap: React.FC<WorldMapProps> = ({ player, room, world, worldEvents, players, onAction, onOpenMarket }) => {
     // Explicitly destructure season to ensure usage in hooks if needed, 
     // although the main fix is in the React.memo comparison or just passing it safely.
     // The previous implementation relied on 'world' reference change. 
@@ -198,7 +198,7 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
 
     return (
         <div className="relative w-full h-full flex flex-col items-center justify-center p-0">
-            {/* ... (rest of render is fine) ... */}
+            {/* ... component content ... */}
             <div className={`relative w-full max-w-full max-h-full mx-auto ${aspectRatioClass} rounded-[2rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.5)] border-4 border-white/5 bg-slate-950 transition-all duration-1000`}>
                 <AnimatePresence mode="popLayout" custom={direction}>
                     <motion.div key={mapKey} custom={direction} variants={containerVariants} initial="initial" animate="animate" exit="exit" className="absolute inset-0 w-full h-full">
@@ -411,33 +411,6 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
             </AnimatePresence>
         </div>
     );
-}, (prev, next) => {
-    // Custom check: If Season changed, we MUST re-render
-    if (prev.world?.season !== next.world?.season) return false;
-    if (prev.world?.weather !== next.world?.weather) return false;
-
-    // Default strict equality for others (approximate)
-    // We generally want to avoid re-rendering entire map on TICK updates unless needed (like time of day change?)
-    // Time of day (Day/Night) depends on gameTick.
-    const prevDayPart = getDayPart(prev.world?.gameTick || 0);
-    const nextDayPart = getDayPart(next.world?.gameTick || 0);
-    if (prevDayPart !== nextDayPart) return false;
-
-    // Check Player processes changes (for HUD)
-    if (prev.player.activeProcesses !== next.player.activeProcesses) return false;
-
-    // If active modal states changed ? This logic is inside the hook, which is inside the component. 
-    // Wait, useWorldMapLogic is called INSIDE the component. Changes to logic refs won't trigger re-render if props are equal.
-    // So we just rely on the fact that if 'player' or 'room' object refs change, we re-render?
-    // The issue might be that React.memo was TOO aggressive or 'world' ref wasn't changing.
-    // By adding the checks above, we ensure season changes break the memo.
-
-    // For now, let's trust React's default shallow compare EXCEPT for these specific deep checks we just added 
-    // OR we revert to default behavior if we aren't sure. 
-    // Actually, simply removing React.memo or making the deps explicit is safer.
-    // But since the user complained, let's keep React.memo but return FALSE (trigger update) on Season mismatch.
-
-    return prev.player === next.player && prev.room === next.room && prev.world === next.world && prev.worldEvents === next.worldEvents;
-});
-
+};
 GameMap.displayName = 'GameMap';
+

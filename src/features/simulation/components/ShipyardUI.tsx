@@ -211,11 +211,20 @@ export const ActionListRow: React.FC<ActionListRowProps> = ({
                 {!isMaxed ? (
                     <>
                         <div className="flex items-center justify-end gap-3 w-full">
-                            {Object.entries(cost).map(([res, amt]) => (
-                                <div key={res} className={`flex items-center gap-1.5 ${playerResources[res] >= amt ? 'opacity-100' : 'opacity-60 grayscale'}`}>
-                                    <ResourceIcon resource={res} amount={amt} size="sm" showLabel={true} />
-                                </div>
-                            ))}
+                            {Object.entries(cost).map(([res, amt]) => {
+                                const canAffordRes = (playerResources[res] || 0) >= amt;
+                                return (
+                                    <div key={res} className={`flex items-center gap-1.5 ${canAffordRes ? 'opacity-100' : 'opacity-100'}`}>
+                                        <ResourceIcon
+                                            resource={res}
+                                            amount={amt}
+                                            size="sm"
+                                            showLabel={true}
+                                            className={canAffordRes ? "text-[#292524]" : "text-rose-700 font-bold"}
+                                        />
+                                    </div>
+                                );
+                            })}
                         </div>
                         <InkButton
                             onClick={onAction}
@@ -233,6 +242,68 @@ export const ActionListRow: React.FC<ActionListRowProps> = ({
                     </div>
                 )}
             </div>
+        </div>
+    );
+};
+
+export const ConfirmationOverlay: React.FC<{
+    isOpen: boolean;
+    onConfirm: () => void;
+    onCancel: () => void;
+    title: string;
+    cost: Record<string, number>;
+}> = ({ isOpen, onConfirm, onCancel, title, cost }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-8">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9, rotate: -2 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-[#f2e8d5] p-8 w-full max-w-md shadow-2xl relative rotate-1 border border-[#b45309]/30"
+                style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E")`
+                }}
+            >
+                {/* Tape effect */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-white/40 rotate-1 shadow-sm backdrop-blur-sm" />
+
+                <div className="border-b-2 border-dashed border-[#292524]/20 pb-6 mb-6 text-center">
+                    <h3 className="font-serif font-black text-2xl uppercase tracking-widest text-[#2a1b12] mb-1">Faktura</h3>
+                    <p className="font-serif italic text-stone-600 text-sm">Kongelig Skipsverft</p>
+                </div>
+
+                <div className="space-y-6 mb-8">
+                    <div className="flex justify-between items-baseline border-b border-stone-300 pb-2">
+                        <span className="font-bold text-stone-500 text-sm uppercase tracking-wide">Vare</span>
+                        <span className="font-serif font-bold text-lg text-[#292524]">{title}</span>
+                    </div>
+
+                    <div className="bg-[#e7ded0] p-4 rounded-sm border border-[#d6cbb8]">
+                        <div className="text-xs font-black uppercase tracking-widest text-[#b45309] mb-3 text-center">Kostnader</div>
+                        <div className="flex flex-wrap justify-center gap-4 text-[#292524]">
+                            {Object.entries(cost).map(([res, amt]) => (
+                                <div key={res} className="flex items-center gap-2">
+                                    <ResourceIcon resource={res} amount={amt} size="sm" showLabel={true} className="text-[#292524]" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex gap-4">
+                    <button
+                        onClick={onCancel}
+                        className="flex-1 py-3 border-2 border-[#292524]/20 font-bold uppercase tracking-widest text-xs text-[#57534e] hover:bg-[#292524]/5 transition-colors"
+                    >
+                        Avslå
+                    </button>
+                    <InkButton onClick={onConfirm} className="flex-1 py-3" variant="primary">
+                        Signer
+                    </InkButton>
+                </div>
+            </motion.div>
         </div>
     );
 };

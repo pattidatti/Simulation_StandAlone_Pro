@@ -794,8 +794,13 @@ export const handleBuyBoatCosmetic = (ctx: ActionContext) => {
         : (actor.boat.customization.unlocked = []);
 
     if (unlocked.includes(id)) {
-        if (cosmeticType === 'color') actor.boat.customization.color = (COSMETIC_UNLOCKS.colors.find(c => c.id === id) as any)?.hex || '#4b2c20';
-        if (cosmeticType === 'flag') actor.boat.customization.flagId = id;
+        // Force new reference for React detection even for owned items
+        const newCustomization = { ...actor.boat.customization };
+
+        if (cosmeticType === 'color') newCustomization.color = (COSMETIC_UNLOCKS.colors.find(c => c.id === id) as any)?.hex || '#4b2c20';
+        if (cosmeticType === 'flag') newCustomization.flagId = id;
+
+        actor.boat = { ...actor.boat, customization: newCustomization };
 
         localResult.message = "Endret utseende.";
         return true;
@@ -832,9 +837,15 @@ export const handleBuyBoatCosmetic = (ctx: ActionContext) => {
     });
 
     // Unlock & Equip
+    // Unlock & Equip
     actor.boat.customization.unlocked.push(id);
-    if (cosmeticType === 'color') actor.boat.customization.color = itemDef.hex;
-    if (cosmeticType === 'flag') actor.boat.customization.flagId = id;
+
+    // Force new reference for React detection
+    const newCustomization = { ...actor.boat.customization };
+    if (cosmeticType === 'color') newCustomization.color = itemDef.hex;
+    if (cosmeticType === 'flag') newCustomization.flagId = id;
+
+    actor.boat = { ...actor.boat, customization: newCustomization };
 
     localResult.message = `Kjøpte ${itemDef.name}!`;
     return true;
