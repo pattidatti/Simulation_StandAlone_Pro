@@ -26,6 +26,7 @@ import { RackSvg } from './components/WeaponRackWindow';
 import { DockView } from './components/DockView';
 import { ShipyardWindow } from './components/ShipyardWindow';
 import { SailingMinigame } from './components/SailingMinigame';
+import { HarvestingGame } from './minigames/HarvestingGame';
 
 interface WorldMapProps {
     player: SimulationPlayer;
@@ -77,6 +78,8 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
         setIsSailingOpen,
         isWharfUpgradeOpen,
         setIsWharfUpgradeOpen,
+        isFlaxGameOpen,
+        setIsFlaxGameOpen,
         direction,
         handlePOIAction
     } = useWorldMapLogic(player, onAction, onOpenMarket);
@@ -377,6 +380,23 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                         onClose={() => setIsWharfUpgradeOpen(false)}
                         viewingRegionId={viewingRegionId}
                     />
+                )}
+                {isFlaxGameOpen && (
+                    <SimulationMapWindow
+                        title="Linhøsting"
+                        onClose={() => setIsFlaxGameOpen(false)}
+                        maxWidth="max-w-xl"
+                    >
+                        <HarvestingGame
+                            resourceName="Lin"
+                            possibleYield={12}
+                            equipment={Object.values(player.equipment || {}) as any}
+                            onComplete={(score: number) => {
+                                onAction({ type: 'HARVEST', locationId: 'flax_field', cropId: 'flax', score });
+                                setIsFlaxGameOpen(false);
+                            }}
+                        />
+                    </SimulationMapWindow>
                 )}
             </AnimatePresence>
         </div>

@@ -297,7 +297,11 @@ export const FloatingActionTooltip: React.FC<FloatingActionTooltipProps> = ({ po
                                         >
                                             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl -mr-16 -mt-16" />
                                             <div className="flex flex-col items-start z-10">
-                                                <span className={`text-2xl font-black uppercase tracking-tighter italic ${player.status.stamina < calculateStaminaCost(15, currentSeason, currentWeather) ? 'text-slate-500' : 'text-white'}`}>Innhøsting</span>
+                                                <span className={`text-2xl font-black uppercase tracking-tighter italic ${player.status.stamina < calculateStaminaCost(15, currentSeason, currentWeather) ? 'text-slate-500' : 'text-white'}`}>
+                                                    {poi.label?.toLowerCase().includes('lin') ? 'Linhøsting' :
+                                                        poi.id === 'grain_fields' ? 'Kornhøsting' :
+                                                            'Innhøsting'}
+                                                </span>
                                                 <span className={`text-xs font-black uppercase tracking-[0.2em] mt-1 ${player.status.stamina < calculateStaminaCost(15, currentSeason, currentWeather) ? 'text-red-400' : 'text-emerald-400'}`}>
                                                     {player.status.stamina < calculateStaminaCost(15, currentSeason, currentWeather)
                                                         ? `Mangler energi (${Math.ceil(player.status.stamina)}/${calculateStaminaCost(15, currentSeason, currentWeather).toFixed(0)})`

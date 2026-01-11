@@ -96,11 +96,15 @@ export const POINTS_OF_INTEREST: POI[] = [
         actions: [], isHub: true
     },
     {
-        id: 'flax_field', label: 'Lin-åkeren', icon: '🌿', top: '70%', left: '40%',
-        roles: ['PEASANT', 'BARON', 'KING'], parentId: 'fields',
+        id: 'flax_field',
+        label: 'Lin-åkeren',
+        icon: '🌿',
+        roles: ['PEASANT'],
+        parentId: 'fields',
+        top: '70%',
+        left: '40%',
         actions: [
-            { id: 'PLANT_FLAX', label: 'Så Lin', cost: '-5 lin -30⚡' },
-            { id: 'HARVEST_FLAX', label: 'Høste Lin', cost: '-40⚡' }
+            { id: 'PLANT', label: 'Så Lin', cost: '-10 lin -30⚡', cropId: 'flax' }
         ]
     },
 
