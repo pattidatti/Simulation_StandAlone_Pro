@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Hammer, Anchor, Palette, ArrowUp, Check, Box, Wind } from 'lucide-react';
+import { Hammer, Anchor, Palette, ArrowUp, Check, Box, Wind, Heart } from 'lucide-react';
 import { SimulationMapWindow } from './ui/SimulationMapWindow';
 import { ShipyardVisualizer } from './ShipyardVisualizer';
 import { SimulationPlayer } from '../simulationTypes';
@@ -32,6 +32,8 @@ const ShipyardWindowComponent: React.FC<ShipyardWindowProps> = ({ player, onClos
         stage: player.boat?.stage ?? 0,
         hullType: player.boat?.hullType ?? 'oak_standard',
         model: player.boat?.model ?? 'standard',
+        hp: player.boat?.hp,
+        maxHp: player.boat?.maxHp || BOAT_MODELS[player.boat?.model as keyof typeof BOAT_MODELS]?.baseHp || 100,
         componentLevels: {
             sails: player.boat?.componentLevels?.sails ?? 0,
             hull: player.boat?.componentLevels?.hull ?? 0,
@@ -219,18 +221,87 @@ const ConstructionView = ({ boat, player, onAction }: any) => {
         ][stage]) || {} // Fallback to empty object if out of bounds
     } : null;
 
+    const isFinished = stage >= 4;
+    const hp = boat.hp ?? boat.maxHp ?? 100;
+    const maxHp = boat.maxHp ?? 100;
+    const hpPercent = (hp / maxHp) * 100;
+    const isDamaged = hp < maxHp;
+
+    const missingHp = maxHp - hp;
+    const itemsNeeded = Math.ceil(missingHp / 10);
+    const repairCost = isDamaged ? { oak_lumber: itemsNeeded, tar: itemsNeeded } : {};
+
     return (
         <div className="p-8 flex flex-col gap-6 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-stone-400 scrollbar-track-transparent">
             <div>
                 <h3 className="text-4xl font-serif font-black uppercase text-amber-900 tracking-[0.2em] mb-2 drop-shadow-sm">
-                    {stage >= 4 ? "FERDIGSTILT" : `FASE ${stage + 1}`}
+                    {isFinished ? "VEDLIKEHOLD" : `FASE ${stage + 1}`}
                 </h3>
                 <p className="text-stone-700 font-serif italic text-lg tracking-wide">
-                    {stage >= 4 ? "Skip Ferdigstilt" : nextStage?.name}
+                    {isFinished ? "Verft & Reparasjon" : nextStage?.name}
                 </p>
             </div>
 
-            {nextStage && (
+            {/* MAINTENANCE DOCK (For Finished Boats) */}
+            {isFinished && (
+                <div className="bg-[#292524] rounded-sm p-6 border border-white/5 relative overflow-hidden group shadow-lg">
+                    <div className="flex justify-between items-center mb-6">
+                        <span className="text-sm font-bold text-stone-400 uppercase tracking-widest font-serif flex items-center gap-2">
+                            <Heart size={14} className={isDamaged ? "text-rose-500" : "text-emerald-500"} />
+                            Skrog Integritet
+                        </span>
+                        <span className={`font-mono text-lg font-bold ${isDamaged ? "text-rose-500" : "text-emerald-500"}`}>
+                            {hp} / {maxHp} HP
+                        </span>
+                    </div>
+
+                    {/* HP Bar */}
+                    <div className="h-4 bg-black/40 rounded-full overflow-hidden mb-8 border border-white/5 relative">
+                        {/* Grid lines */}
+                        <div className="absolute inset-0 flex justify-between px-1 opacity-20">
+                            {[...Array(9)].map((_, i) => <div key={i} className="w-[1px] h-full bg-white" />)}
+                        </div>
+                        <div
+                            className={`h-full transition-all duration-1000 ease-out relative ${isDamaged ? "bg-rose-600" : "bg-emerald-600"}`}
+                            style={{ width: `${hpPercent}%` }}
+                        >
+                            <div className="absolute inset-0 bg-white/10" />
+                        </div>
+                    </div>
+
+                    {isDamaged ? (
+                        <>
+                            <div className="flex items-center gap-4 mb-6 p-4 bg-black/20 rounded border border-white/5">
+                                <span className="text-stone-400 text-sm font-serif italic">Reparasjonskostnad:</span>
+                                <div className="flex gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <ResourceIcon resource="oak_lumber" size="sm" amount={repairCost.oak_lumber} className={player.resources.oak_lumber >= itemsNeeded ? "text-[#e7ded0]" : "text-rose-500 font-bold"} />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <ResourceIcon resource="tar" size="sm" amount={repairCost.tar} className={player.resources.tar >= itemsNeeded ? "text-[#e7ded0]" : "text-rose-500 font-bold"} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <InkButton
+                                onClick={() => onAction({ type: 'REPAIR_BOAT' }, "Reparer Skrog", repairCost)}
+                                disabled={(player.resources.oak_lumber || 0) < itemsNeeded || (player.resources.tar || 0) < itemsNeeded}
+                                className="w-full py-4 text-sm"
+                            >
+                                Utfør Reparasjon
+                            </InkButton>
+                        </>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-6 gap-4 opacity-80">
+                            <WaxSeal label="GODKJENT" color="#10b981" />
+                            <span className="text-emerald-500/50 text-xs font-black tracking-[0.3em] uppercase">Ingen feil funnet</span>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* CONSTRUCTION PREVIEW (For Unfinished Boats) */}
+            {!isFinished && nextStage && (
                 <div className="bg-[#292524] rounded-sm p-6 border border-white/5 relative overflow-hidden group shadow-lg">
                     <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
