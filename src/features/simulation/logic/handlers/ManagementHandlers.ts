@@ -553,7 +553,7 @@ export const handleContributeToBoat = (ctx: ActionContext) => {
             hp: 100,
             maxHp: 100,
             cannons: 0,
-            cannonballs: 10, // Default ammo
+            cannonballs: 50, // Default ammo
             isDamaged: false
         };
     }

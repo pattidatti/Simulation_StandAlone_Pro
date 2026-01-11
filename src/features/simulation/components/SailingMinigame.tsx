@@ -5,7 +5,7 @@ import { useSimulation } from '../SimulationContext';
 import { FishResourceNode } from '../types/world';
 import { ModularBoatSVG } from './ModularBoatSVG';
 import { SeaBackground } from './SeaBackground';
-import { Fish, Skull } from 'lucide-react';
+import { Fish, Skull, Circle } from 'lucide-react';
 import { ref, update, onValue, runTransaction } from 'firebase/database';
 import { simulationDb } from '../simulationFirebase';
 
@@ -78,6 +78,7 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
     // Combat State
     const [hp, setHp] = useState(player.boat?.hp || 100);
     const [maxHp] = useState(player.boat?.maxHp || 100);
+    const [optimisticAmmo, setOptimisticAmmo] = useState(player.boat?.cannonballs || 0);
     const [isDead, setIsDead] = useState(false);
     const [lastFireTime, setLastFireTime] = useState(0);
     const [projectiles, setProjectiles] = useState<Projectile[]>([]);
@@ -170,6 +171,11 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         };
     }, [roomPin, player.id]);
 
+    // Sync Optimistic Ammo (Reconciliation)
+    useEffect(() => {
+        setOptimisticAmmo(player.boat?.cannonballs || 0);
+    }, [player.boat?.cannonballs]);
+
     // Set Active Minigame State
     useEffect(() => {
         setActiveMinigame('SAILING');
@@ -229,6 +235,19 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         const now = Date.now();
         if (now - lastFireTime < 1500) return; // 1.5s Cooldown
         if (isFishing || isDead) return;
+
+        // Ammo Check
+        if (optimisticAmmo <= 0) {
+            // TODO: Play "Click" sound
+            return;
+        }
+
+        // Optimistic Consumption
+        const newAmmo = optimisticAmmo - 1;
+        setOptimisticAmmo(newAmmo);
+        update(ref(simulationDb, `simulation_rooms/${roomPin}/players/${player.id}/boat`), {
+            cannonballs: newAmmo
+        });
 
         setLastFireTime(now);
         setShakeIntensity(5);
@@ -799,7 +818,42 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                             transition={{ type: 'spring', stiffness: 50, damping: 15 }}
                         />
                     </div>
-                    <div className="text-[10px] text-white/30 font-bold uppercase tracking-widest">{hp} / {maxHp} HP</div>
+                    <div className="text-[10px] text-white/30 font-bold uppercase tracking-widest">{Math.round(hp)} / {maxHp} HP</div>
+                </motion.div>
+            </AnimatePresence>
+
+            {/* AMMO HUD - BOTTOM RIGHT */}
+            <AnimatePresence>
+                <motion.div
+                    initial={{ x: 50, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    className="absolute bottom-12 right-12 flex flex-col items-end gap-2 pointer-events-none"
+                >
+                    <div className="px-3 py-1 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full text-[10px] font-black uppercase text-amber-500 tracking-[0.2em]">
+                        AMMUNISJON
+                    </div>
+                    <div className={`p-6 rounded-[2rem] border backdrop-blur-2xl flex flex-col items-center justify-center min-w-[120px] transition-colors duration-500
+                        ${optimisticAmmo > 10 ? 'bg-slate-950/40 border-white/10' :
+                            (optimisticAmmo > 0 ? 'bg-amber-950/40 border-amber-500/30' : 'bg-red-950/60 border-red-500/50 animate-pulse')}
+                    `}>
+                        <div className="flex items-end gap-1 mb-1">
+                            <span className={`text-5xl font-black italic tracking-tighter leading-none
+                                ${optimisticAmmo > 10 ? 'text-white' : (optimisticAmmo > 0 ? 'text-amber-400' : 'text-red-500')}
+                            `}>
+                                {optimisticAmmo}
+                            </span>
+                            <span className="text-white/20 text-sm font-bold uppercase mb-1">stk</span>
+                        </div>
+                        <div className="flex items-center gap-2 opacity-50">
+                            <Circle size={12} className={optimisticAmmo > 0 ? 'fill-current text-white' : 'text-red-500'} />
+                            <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
+                                <motion.div
+                                    className={`h-full ${optimisticAmmo > 0 ? 'bg-white' : 'bg-red-500'}`}
+                                    animate={{ width: `${Math.min(100, (optimisticAmmo / 50) * 100)}%` }}
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </motion.div>
             </AnimatePresence>
 
