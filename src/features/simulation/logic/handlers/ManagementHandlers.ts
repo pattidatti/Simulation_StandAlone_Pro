@@ -782,15 +782,20 @@ export const handleBuyBoatModel = (ctx: ActionContext) => {
 
 export const handleBuyBoatCosmetic = (ctx: ActionContext) => {
     const { actor, action, localResult } = ctx;
-    const { type, id } = action;
+    const { cosmeticType, id } = action;
 
     if (!actor.boat) return false;
     if (!actor.boat.customization) actor.boat.customization = { color: '#4b2c20', flagId: 'none', figurehead: 'none', unlocked: [] };
 
     // Check if already owned
-    if (actor.boat.customization.unlocked.includes(id)) {
-        if (type === 'color') actor.boat.customization.color = (COSMETIC_UNLOCKS.colors.find(c => c.id === id) as any)?.hex || '#4b2c20';
-        if (type === 'flag') actor.boat.customization.flagId = id;
+    // Robust check: Ensure unlocked is an array before checking includes
+    const unlocked = Array.isArray(actor.boat.customization.unlocked)
+        ? actor.boat.customization.unlocked
+        : (actor.boat.customization.unlocked = []);
+
+    if (unlocked.includes(id)) {
+        if (cosmeticType === 'color') actor.boat.customization.color = (COSMETIC_UNLOCKS.colors.find(c => c.id === id) as any)?.hex || '#4b2c20';
+        if (cosmeticType === 'flag') actor.boat.customization.flagId = id;
 
         localResult.message = "Endret utseende.";
         return true;
@@ -798,8 +803,8 @@ export const handleBuyBoatCosmetic = (ctx: ActionContext) => {
 
     // Find Logic
     let itemDef: any = null;
-    if (type === 'color') itemDef = COSMETIC_UNLOCKS.colors.find(c => c.id === id);
-    if (type === 'flag') itemDef = COSMETIC_UNLOCKS.flags.find(f => f.id === id);
+    if (cosmeticType === 'color') itemDef = COSMETIC_UNLOCKS.colors.find(c => c.id === id);
+    if (cosmeticType === 'flag') itemDef = COSMETIC_UNLOCKS.flags.find(f => f.id === id);
 
     if (!itemDef) {
         localResult.success = false;
@@ -828,8 +833,8 @@ export const handleBuyBoatCosmetic = (ctx: ActionContext) => {
 
     // Unlock & Equip
     actor.boat.customization.unlocked.push(id);
-    if (type === 'color') actor.boat.customization.color = itemDef.hex;
-    if (type === 'flag') actor.boat.customization.flagId = id;
+    if (cosmeticType === 'color') actor.boat.customization.color = itemDef.hex;
+    if (cosmeticType === 'flag') actor.boat.customization.flagId = id;
 
     localResult.message = `Kjøpte ${itemDef.name}!`;
     return true;

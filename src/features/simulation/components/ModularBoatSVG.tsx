@@ -11,7 +11,7 @@ interface ModularBoatSVGProps {
         nets: number;
     };
     view?: 'top' | 'side';
-    variant?: 'standard' | 'blueprint'; // NEW: Holographic Mode
+    variant?: 'standard' | 'drafting' | 'realistic'; // Updated for Royal Shipwright
     customization?: {
         color?: string;
         flagId?: string;
@@ -50,42 +50,44 @@ export const ModularBoatSVG: React.FC<ModularBoatSVGProps> = React.memo(({
     className = ""
 }) => {
     // --- STYLE LOGIC ---
-    const isBlueprint = variant === 'blueprint';
+    const isDrafting = variant === 'drafting';
 
     // Aesthetic Palettes
     const PALETTE = {
         standard: {
-            hullFill: customization.color || '#4b2c20',
-            hullStroke: '#2d1a12',
-            deckFill: '#000000',
-            deckOpacity: 0.2,
-            sailFill: customization.sailPattern === 'striped' ? "url(#stripedPattern)" : "#f3f4f6", // TODO: proper Pattern ref
-            sailStroke: (componentLevels.sails || 0) >= 3 ? "#fbbf24" : "#d1d5db",
-            metal: '#1f2937',
-            wood: '#3d2319',
-            gold: '#fbbf24'
+            hullFill: customization.color || '#453020', // WoodLight
+            hullStroke: '#2a1b12', // WoodDark
+            deckFill: '#1a0f0a', // Darker wood
+            deckOpacity: 0.4,
+            sailFill: customization.sailPattern === 'striped' ? "url(#stripedPattern)" : "#f0e6d2", // Parchment-like sail
+            sailStroke: (componentLevels.sails || 0) >= 3 ? "#b45309" : "#a8a29e", // Brass or Stone
+            metal: '#3f3f46',
+            wood: '#453020',
+            gold: '#d97706'
         },
-        blueprint: {
-            hullFill: 'rgba(6, 182, 212, 0.05)', // Low opacity Cyan
-            hullStroke: '#06b6d4', // Cyan-500
-            deckFill: 'transparent',
-            deckOpacity: 0,
-            sailFill: 'rgba(255, 255, 255, 0.05)',
-            sailStroke: '#22d3ee', // Cyan-400
-            metal: '#0891b2', // Cyan-600
-            wood: '#0e7490', // Cyan-700
-            gold: '#fbbf24' // Keep gold for highlights/active
+        drafting: {
+            hullFill: '#f5f5f4', // Warm Grey / Off-white wash
+            hullStroke: '#1c1917', // Stone-900
+            deckFill: '#e7e5e4', // Slightly darker wash
+            deckOpacity: 1, // SOLID FILL
+            sailFill: '#fafaf9', // White wash
+            sailStroke: '#1c1917',
+            metal: '#44403c', // Dark Stone fill
+            wood: '#57534e', // Stone fill
+            gold: '#1c1917' // Ink
         }
     };
 
-    const colors = isBlueprint ? PALETTE.blueprint : PALETTE.standard;
-    const filter = isBlueprint ? "drop-shadow(0 0 2px rgba(6,182,212,0.5))" : "none";
-    const strokeWidth = isBlueprint ? "2" : "4";
+    const colors = isDrafting ? PALETTE.drafting : PALETTE.standard;
+    const strokeWidth = isDrafting ? "2.5" : "4";
+
+    // "Hand-drawn" effect for drafting
+    const filter = isDrafting ? "url(#inkRoughness)" : "none";
+    const strokeDasharray = isDrafting ? "300 5" : "none"; // Imperfect lines
 
     const isConstruction = stage < 4;
     const hullPath = (HULL_PATHS as any)[model] || HULL_PATHS.standard;
     const sailPath = (SAIL_PATHS as any)[model] || SAIL_PATHS.standard;
-    const sailLevel = componentLevels.sails || 0;
     const cannonCount = componentLevels.cannons || 0;
 
     // --- SIDE VIEW ---
@@ -96,10 +98,20 @@ export const ModularBoatSVG: React.FC<ModularBoatSVGProps> = React.memo(({
                 className={`w-full h-full ${className}`}
                 initial={false}
                 animate={{ scale }}
-                style={{ filter }}
+                style={{ filter: isDrafting ? 'none' : 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))' }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             >
-                <g transform="translate(200, 180)">
+                {/* Ink Effect Defs */}
+                {isDrafting && (
+                    <defs>
+                        <filter id="inkRoughness">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+                            <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
+                        </filter>
+                    </defs>
+                )}
+
+                <g transform="translate(200, 180)" filter={filter}>
                     {stage >= 1 && (
                         <g id="hull-side">
                             <path
@@ -107,19 +119,29 @@ export const ModularBoatSVG: React.FC<ModularBoatSVGProps> = React.memo(({
                                 fill={colors.hullFill}
                                 stroke={colors.hullStroke}
                                 strokeWidth={strokeWidth}
+                                strokeLinecap="round"
+                                strokeDasharray={strokeDasharray}
                             />
                         </g>
                     )}
                     {stage >= 2 && (
                         <g id="mast-side">
-                            <rect x="-4" y="-180" width="8" height="150" rx="2" fill={colors.wood} stroke={isBlueprint ? colors.hullStroke : 'none'} />
+                            <rect x="-4" y="-180" width="8" height="150" rx="2" fill={isDrafting ? 'none' : colors.wood} stroke={colors.wood} strokeWidth={isDrafting ? 2 : 0} />
                             <motion.path
-                                d="M-55,-145 Q20,-100 -55,-20"
+                                // UPDATED: Sail now starts at M0 (Mast Center) instead of M-55 (Empty Space)
+                                d="M0,-145 Q60,-90 0,-20"
                                 fill={colors.sailFill}
                                 stroke={colors.sailStroke}
                                 strokeWidth="2"
-                                animate={{ d: ["M-55,-145 Q20,-95 -55,-20", "M-55,-145 Q40,-95 -55,-20", "M-55,-145 Q20,-95 -55,-20"] }}
-                                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                                strokeDasharray={isDrafting ? "4 2" : "none"} // Dashed lines for sails in draft
+                                animate={{
+                                    d: [
+                                        "M0,-145 Q60,-90 0,-20",
+                                        "M0,-145 Q80,-90 0,-20", // Billow out further
+                                        "M0,-145 Q60,-90 0,-20"
+                                    ]
+                                }}
+                                transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }} // Slower, calmer sway
                             />
                         </g>
                     )}
@@ -133,12 +155,21 @@ export const ModularBoatSVG: React.FC<ModularBoatSVGProps> = React.memo(({
         <motion.svg
             viewBox="0 0 400 300"
             className={`w-full h-full ${className}`}
-            style={{ rotate: rotation, filter }}
+            style={{ rotate: rotation }}
             initial={false}
             animate={{ scale }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
-            <g transform="translate(200, 150) scale(1)">
+            {isDrafting && (
+                <defs>
+                    <filter id="inkRoughness">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
+                    </filter>
+                </defs>
+            )}
+
+            <g transform="translate(200, 150) scale(1)" filter={filter}>
                 {/* HULL */}
                 {stage >= 1 && (
                     <g id="hull">
@@ -147,6 +178,7 @@ export const ModularBoatSVG: React.FC<ModularBoatSVGProps> = React.memo(({
                             fill={colors.hullFill}
                             stroke={colors.hullStroke}
                             strokeWidth={strokeWidth}
+                            strokeLinecap="round"
                         />
                         <path
                             d="M-130,-30 L110,-30 L130,0 L110,30 L-130,30 Z"
@@ -159,16 +191,16 @@ export const ModularBoatSVG: React.FC<ModularBoatSVGProps> = React.memo(({
                 {/* CANNONS */}
                 {!isConstruction && cannonCount > 0 && (
                     <g id="cannons">
-                        <rect x="-80" y="-45" width="20" height="8" fill={colors.metal} stroke={isBlueprint ? colors.hullStroke : 'none'} strokeWidth="1" />
-                        <rect x="-40" y="-48" width="20" height="8" fill={colors.metal} stroke={isBlueprint ? colors.hullStroke : 'none'} strokeWidth="1" />
-                        <rect x="0" y="-50" width="20" height="8" fill={colors.metal} stroke={isBlueprint ? colors.hullStroke : 'none'} strokeWidth="1" />
-                        <rect x="-80" y="37" width="20" height="8" fill={colors.metal} stroke={isBlueprint ? colors.hullStroke : 'none'} strokeWidth="1" />
-                        <rect x="-40" y="40" width="20" height="8" fill={colors.metal} stroke={isBlueprint ? colors.hullStroke : 'none'} strokeWidth="1" />
-                        <rect x="0" y="42" width="20" height="8" fill={colors.metal} stroke={isBlueprint ? colors.hullStroke : 'none'} strokeWidth="1" />
+                        <rect x="-80" y="-45" width="20" height="8" fill={colors.metal} stroke={isDrafting ? colors.hullStroke : 'none'} strokeWidth="1" />
+                        <rect x="-40" y="-48" width="20" height="8" fill={colors.metal} stroke={isDrafting ? colors.hullStroke : 'none'} strokeWidth="1" />
+                        <rect x="0" y="-50" width="20" height="8" fill={colors.metal} stroke={isDrafting ? colors.hullStroke : 'none'} strokeWidth="1" />
+                        <rect x="-80" y="37" width="20" height="8" fill={colors.metal} stroke={isDrafting ? colors.hullStroke : 'none'} strokeWidth="1" />
+                        <rect x="-40" y="40" width="20" height="8" fill={colors.metal} stroke={isDrafting ? colors.hullStroke : 'none'} strokeWidth="1" />
+                        <rect x="0" y="42" width="20" height="8" fill={colors.metal} stroke={isDrafting ? colors.hullStroke : 'none'} strokeWidth="1" />
                         {model === 'galleon' && (
                             <>
-                                <rect x="-120" y="-42" width="20" height="8" fill={colors.metal} stroke={isBlueprint ? colors.hullStroke : 'none'} strokeWidth="1" />
-                                <rect x="-120" y="34" width="20" height="8" fill={colors.metal} stroke={isBlueprint ? colors.hullStroke : 'none'} strokeWidth="1" />
+                                <rect x="-120" y="-42" width="20" height="8" fill={colors.metal} stroke={isDrafting ? colors.hullStroke : 'none'} strokeWidth="1" />
+                                <rect x="-120" y="34" width="20" height="8" fill={colors.metal} stroke={isDrafting ? colors.hullStroke : 'none'} strokeWidth="1" />
                             </>
                         )}
                     </g>
@@ -184,12 +216,13 @@ export const ModularBoatSVG: React.FC<ModularBoatSVGProps> = React.memo(({
                             fill={colors.sailFill}
                             stroke={colors.sailStroke}
                             strokeWidth="2"
-                            opacity="0.9"
+                            opacity={isDrafting ? 1 : 0.9}
+                            strokeDasharray={isDrafting ? "4 2" : "none"}
                         />
                         {/* Flag */}
                         <motion.path
                             d="M-4,-80 L-40,-70 L-40,-90 Z"
-                            fill={isBlueprint ? colors.gold : (customization.color || '#ef4444')} // Gold flag in blueprint
+                            fill={isDrafting ? colors.gold : (customization.color || '#ef4444')}
                             animate={{ scaleX: [1, 1.2, 1], rotate: [0, 5, 0] }}
                             transition={{ repeat: Infinity, duration: 1.5 }}
                         />
@@ -203,7 +236,7 @@ export const ModularBoatSVG: React.FC<ModularBoatSVGProps> = React.memo(({
         prev.stage === next.stage &&
         prev.model === next.model &&
         prev.view === next.view &&
-        prev.variant === next.variant && // NEW
+        prev.variant === next.variant &&
         prev.scale === next.scale &&
         prev.rotation === next.rotation &&
         prev.customization?.color === next.customization?.color &&

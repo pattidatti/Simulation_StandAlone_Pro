@@ -9,8 +9,7 @@ export const BOAT_MODELS = {
         baseHp: 100,
         cargoSlots: 2,
         maxCannons: 0,
-        cost: { oak_lumber: 50, tar: 20 } as Partial<Resources>,
-        levelReq: 0 // Completed Stage 4 = Access to upgrades
+        cost: { oak_lumber: 50, tar: 20 } as Partial<Resources>
     },
     sloop: {
         id: 'sloop',
@@ -20,8 +19,7 @@ export const BOAT_MODELS = {
         baseHp: 250,
         cargoSlots: 4,
         maxCannons: 2,
-        cost: { oak_lumber: 200, iron_ingot: 50, linen_canvas: 40, tar: 50 } as Partial<Resources>,
-        levelReq: 5
+        cost: { oak_lumber: 200, iron_ingot: 50, linen_canvas: 40, tar: 50 } as Partial<Resources>
     },
     cog: {
         id: 'cog',
@@ -31,8 +29,7 @@ export const BOAT_MODELS = {
         baseHp: 600,
         cargoSlots: 8,
         maxCannons: 4,
-        cost: { oak_lumber: 500, iron_ingot: 100, linen_canvas: 80, tar: 100 } as Partial<Resources>,
-        levelReq: 10
+        cost: { oak_lumber: 500, iron_ingot: 100, linen_canvas: 80, tar: 100 } as Partial<Resources>
     },
     galleon: {
         id: 'galleon',
@@ -42,8 +39,7 @@ export const BOAT_MODELS = {
         baseHp: 1500,
         cargoSlots: 12,
         maxCannons: 12,
-        cost: { oak_lumber: 1000, iron_ingot: 300, linen_canvas: 150, gold: 5000, silk: 50 } as Partial<Resources>,
-        levelReq: 20
+        cost: { oak_lumber: 1000, iron_ingot: 300, linen_canvas: 150, gold: 5000, silk: 50 } as Partial<Resources>
     }
 } as const;
 
