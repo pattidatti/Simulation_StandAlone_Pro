@@ -138,6 +138,11 @@ export interface SimulationPlayer {
             figurehead: string;
             unlocked: string[];
         };
+        // Combat Stats
+        hp: number;
+        maxHp: number;
+        cannons: number;
+        isDamaged: boolean;
         position?: { x: number, y: number, rotation: number };
     };
     online?: boolean;

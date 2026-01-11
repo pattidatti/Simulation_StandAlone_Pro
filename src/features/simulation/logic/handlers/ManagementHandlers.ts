@@ -542,9 +542,81 @@ export const handleContributeToBoat = (ctx: ActionContext) => {
     const { stage: targetStage, resources: reqs } = action;
 
     if (!actor.boat) {
-        actor.boat = { stage: 0, hullType: 'oak_standard', stamina: 100, durability: 100, upgrades: [] };
+        actor.boat = {
+            stage: 0,
+            hullType: 'oak_standard',
+            stamina: 100,
+            durability: 100,
+            upgrades: [],
+            hp: 100,
+            maxHp: 100,
+            cannons: 0,
+            isDamaged: false
+        };
     }
 
+    // --- REPAIR LOGIC ---
+    if (targetStage === -1) {
+        if (!actor.boat.isDamaged) {
+            localResult.success = false;
+            localResult.message = "Båten trenger ikke reparasjon.";
+            return false;
+        }
+
+        let canAfford = true;
+        Object.entries(reqs as Resources).forEach(([res, amt]) => {
+            if (((actor.resources as any)[res] || 0) < (amt as number)) canAfford = false;
+        });
+
+        if (!canAfford) {
+            localResult.success = false;
+            localResult.message = "Du har ikke nok materialer til å reparere skroget.";
+            return false;
+        }
+
+        // Deduct
+        Object.entries(reqs as Resources).forEach(([res, amt]) => {
+            (actor.resources as any)[res] -= (amt as number);
+            localResult.utbytte.push({ resource: res as any, amount: -(amt as number) });
+        });
+
+        // Effect: Patch Job
+        actor.boat.isDamaged = false;
+        actor.boat.hp = 25; // Just enough to sail carefully
+        localResult.message = "Nødreparasjon fullført. Skroget er tett!";
+        return true;
+    }
+
+    // --- MAINTENANCE LOGIC ---
+    if (targetStage === -2) {
+        if (actor.boat.hp >= actor.boat.maxHp) {
+            localResult.success = false;
+            localResult.message = "Båten er allerede i topp stand.";
+            return false;
+        }
+
+        let canAfford = true;
+        Object.entries(reqs as Resources).forEach(([res, amt]) => {
+            if (((actor.resources as any)[res] || 0) < (amt as number)) canAfford = false;
+        });
+
+        if (!canAfford) {
+            localResult.success = false;
+            localResult.message = "Mangler materialer til vedlikehold.";
+            return false;
+        }
+
+        Object.entries(reqs as Resources).forEach(([res, amt]) => {
+            (actor.resources as any)[res] -= (amt as number);
+            localResult.utbytte.push({ resource: res as any, amount: -(amt as number) });
+        });
+
+        actor.boat.hp = actor.boat.maxHp;
+        localResult.message = "Vedlikehold utført. Skroget er som nytt!";
+        return true;
+    }
+
+    // --- UPGRADE LOGIC ---
     if (actor.boat.stage >= targetStage) {
         localResult.success = false;
         localResult.message = "Du har allerede fullført dette trinnet.";

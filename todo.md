@@ -6,6 +6,9 @@
 ## Medium Priority
 - [ ] 
 ## Low Priority
+- Ekte ammo på båten. Bruker kanonballer, lages med stein og jerbarre. Må legges til i Båt-UI på kai. 
+- Båten SVG på Kai-hub må rendres fra siden, ikke top down. Oppdatere hele kai UI også. 
+- Mang
 - [x] Sjekke at systemene for å bytte baroner og konge faktisk eksisterer og at de virker skikkelig. 
 - [ ] Dart i vertshuset (andre etasje)
 - [x] Husmannsplass viser ikke riktige bilder når man har oppgradert 1-5, hverken ute eller inne i stugo. Vi bruker map_peasant_farm og map_stugo_interior . Undersøk 

@@ -4,6 +4,17 @@ import type { SimulationPlayer } from './player';
 import type { CoupData, ElectionState, DiplomacyMessage, TradeOffer } from './politics';
 import type { ActiveSiege, Garrison, Fortification } from './war';
 
+export type WorldSeason = 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+
+export interface FishResourceNode {
+    id: string;
+    x: number;
+    y: number;
+    type: 'COD' | 'HERRING' | 'SALMON' | 'TUNA';
+    amount: number;
+    expiresAt: number;
+}
+
 export interface MarketItem {
     price: number;
     stock: number;
@@ -87,7 +98,7 @@ export interface SimulationRoom {
     public_profiles?: Record<string, any>;
     world: {
         year: number;
-        season: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+        season: WorldSeason;
         weather: WeatherType;
         gameTick: number;
         lastTickAt: number;
@@ -106,6 +117,7 @@ export interface SimulationRoom {
                 contributions: Record<string, { name: string, resources: Partial<Resources> }>;
             }>;
         };
+        sea_resources?: Record<string, FishResourceNode>;
     };
     worldEvents: Record<string, WorldEvent>;
     diplomacy: Record<string, DiplomacyMessage>;

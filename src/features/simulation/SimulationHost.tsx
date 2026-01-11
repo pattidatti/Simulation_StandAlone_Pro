@@ -60,6 +60,59 @@ export const SimulationHost: React.FC = () => {
     // --- TICKER ---
     useGameTicker(pin, roomData?.status || 'LOBBY', roomData?.world, onlineCount);
 
+    // --- HOST-AUTHORITATIVE: THE LIVING SEA (Fish Spawner) ---
+    useEffect(() => {
+        if (!pin || !roomData?.world || roomData.status !== 'PLAYING') return;
+
+        const spawnFish = async () => {
+            const currentFish = roomData.world.sea_resources || {};
+            const count = Object.keys(currentFish).length;
+            const MAX_FISH = 15;
+
+            if (count < MAX_FISH) {
+                // Spawn 1-3 new fish
+                const spawnCount = Math.floor(Math.random() * 2) + 1;
+                const updates: any = {};
+
+                for (let i = 0; i < spawnCount; i++) {
+                    const id = `fish_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+                    // World Size is roughly 5000x5000 in SailingMinigame, centered at 2500,2500? 
+                    // No, SailingMinigame uses absolute coords. Let's assume safe range 0-4000.
+                    // Actually SailingMinigame "pos" starts at 1000,1000.
+                    const x = Math.floor(Math.random() * 4000);
+                    const y = Math.floor(Math.random() * 4000);
+                    const types = ['COD', 'HERRING', 'SALMON', 'TUNA'] as const;
+                    const type = types[Math.floor(Math.random() * types.length)];
+
+                    updates[`simulation_rooms/${pin}/world/sea_resources/${id}`] = {
+                        id,
+                        x,
+                        y,
+                        type,
+                        amount: Math.floor(Math.random() * 5) + 1,
+                        expiresAt: Date.now() + 1000 * 60 * 10 // 10 minutes
+                    };
+                }
+
+                // Cleanup expired fish
+                const now = Date.now();
+                Object.values(currentFish).forEach((f: any) => {
+                    if (f.expiresAt < now) {
+                        updates[`simulation_rooms/${pin}/world/sea_resources/${f.id}`] = null;
+                    }
+                });
+
+                if (Object.keys(updates).length > 0) {
+                    await update(ref(db), updates);
+                }
+            }
+        };
+
+        const interval = setInterval(spawnFish, 10000); // Check every 10s
+        return () => clearInterval(interval);
+    }, [pin, roomData?.status, roomData?.world?.sea_resources]); // Dependency on sea_resources to avoid stale closure if checking directly, but better to read from roomData which updates via listener
+
+
     // --- INITIAL FETCH ---
     useEffect(() => {
         const roomsRef = ref(db, 'simulation_rooms');

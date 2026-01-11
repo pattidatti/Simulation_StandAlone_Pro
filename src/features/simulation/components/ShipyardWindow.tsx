@@ -60,10 +60,33 @@ import { SimulationMapWindow } from './ui/SimulationMapWindow';
 
 export const ShipyardWindow: React.FC<ShipyardWindowProps> = ({ player, room, onClose, onContribute }) => {
     const currentBoatStage = player.boat?.stage || 0;
-    const nextStage = BOAT_STAGES.find(s => s.stage === currentBoatStage + 1);
+    const isDamaged = player.boat?.isDamaged || false;
+    const hp = player.boat?.hp || 0;
+    const maxHp = player.boat?.maxHp || 100;
+
+    // Logic Priority: Critical Repair -> Maintenance -> Upgrade
+    let nextStage: any = null;
+
+    if (isDamaged) {
+        nextStage = {
+            stage: -1,
+            name: 'Skrogreparasjon',
+            description: 'Skipet har tatt skade og må tettest før det kan seile igjen. En enkel lapp holder det flytende.',
+            requirements: { oak_lumber: 5, tar: 2 }
+        };
+    } else if (hp < maxHp) {
+        nextStage = {
+            stage: -2,
+            name: 'Vedlikehold',
+            description: `Skroget er slitt (${hp}/${maxHp} HP). Bytt ut råtne planker for å gjenopprette full styrke.`,
+            requirements: { plank: 10, tar: 5 }
+        };
+    } else {
+        nextStage = BOAT_STAGES.find(s => s.stage === currentBoatStage + 1);
+    }
 
     const hasResources = nextStage ? Object.entries(nextStage.requirements).every(([res, amt]) => {
-        return (player.resources[res as keyof Resources] || 0) >= amt;
+        return (player.resources[res as keyof Resources] || 0) >= (amt as number);
     }) : false;
 
     const recipeForList = nextStage ? {
@@ -172,7 +195,8 @@ export const ShipyardWindow: React.FC<ShipyardWindowProps> = ({ player, room, on
                                         variant={hasResources ? 'primary' : 'primary'}
                                     >
                                         <Hammer size={18} />
-                                        {currentBoatStage === 0 ? 'Legg Ned Kjøl' : 'Ferdigstill Seksjon'}
+                                        <Hammer size={18} />
+                                        {nextStage?.stage === -1 ? 'Utfør Nødreparasjon' : (nextStage?.stage === -2 ? 'Utfør Vedlikehold' : (currentBoatStage === 0 ? 'Legg Ned Kjøl' : 'Ferdigstill Seksjon'))}
                                     </ShipyardButton>
 
                                     {!hasResources && (

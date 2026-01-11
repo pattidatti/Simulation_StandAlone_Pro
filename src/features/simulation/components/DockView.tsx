@@ -41,7 +41,8 @@ const DockButton: React.FC<{ children: React.ReactNode; onClick?: () => void; di
 
 export const DockView: React.FC<DockViewProps> = ({ player, world, onAction }) => {
     const { season, time } = world;
-    const canSail = player.boat && player.boat.stage >= 2;
+    const isDamaged = player.boat?.isDamaged || false;
+    const canSail = player.boat && player.boat.stage >= 2 && !isDamaged;
 
     // Construct the high-realism asset mapping
     const seasonKey = season.toLowerCase(); // spring, summer, autumn, winter
@@ -139,7 +140,8 @@ export const DockView: React.FC<DockViewProps> = ({ player, world, onAction }) =
                             onClick={() => onAction('START_SAILING')}
                             variant={canSail ? 'primary' : 'ghost'}
                         >
-                            <Navigation size={20} /> Sette Seil
+                            <Navigation size={20} />
+                            {isDamaged ? 'SKADET SKROG!' : 'Sette Seil'}
                         </DockButton>
                     </div>
                 </motion.div>
