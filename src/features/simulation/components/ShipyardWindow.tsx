@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { Hammer, Anchor, Palette, ArrowUp, Check, Box, Wind } from 'lucide-react';
 import { SimulationMapWindow } from './ui/SimulationMapWindow';
 import { ShipyardVisualizer } from './ShipyardVisualizer';
-import { SimulationPlayer, Resources } from '../simulationTypes';
+import { SimulationPlayer } from '../simulationTypes';
 import { BOAT_MODELS, BOAT_UPGRADES, COSMETIC_UNLOCKS } from '../constants';
 import { InkButton, WaxSeal, ActionListRow, ConfirmationOverlay } from './ShipyardUI';
 import { ResourceIcon } from '../ui/ResourceIcon';
@@ -21,11 +21,6 @@ const TABS = [
     { id: 'models', label: 'Models', icon: Anchor },
     { id: 'cosmetics', label: 'Aesthetics', icon: Palette },
 ] as const;
-
-const PANEL_VARIANTS = {
-    hidden: { opacity: 0, x: 20 },
-    visible: { opacity: 1, x: 0, transition: { staggerChildren: 0.05, ease: [0.22, 1, 0.36, 1], duration: 0.6 } }
-};
 
 const ShipyardWindowComponent: React.FC<ShipyardWindowProps> = ({ player, onClose, onAction }) => {
     const [activeTab, setActiveTab] = useState<typeof TABS[number]['id']>('construct');
@@ -75,11 +70,7 @@ const ShipyardWindowComponent: React.FC<ShipyardWindowProps> = ({ player, onClos
         }
     };
 
-    useEffect(() => {
-        if (boat.stage >= 4 && activeTab === 'construct') {
-            setActiveTab('upgrade');
-        }
-    }, [boat.stage, activeTab]);
+
 
     return (
         <SimulationMapWindow title="" onClose={onClose} maxWidth="max-w-7xl" hideHeader={true} noPadding={true}>
@@ -112,14 +103,16 @@ const ShipyardWindowComponent: React.FC<ShipyardWindowProps> = ({ player, onClos
                     </div>
 
                     {/* Navigation */}
-                    <div className="flex gap-2 h-full pt-6 pr-12">
+                    <div className="flex gap-2 h-full pt-6 pr-12 relative z-30">
                         {TABS.map(tab => {
-                            const disabled = tab.id !== 'construct' && boat.stage < 4;
+                            const isConstruction = tab.id === 'construct';
+                            const disabled = !isConstruction && boat.stage < 4;
                             const isActive = activeTab === tab.id;
                             return (
                                 <button
                                     key={tab.id}
-                                    onClick={() => !disabled && setActiveTab(tab.id)}
+                                    type="button"
+                                    onClick={() => setActiveTab(tab.id)}
                                     disabled={disabled}
                                     className={`
                                         flex items-center gap-3 px-8 h-full rounded-t-lg transition-all group relative overflow-hidden
@@ -185,21 +178,12 @@ const ShipyardWindowComponent: React.FC<ShipyardWindowProps> = ({ player, onClos
                         }} />
 
                         <div className="flex-1 overflow-hidden p-8 relative z-10">
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={activeTab}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    transition={{ duration: 0.25, ease: 'easeOut' }}
-                                    className="h-full"
-                                >
-                                    {activeTab === 'construct' && <ConstructionView boat={boat} player={player} onAction={handleAction} />}
-                                    {activeTab === 'upgrade' && <UpgradeView boat={boat} player={player} onAction={handleAction} />}
-                                    {activeTab === 'models' && <ModelsView boat={boat} player={player} onAction={handleAction} />}
-                                    {activeTab === 'cosmetics' && <CosmeticsView boat={boat} onAction={handleAction} />}
-                                </motion.div>
-                            </AnimatePresence>
+                            <div className="h-full relative overflow-hidden">
+                                {activeTab === 'construct' && <ConstructionView boat={boat} player={player} onAction={handleAction} />}
+                                {activeTab === 'upgrade' && <UpgradeView boat={boat} player={player} onAction={handleAction} />}
+                                {activeTab === 'models' && <ModelsView boat={boat} player={player} onAction={handleAction} />}
+                                {activeTab === 'cosmetics' && <CosmeticsView boat={boat} onAction={handleAction} />}
+                            </div>
                         </div>
                     </div>
 
@@ -212,32 +196,42 @@ const ShipyardWindowComponent: React.FC<ShipyardWindowProps> = ({ player, onClos
 // --- EXTRACTED COMPONENTS (To prevent re-renders) ---
 
 const ConstructionView = ({ boat, player, onAction }: any) => {
-    const stage = boat.stage;
+    console.log('[Shipyard] Rendering ConstructionView', { boat, stage: boat?.stage, player });
+
+    if (!player || !boat) {
+        console.error('[Shipyard] ConstructionView missing props', { player, boat });
+        return <div className="p-8 text-red-500 font-bold">Error: Missing Data</div>;
+    }
+
+    const stage = boat.stage ?? 0;
+
+    // Safety check for stage
+    const currentStageName = ['Kjølstrekking', 'Mast & Rigg', 'Dekk & Detaljer', 'Sjøsetting'][stage] || 'Ukjent Fase';
+
     const nextStage = stage < 4 ? {
         stage: stage + 1,
-        // ... (rest of logic same as before, simplified for brevity here, actual will copy logic)
-        name: ['Kjølstrekking', 'Mast & Rigg', 'Dekk & Detaljer', 'Sjøsetting'][stage],
-        reqs: [
+        name: currentStageName,
+        reqs: ([
             { oak_lumber: 20 },
             { oak_lumber: 40, linen_canvas: 10 },
             { oak_lumber: 30, iron_ingot: 10 },
             { oak_lumber: 50, tar: 20 }
-        ][stage] as unknown as Resources
+        ][stage]) || {} // Fallback to empty object if out of bounds
     } : null;
 
     return (
-        <div className="p-8 flex flex-col gap-6">
-            <motion.div variants={PANEL_VARIANTS}>
+        <div className="p-8 flex flex-col gap-6 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-stone-400 scrollbar-track-transparent">
+            <div>
                 <h3 className="text-4xl font-serif font-black uppercase text-amber-900 tracking-[0.2em] mb-2 drop-shadow-sm">
                     {stage >= 4 ? "FERDIGSTILT" : `FASE ${stage + 1}`}
                 </h3>
                 <p className="text-stone-700 font-serif italic text-lg tracking-wide">
                     {stage >= 4 ? "Skip Ferdigstilt" : nextStage?.name}
                 </p>
-            </motion.div>
+            </div>
 
             {nextStage && (
-                <motion.div variants={PANEL_VARIANTS} className="bg-[#292524] rounded-sm p-6 border border-white/5 relative overflow-hidden group shadow-lg">
+                <div className="bg-[#292524] rounded-sm p-6 border border-white/5 relative overflow-hidden group shadow-lg">
                     <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                     <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
@@ -246,7 +240,7 @@ const ConstructionView = ({ boat, player, onAction }: any) => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-6 mb-8">
-                        {Object.entries(nextStage.reqs).map(([res, amt]) => {
+                        {Object.entries(nextStage.reqs as unknown as Record<string, number>).map(([res, amt]) => {
                             const has = (player.resources as any)[res] || 0;
                             const ok = has >= (amt as number);
                             return (
@@ -266,7 +260,7 @@ const ConstructionView = ({ boat, player, onAction }: any) => {
                     >
                         Start Bygging
                     </InkButton>
-                </motion.div>
+                </div>
             )}
         </div>
     );
