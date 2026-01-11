@@ -54,3 +54,15 @@
 .animate-dust-float {
   animation: dust-float ease-in-out infinite;
 }
+
+@keyframes blueprint-scan {
+  0% { transform: translateX(-10%); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(110%); opacity: 0; }
+}
+
+.animate-blueprint-scan {
+  animation: blueprint-scan 4s linear infinite;
+  will-change: transform;
+}
