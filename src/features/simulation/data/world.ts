@@ -1,28 +1,27 @@
 import type { SimulationMarket } from '../simulationTypes';
 
 export const INITIAL_MARKET: SimulationMarket = {
-    grain: { price: 10, stock: 500, demand: 1.0 },
-    flour: { price: 15, stock: 100, demand: 1.0 },
-    bread: { price: 25, stock: 50, demand: 1.0 },
-    wood: { price: 15, stock: 300, demand: 1.0 },
-    plank: { price: 25, stock: 100, demand: 1.0 },
-    iron_ore: { price: 30, stock: 100, demand: 1.0 },
-    iron_ingot: { price: 60, stock: 50, demand: 1.0 },
-    stone: { price: 20, stock: 200, demand: 1.0 },
-    wool: { price: 12, stock: 200, demand: 1.0 },
-    cloth: { price: 45, stock: 50, demand: 1.0 },
-    honey: { price: 30, stock: 50, demand: 1.0 },
-    meat: { price: 25, stock: 100, demand: 1.0 },
-    siege_sword: { price: 40, stock: 20, demand: 1.0 },
-    siege_armor: { price: 40, stock: 20, demand: 1.0 },
+    grain: { price: 0.5, stock: 800, basePrice: 0.5, baseStock: 800, demand: 1.0 },
+    flour: { price: 1.75, stock: 300, basePrice: 1.75, baseStock: 300, demand: 1.0 },
+    bread: { price: 1.2, stock: 300, basePrice: 1.2, baseStock: 300, demand: 1.0 },
+    wood: { price: 1.25, stock: 800, basePrice: 1.25, baseStock: 800, demand: 1.0 },
+    plank: { price: 11.25, stock: 300, basePrice: 11.25, baseStock: 300, demand: 1.0 },
+    iron_ore: { price: 2.5, stock: 800, basePrice: 2.5, baseStock: 800, demand: 1.0 },
+    iron_ingot: { price: 25.0, stock: 300, basePrice: 25.0, baseStock: 300, demand: 1.0 },
+    stone: { price: 1.25, stock: 800, basePrice: 1.25, baseStock: 800, demand: 1.0 },
+    wool: { price: 0.5, stock: 800, basePrice: 0.5, baseStock: 800, demand: 1.0 },
+    cloth: { price: 10.0, stock: 300, basePrice: 10.0, baseStock: 300, demand: 1.0 },
+    honey: { price: 1.0, stock: 300, basePrice: 1.0, baseStock: 300, demand: 1.0 },
+    meat: { price: 1.5, stock: 300, basePrice: 1.5, baseStock: 300, demand: 1.0 },
+    siege_sword: { price: 40.0, stock: 100, basePrice: 40.0, baseStock: 100, demand: 1.0 },
+    siege_armor: { price: 40.0, stock: 100, basePrice: 40.0, baseStock: 100, demand: 1.0 },
     // Maritime Items (Start with 0 stock)
-
-    flax: { price: 15, stock: 0, demand: 1.0 },
-    linen_canvas: { price: 90, stock: 0, demand: 1.0 },
-    tar: { price: 50, stock: 0, demand: 1.0 },
-    fish_raw: { price: 20, stock: 0, demand: 1.0 },
-    silk: { price: 300, stock: 0, demand: 1.0 },
-    spice: { price: 450, stock: 0, demand: 1.0 },
+    flax: { price: 10.0, stock: 0, basePrice: 1.0, baseStock: 800, demand: 1.0 }, // Price = Base * 10 (Max Volatility)
+    linen_canvas: { price: 125.0, stock: 0, basePrice: 12.5, baseStock: 300, demand: 1.0 },
+    tar: { price: 162.5, stock: 0, basePrice: 16.25, baseStock: 300, demand: 1.0 },
+    fish_raw: { price: 20.0, stock: 0, basePrice: 2.0, baseStock: 800, demand: 1.0 },
+    silk: { price: 500.0, stock: 0, basePrice: 50.0, baseStock: 50, demand: 1.0 },
+    spice: { price: 750.0, stock: 0, basePrice: 75.0, baseStock: 50, demand: 1.0 },
 };
 
 export const EVENTS = {

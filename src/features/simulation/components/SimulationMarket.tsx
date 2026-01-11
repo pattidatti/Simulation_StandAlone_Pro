@@ -11,6 +11,7 @@ import { handleCareerChange } from '../globalActions';
 import { GAME_BALANCE } from '../data/gameBalance';
 import { SimulationRoleWarningModal } from './SimulationRoleWarningModal';
 import { MercantileDashboard } from './MercantileDashboard';
+import { calculateBulkPrice, getDynamicPrice } from '../logic/handlers/MarketHandlers';
 
 interface SimulationMarketProps {
     player: SimulationPlayer;
@@ -109,21 +110,31 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                                 const item = (market || {})[resId] || (INITIAL_MARKET as any)[resId];
                                 const details = (RESOURCE_DETAILS as any)[resId];
                                 if (!item || !details) return null;
-                                const price = item.price || 0;
                                 const stock = item.stock || 0;
                                 const playerStock = (player.resources as any)?.[resId] || 0;
 
                                 // Per-item local state
                                 const [qty, setQty] = React.useState(1);
 
-                                const maxBuy = Math.min(stock, Math.floor((player.resources?.gold || 0) / price));
+                                // Dynamic Price Logic
+                                const currentUnitPrice = getDynamicPrice(item);
+                                const totalCost = calculateBulkPrice(item, qty, true);
+
+                                // Sentiment Colors (Avant-Garde HSL)
+                                let priceColor = 'text-game-gold'; // Default
+                                if (item.basePrice) {
+                                    if (currentUnitPrice < item.basePrice * 0.8) priceColor = 'text-[hsl(150,60%,55%)]'; // Bullish Green
+                                    if (currentUnitPrice > item.basePrice * 1.5) priceColor = 'text-[hsl(355,75%,60%)]'; // Bearish Red
+                                }
+
+                                const maxBuy = Math.min(stock, Math.floor((player.resources?.gold || 0) / currentUnitPrice));
                                 const maxSell = playerStock;
 
                                 const updateQty = (val: number) => {
                                     setQty(Math.max(1, isNaN(val) ? 1 : val));
                                 };
 
-                                const totalVal = (price * qty).toFixed(1);
+                                const totalVal = totalCost.toFixed(1);
 
                                 return (
                                     <div key={resId} className="grid grid-cols-12 gap-1 px-6 py-1.5 items-center group hover:bg-white/[0.02] transition-colors relative">
@@ -139,16 +150,24 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
 
                                         {/* PRICE COLUMN */}
                                         <div className="col-span-1 flex flex-col items-center">
-                                            <div className="text-lg font-black text-game-gold tabular-nums tracking-tight">
-                                                {price.toFixed(1)}g
+                                            <div className={`text-lg font-black tabular-nums tracking-tight transition-all duration-700 ease-[cubic-bezier(0.17,0.89,0.32,1.49)] ${priceColor}`}>
+                                                {currentUnitPrice.toFixed(1)}g
                                             </div>
                                         </div>
 
-                                        {/* MARKET DEPTH (STOCK) - No bar, just number */}
-                                        <div className="col-span-1 flex flex-col items-center">
-                                            <span className={`text-xl font-black tabular-nums tracking-tighter ${stock > 0 ? 'text-white' : 'text-rose-500/50'}`}>
+                                        {/* MARKET DEPTH (STOCK) - With Liquidity Bar */}
+                                        <div className="col-span-1 flex flex-col items-center relative group">
+                                            <span className={`text-xl font-black tabular-nums tracking-tighter z-10 ${stock > 0 ? 'text-white' : 'text-rose-500/50'}`}>
                                                 {stock.toLocaleString()}
                                             </span>
+                                            {item.baseStock && (
+                                                <div className="absolute inset-x-2 bottom-0 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-game-gold/30 transition-all duration-700"
+                                                        style={{ width: `${Math.min(100, (stock / item.baseStock) * 100)}%` }}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* PLAYER OWNERSHIP */}
@@ -185,7 +204,7 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                                                 <GameButton
                                                     variant="primary"
                                                     onClick={() => onAction({ type: 'BUY', resource: resId, amount: qty })}
-                                                    disabled={(player.resources?.gold || 0) < (price * qty) || stock < qty || !!actionLoading}
+                                                    disabled={(player.resources?.gold || 0) < totalCost || stock < qty || !!actionLoading}
                                                     className="flex-1 py-0 h-8 font-black text-[10px] tracking-widest"
                                                 >
                                                     KJØP

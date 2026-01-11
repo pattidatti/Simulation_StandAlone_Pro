@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
-import { ref, runTransaction, update } from 'firebase/database';
+import { ref, runTransaction, update, get } from 'firebase/database';
 import { simulationDb as db } from '../simulationFirebase';
 import { getSeasonForTick, getYearForTick } from '../utils/timeUtils';
 import type { SimulationRoom } from '../simulationTypes';
 import { syncServerMetadata } from '../logic/roomInit';
+import { handleMarketEntropy } from '../logic/handlers/MarketHandlers';
 
 export const useGameTicker = (pin: string | undefined, roomStatus: SimulationRoom['status'], world: SimulationRoom['world'] | null | undefined, onlineCount?: number) => {
     useEffect(() => {
@@ -33,6 +34,26 @@ export const useGameTicker = (pin: string | undefined, roomStatus: SimulationRoo
                             // Auto-calculate Season/Year inside the transaction
                             currentWorld.season = getSeasonForTick(newTick);
                             currentWorld.year = getYearForTick(newTick, 1100);
+
+                            // --- PHASE 3: MARKET ENTROPY ---
+                            // Every 10 ticks (approx 10 mins), apply entropy to all markets
+                            if (newTick % 10 === 0) {
+                                const marketsRef = ref(db, `simulation_rooms/${pin}/markets`);
+                                // We can't easily transaction two refs at once in raw Firebase 
+                                // without moving the transaction to the root.
+                                // However, since we are the AUTHORATIVE TICKER (inside a successful transaction on world),
+                                // we can perform a safe update on markets.
+                                // To be 100% safe, we fetch and set/transaction.
+                                get(marketsRef).then(snapshot => {
+                                    if (snapshot.exists()) {
+                                        const markets = snapshot.val();
+                                        Object.keys(markets).forEach(mKey => {
+                                            handleMarketEntropy(markets[mKey]);
+                                        });
+                                        update(marketsRef, markets);
+                                    }
+                                });
+                            }
 
                             syncedWorld = { ...currentWorld };
                             return currentWorld;

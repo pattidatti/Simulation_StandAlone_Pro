@@ -18,6 +18,8 @@ export interface FishResourceNode {
 export interface MarketItem {
     price: number;
     stock: number;
+    basePrice: number;
+    baseStock: number;
     demand: number;
 }
 

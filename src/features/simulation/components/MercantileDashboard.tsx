@@ -5,6 +5,8 @@ import { RESOURCE_DETAILS } from '../data/resources';
 import { ACTION_ICONS, GAME_BALANCE } from '../constants';
 import { simulationDb as db } from '../simulationFirebase';
 import { ref, update } from 'firebase/database';
+import { getDynamicPrice, calculateBulkPrice } from '../logic/handlers/MarketHandlers';
+import { MarketItem } from '../types/world';
 
 
 interface MercantileDashboardProps {
@@ -33,8 +35,9 @@ export const MercantileDashboard: React.FC<MercantileDashboardProps> = ({ player
     const isCommodity = resourceInfo?.isCommodity;
 
     const marketItem = selectedResource ? market[selectedResource] : null;
-    const price = marketItem?.price || 0;
-    const totalCost = price * quantity; // Allow float for accurate cost calculation
+
+    // SCARCITY-BASED PRICING LOGIC
+    const totalCost = marketItem && quantity > 0 ? calculateBulkPrice(marketItem as unknown as MarketItem, quantity, transactionMode === 'BUY') : 0;
 
     // Lazy Initialization for Legacy Players
     React.useEffect(() => {
@@ -169,8 +172,16 @@ export const MercantileDashboard: React.FC<MercantileDashboardProps> = ({ player
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-amber-400 font-black text-lg">
-                                                {Number(data.price).toLocaleString('nb-NO', { maximumFractionDigits: 2 })}g
+                                            <div className={`font-black text-lg transition-all duration-700 ease-[cubic-bezier(0.17,0.89,0.32,1.49)] ${(() => {
+                                                const currentItemPrice = getDynamicPrice(data as unknown as MarketItem);
+                                                const basePrice = (data as any).basePrice;
+                                                if (!basePrice) return 'text-amber-400';
+                                                const ratio = currentItemPrice / basePrice;
+                                                if (ratio < 0.8) return 'text-[hsl(150,60%,55%)]'; // Bullish Green
+                                                if (ratio > 1.5) return 'text-[hsl(355,75%,60%)]'; // Bearish Red
+                                                return 'text-amber-400';
+                                            })()}`}>
+                                                {Number(getDynamicPrice(data as unknown as MarketItem)).toLocaleString('nb-NO', { maximumFractionDigits: 2 })}g
                                             </div>
                                             <div className="text-[10px] text-emerald-500/50 font-bold uppercase tracking-wider">pr. stk</div>
                                         </div>
@@ -311,7 +322,7 @@ export const MercantileDashboard: React.FC<MercantileDashboardProps> = ({ player
                                                 />
                                                 <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
                                                     <span className="text-xs font-bold text-slate-500 uppercase">Totalsum</span>
-                                                    <span className={`text-xl font-black ${player.resources.gold < totalCost && transactionMode === 'BUY' ? 'text-rose-500' : 'text-white'}`}>
+                                                    <span className={`text-xl font-black transition-all duration-500 ease-[cubic-bezier(0.17,0.89,0.32,1.49)] ${player.resources.gold < totalCost && transactionMode === 'BUY' ? 'text-rose-500' : 'text-white'}`}>
                                                         {Number(totalCost).toLocaleString('nb-NO', { maximumFractionDigits: 2 })}g
                                                     </span>
                                                 </div>

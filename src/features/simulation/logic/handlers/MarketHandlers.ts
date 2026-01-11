@@ -1,5 +1,45 @@
 import { GAME_BALANCE, INITIAL_MARKET } from '../../constants';
 import type { ActionContext } from '../actionTypes';
+import type { MarketItem } from '../../types/world';
+
+/**
+ * Calculates current price based on Scarcity-Based Pricing (vAMM derivative).
+ * P = P_base * (S_base / S_curr) ^ 1.25
+ */
+export const getDynamicPrice = (item: MarketItem): number => {
+    if (!item.basePrice || !item.baseStock) return item.price;
+
+    // Safety: Stock can never be 0 for the divisor
+    const currentStock = Math.max(1, item.stock);
+    const scarcityRatio = item.baseStock / currentStock;
+
+    // Volatility Curve (1.25 exponent)
+    let multiplier = Math.pow(scarcityRatio, 1.25);
+
+    // Safety Clamps: 0.2x to 10x
+    multiplier = Math.min(10.0, Math.max(0.2, multiplier));
+
+    return item.basePrice * multiplier;
+};
+
+/**
+ * Calculates total cost for multiple units including price slippage.
+ */
+export const calculateBulkPrice = (item: MarketItem, qty: number, isBuy: boolean): number => {
+    let total = 0;
+    const tempItem = { ...item };
+    const stockChange = isBuy ? -1 : 1;
+
+    for (let i = 0; i < qty; i++) {
+        const unitPrice = getDynamicPrice(tempItem);
+        total += isBuy ? unitPrice : unitPrice * (GAME_BALANCE.MARKET.SELL_RATIO || 0.8);
+        tempItem.stock += stockChange;
+
+        // Safety: Prevent stock from going below 0 in projection
+        if (tempItem.stock < 0) break;
+    }
+    return total;
+};
 
 /**
  * Handles buying a resource from the market.
@@ -55,7 +95,9 @@ export const handleBuy = (ctx: ActionContext) => {
         localResult.message = "Varen finnes ikke på dette markedet.";
         return false;
     }
-    const price = item.price;
+
+    // Dynamic Price Calculation
+    const currentPrice = getDynamicPrice(item);
 
     if (item.stock <= 0) {
         localResult.success = false;
@@ -63,21 +105,21 @@ export const handleBuy = (ctx: ActionContext) => {
         return false;
     }
 
-    if ((actor.resources.gold || 0) < price) {
+    if ((actor.resources.gold || 0) < currentPrice) {
         localResult.success = false;
-        localResult.message = "Du har ikke nok gull.";
+        localResult.message = `Du har ikke nok gull. Trenger ${currentPrice.toFixed(2)}g`;
         return false;
     }
 
     // Perform Transaction
-    actor.resources.gold = (actor.resources.gold || 0) - price;
+    actor.resources.gold = (actor.resources.gold || 0) - currentPrice;
     (actor.resources as any)[resource] = ((actor.resources as any)[resource] || 0) + 1;
     item.stock -= 1;
 
-    // Price impact (linear)
-    item.price += item.price * (GAME_BALANCE.MARKET.PRICE_IMPACT_BUY || 0.005);
+    // Update the cached price for UI/legacy support
+    item.price = getDynamicPrice(item);
 
-    localResult.message = `Kjøpte 1 ${resource} for ${price.toFixed(2)}g`;
+    localResult.message = `Kjøpte 1 ${resource} for ${currentPrice.toFixed(2)}g`;
     localResult.utbytte.push({ resource, amount: 1 });
 
     return true;
@@ -157,15 +199,18 @@ export const handleSell = (ctx: ActionContext) => {
         localResult.message = "Markedet tar ikke imot denne varen.";
         return false;
     }
-    const sellPrice = item.price * (GAME_BALANCE.MARKET.SELL_RATIO || 0.8);
+
+    // Dynamic Price Calculation (Sell Ratio applied)
+    const marketPrice = getDynamicPrice(item);
+    const sellPrice = marketPrice * (GAME_BALANCE.MARKET.SELL_RATIO || 0.8);
 
     // Perform Transaction
     (actor.resources as any)[resource] -= 1;
     actor.resources.gold = (actor.resources.gold || 0) + sellPrice;
     item.stock += 1;
 
-    // Price impact
-    item.price -= item.price * (GAME_BALANCE.MARKET.PRICE_IMPACT_SELL || 0.01);
+    // Update cached price
+    item.price = getDynamicPrice(item);
 
     localResult.message = `Solgte 1 ${resource} for ${sellPrice.toFixed(2)}g`;
 
@@ -199,52 +244,74 @@ export const handleTradeRoute = (ctx: ActionContext) => {
     }
 
     if (direction === 'IMPORT') {
-        // Buy from target, add to source (as merchant stock? No, merchant is personal agent for now)
-        // Merchants usually buy low somewhere else and sell high at home.
-        // For simplicity: Merchants buy 10 units from target and add to source market stock?
-        // Or Merchant buys for themselves from target.
-        // Let's assume the Trade Route action is a "Bulk Buy/Sell" that moves market stock and gives merchant profit.
+        const purchaseUnits = 5;
+        // Bulk 5 Import
+        // Calculate slippage using the same projection logic as the UI
+        const currentTotal = calculateBulkPrice(targetItem, purchaseUnits, true);
 
-        const priceAtTarget = targetItem.price;
-        const totalCost = priceAtTarget * 5; // Bulk 5
-
-        if ((actor.resources.gold || 0) < totalCost) {
+        if ((actor.resources.gold || 0) < currentTotal) {
             localResult.success = false;
-            localResult.message = "Ikke nok gull til bulk-import.";
+            localResult.message = `Ikke nok gull. Trenger ${currentTotal.toFixed(2)}g for 5stk.`;
             return false;
         }
 
-        if (targetItem.stock < 5) {
-            localResult.success = false;
-            localResult.message = "Mangler bulk-lager ved kilden.";
-            return false;
+        // Execute: update stock one by one to ensure internal metadata (item.price) is updated correctly
+        for (let i = 0; i < purchaseUnits; i++) {
+            targetItem.stock -= 1;
+            targetItem.price = getDynamicPrice(targetItem);
         }
 
-        actor.resources.gold -= totalCost;
-        (actor.resources as any)[resource] = ((actor.resources as any)[resource] || 0) + 5;
-        targetItem.stock -= 5;
-        targetItem.price += targetItem.price * 0.02; // higher impact for bulk
+        actor.resources.gold -= currentTotal;
+        (actor.resources as any)[resource] = ((actor.resources as any)[resource] || 0) + purchaseUnits;
 
-        localResult.message = `Importerte 5 ${resource} fra ${targetRegionId} for ${totalCost.toFixed(2)}g`;
+        localResult.message = `Bulk-Import: ${purchaseUnits} ${resource} fra ${targetRegionId} for ${currentTotal.toFixed(2)}g`;
     } else {
-        // EXPORT: Sell from personal inventory to target market
-        if (((actor.resources as any)[resource] || 0) < 5) {
+        // Bulk 5 Export
+        const saleUnits = 5;
+
+        if (((actor.resources as any)[resource] || 0) < saleUnits) {
             localResult.success = false;
-            localResult.message = `Mangler 5 ${resource} for eksport.`;
+            localResult.message = `Mangler ${saleUnits} ${resource} for eksport.`;
             return false;
         }
 
-        const priceAtTarget = targetItem.price * GAME_BALANCE.MARKET.SELL_RATIO;
-        const totalGain = priceAtTarget * 5;
+        const totalGain = calculateBulkPrice(targetItem, saleUnits, false);
 
-        (actor.resources as any)[resource] -= 5;
+        // Execute
+        for (let i = 0; i < saleUnits; i++) {
+            targetItem.stock += 1;
+            targetItem.price = getDynamicPrice(targetItem);
+        }
+
+        (actor.resources as any)[resource] -= saleUnits;
         actor.resources.gold += totalGain;
-        targetItem.stock += 5;
-        targetItem.price -= targetItem.price * 0.02;
 
-        localResult.message = `Eksporterte 5 ${resource} til ${targetRegionId} for ${totalGain.toFixed(2)}g`;
+        localResult.message = `Bulk-Eksport: ${saleUnits} ${resource} til ${targetRegionId} for ${totalGain.toFixed(2)}g`;
     }
 
     trackXp('TRADING', 25);
     return true;
+};
+
+/**
+ * Global Market Tick (Entropy). 
+ * Consumes 0.3% of stock for food/commodities to simulate "city consumption".
+ */
+export const handleMarketEntropy = (market: any) => {
+    if (!market) return;
+
+    Object.keys(market).forEach(key => {
+        const item = market[key];
+        if (!item || !item.baseStock) return;
+
+        // Only consume if stock > 10% of base stock (prevent absolute depletion)
+        if (item.stock > item.baseStock * 0.1) {
+            // 0.3% consumption
+            const consumption = item.stock * 0.003;
+            item.stock = Math.max(0, item.stock - consumption);
+
+            // Re-calculate price
+            item.price = getDynamicPrice(item);
+        }
+    });
 };
