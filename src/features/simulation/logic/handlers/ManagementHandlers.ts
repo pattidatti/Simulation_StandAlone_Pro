@@ -1,4 +1,4 @@
-import { GAME_BALANCE, VILLAGE_BUILDINGS, UPGRADES_LIST, INITIAL_RESOURCES, INITIAL_SKILLS } from '../../constants';
+import { GAME_BALANCE, VILLAGE_BUILDINGS, UPGRADES_LIST, INITIAL_RESOURCES, INITIAL_SKILLS, BOAT_MODELS, BOAT_UPGRADES, COSMETIC_UNLOCKS } from '../../constants';
 import type { ActionContext } from '../actionTypes';
 import type { Resources, Role } from '../../simulationTypes';
 
@@ -544,6 +544,8 @@ export const handleContributeToBoat = (ctx: ActionContext) => {
     if (!actor.boat) {
         actor.boat = {
             stage: 0,
+            model: 'standard', // NEW
+            componentLevels: { sails: 0, hull: 0, cannons: 0, nets: 0 }, // NEW
             hullType: 'oak_standard',
             stamina: 100,
             durability: 100,
@@ -551,6 +553,7 @@ export const handleContributeToBoat = (ctx: ActionContext) => {
             hp: 100,
             maxHp: 100,
             cannons: 0,
+            cannonballs: 10, // Default ammo
             isDamaged: false
         };
     }
@@ -655,5 +658,179 @@ export const handleContributeToBoat = (ctx: ActionContext) => {
         actor.skills.CRAFTING.xp += 50;
     }
 
+    return true;
+};
+
+export const handleUpgradeBoatComponent = (ctx: ActionContext) => {
+    const { actor, action, localResult } = ctx;
+    const { componentId } = action; // 'sails', 'hull', 'cannons', 'nets'
+
+    if (!actor.boat) {
+        localResult.success = false;
+        localResult.message = "Du har ingen båt å oppgradere.";
+        return false;
+    }
+
+    // Initialize component levels if missing (Migration fallback)
+    if (!actor.boat.componentLevels) {
+        actor.boat.componentLevels = { sails: 0, hull: 0, cannons: 0, nets: 0 };
+    }
+
+    const currentLevel = (actor.boat.componentLevels as any)[componentId] || 0;
+    const upgradeDef = (BOAT_UPGRADES as any)[componentId];
+
+    if (!upgradeDef) {
+        localResult.success = false;
+        localResult.message = "Ukjent oppgradering.";
+        return false;
+    }
+
+    const nextLevelIndex = currentLevel; // 0 -> Index 0 (Level 1)
+    const nextLevelDef = upgradeDef.levels[nextLevelIndex];
+
+    if (!nextLevelDef) {
+        localResult.success = false;
+        localResult.message = "Maksimalt nivå nådd for denne komponenten.";
+        return false;
+    }
+
+    // Cost Check
+    let canAfford = true;
+    Object.entries(nextLevelDef.cost).forEach(([res, amt]) => {
+        if (((actor.resources as any)[res] || 0) < (amt as number)) canAfford = false;
+    });
+
+    if (!canAfford) {
+        localResult.success = false;
+        localResult.message = "Mangler ressurser for oppgradering.";
+        return false;
+    }
+
+    // Deduct Resources
+    Object.entries(nextLevelDef.cost).forEach(([res, amt]) => {
+        (actor.resources as any)[res] -= (amt as number);
+        localResult.utbytte.push({ resource: res as any, amount: -(amt as number) });
+    });
+
+    // Apply Upgrade
+    (actor.boat.componentLevels as any)[componentId] = currentLevel + 1;
+
+    // Apply Stat Boosts (Simplified Logic - ideal is to recalculate from base + all modifiers)
+    if (componentId === 'hull') actor.boat.maxHp += 50;
+    if (componentId === 'cannons') actor.boat.cannons += 1;
+
+    localResult.message = `Oppgraderte ${upgradeDef.name} til Nivå ${nextLevelDef.level}!`;
+    return true;
+};
+
+export const handleBuyBoatModel = (ctx: ActionContext) => {
+    const { actor, action, localResult } = ctx;
+    const { modelId } = action;
+
+    if (!actor.boat) {
+        localResult.success = false;
+        localResult.message = "Du må bygge en båt først.";
+        return false;
+    }
+
+    const modelDef = (BOAT_MODELS as any)[modelId];
+    if (!modelDef) {
+        localResult.success = false;
+        localResult.message = "Ukjent båtmodell.";
+        return false;
+    }
+
+    if (actor.boat.model === modelId) {
+        localResult.success = false;
+        localResult.message = "Du har allerede denne modellen.";
+        return false;
+    }
+
+    // Cost Check
+    let canAfford = true;
+    Object.entries(modelDef.cost).forEach(([res, amt]) => {
+        if (((actor.resources as any)[res] || 0) < (amt as number)) canAfford = false;
+    });
+
+    if (!canAfford) {
+        localResult.success = false;
+        localResult.message = `Har ikke råd til ${modelDef.name}.`;
+        return false;
+    }
+
+    // Level Req Check
+    if (actor.boat.stage < 4) {
+        localResult.success = false;
+        localResult.message = "Du må fullføre grunnkonstruksjonen (Steg 4) før du kan bytte modell.";
+        return false;
+    }
+
+    // Deduct
+    Object.entries(modelDef.cost).forEach(([res, amt]) => {
+        (actor.resources as any)[res] -= (amt as number);
+        localResult.utbytte.push({ resource: res as any, amount: -(amt as number) });
+    });
+
+    // Apply Model Switch
+    actor.boat.model = modelId;
+    actor.boat.maxHp = modelDef.baseHp;
+    actor.boat.hp = modelDef.baseHp;
+
+    localResult.message = `Kjøpte ny båt: ${modelDef.name}!`;
+    return true;
+};
+
+export const handleBuyBoatCosmetic = (ctx: ActionContext) => {
+    const { actor, action, localResult } = ctx;
+    const { type, id } = action;
+
+    if (!actor.boat) return false;
+    if (!actor.boat.customization) actor.boat.customization = { color: '#4b2c20', flagId: 'none', figurehead: 'none', unlocked: [] };
+
+    // Check if already owned
+    if (actor.boat.customization.unlocked.includes(id)) {
+        if (type === 'color') actor.boat.customization.color = (COSMETIC_UNLOCKS.colors.find(c => c.id === id) as any)?.hex || '#4b2c20';
+        if (type === 'flag') actor.boat.customization.flagId = id;
+
+        localResult.message = "Endret utseende.";
+        return true;
+    }
+
+    // Find Logic
+    let itemDef: any = null;
+    if (type === 'color') itemDef = COSMETIC_UNLOCKS.colors.find(c => c.id === id);
+    if (type === 'flag') itemDef = COSMETIC_UNLOCKS.flags.find(f => f.id === id);
+
+    if (!itemDef) {
+        localResult.success = false;
+        localResult.message = "Ukjent gjenstand.";
+        return false;
+    }
+
+    // Cost Check
+    const cost = itemDef.cost || {};
+    let canAfford = true;
+    Object.entries(cost).forEach(([res, amt]) => {
+        if (((actor.resources as any)[res] || 0) < (amt as number)) canAfford = false;
+    });
+
+    if (!canAfford) {
+        localResult.success = false;
+        localResult.message = "For dyrt.";
+        return false;
+    }
+
+    // Deduct
+    Object.entries(cost).forEach(([res, amt]) => {
+        (actor.resources as any)[res] -= (amt as number);
+        localResult.utbytte.push({ resource: res as any, amount: -(amt as number) });
+    });
+
+    // Unlock & Equip
+    actor.boat.customization.unlocked.push(id);
+    if (type === 'color') actor.boat.customization.color = itemDef.hex;
+    if (type === 'flag') actor.boat.customization.flagId = id;
+
+    localResult.message = `Kjøpte ${itemDef.name}!`;
     return true;
 };

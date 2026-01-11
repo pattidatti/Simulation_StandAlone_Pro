@@ -128,7 +128,14 @@ export interface SimulationPlayer {
     };
     boat?: {
         stage: number;        // 0-4
-        hullType: string;     // e.g., 'oak_standard'
+        model: 'standard' | 'sloop' | 'cog' | 'galleon'; // NEW: Architecture model
+        componentLevels: {    // NEW: Detailed upgrades
+            sails: number;
+            cannons: number;
+            nets: number;
+            hull: number;
+        };
+        hullType: string;     // Legacy: 'oak_standard' (Keep for back-compat until full migration)
         stamina: number;      // Actual boat stamina/fuel
         durability: number;
         upgrades: string[];
@@ -136,6 +143,8 @@ export interface SimulationPlayer {
             color: string;
             flagId: string;
             figurehead: string;
+            sailPattern?: 'none' | 'striped' | 'emblem'; // NEW
+            sternDecor?: string; // NEW
             unlocked: string[];
         };
         // Combat Stats

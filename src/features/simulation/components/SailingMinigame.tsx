@@ -40,19 +40,32 @@ interface OtherPlayerBoat {
     id: string;
     name: string;
     stage: number;
+    model?: 'standard' | 'sloop' | 'cog' | 'galleon';
+    componentLevels?: { sails: number; hull: number; cannons: number; nets: number };
+    customization?: { color?: string; flagId?: string; figurehead?: string; sailPattern?: 'none' | 'striped' | 'emblem' };
     x: number;
     y: number;
     rotation: number;
     isFishing: boolean;
 }
 
+interface FishingNet {
+    active: boolean;
+    x: number;
+    y: number;
+    radius: number;
+    t: number; // 0 to 1 normalization for animation
+    caught: boolean;
+}
+
 interface SailingMinigameProps {
     player: SimulationPlayer;
     roomPin: string;
     onExit: () => void;
+    onActionResult?: (result: any) => void;
 }
 
-export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPin, onExit }) => {
+export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPin, onExit, onActionResult }) => {
     const { setActiveMinigame } = useSimulation();
 
     // --- STATE ---
@@ -70,6 +83,7 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
     const [projectiles, setProjectiles] = useState<Projectile[]>([]);
     const [explosions, setExplosions] = useState<Explosion[]>([]);
     const [shakeIntensity, setShakeIntensity] = useState(0);
+    const [net, setNet] = useState<FishingNet | null>(null);
 
     const [trail, setTrail] = useState<{ x: number, y: number, id: number }[]>([]);
     const trailIdCounter = useRef(0);
@@ -87,7 +101,8 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         targetRotation: 0,
         velocityVector: { x: 0, y: 0 },
         projectiles: [] as Projectile[],
-        explosions: [] as Explosion[]
+        explosions: [] as Explosion[],
+        net: null as FishingNet | null,
     });
 
     const requestRef = useRef<number>(0);
@@ -256,35 +271,36 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
             if (isFishing) return;
             if (physics.current.speed > 1) return;
 
+            const p = physics.current;
+            const rad = (p.rotation * Math.PI) / 180;
+            const dist = 60; // Distance to throw
+
+            p.net = {
+                active: true,
+                x: p.x + Math.cos(rad) * dist,
+                y: p.y + Math.sin(rad) * dist,
+                radius: 0,
+                t: 0,
+                caught: false
+            };
             setIsFishing(true);
-            setTimeout(() => setIsFishing(false), 2000);
-
-            // CHECK FOR NEARBY FISH
-            const FISH_RANGE = 100;
-            const nearbyFish = fishNodes.find(f => {
-                const dx = f.x - physics.current.x;
-                const dy = f.y - physics.current.y;
-                return Math.sqrt(dx * dx + dy * dy) < FISH_RANGE;
-            });
-
-            if (nearbyFish) {
-                try {
-                    const nodeRef = ref(simulationDb, `simulation_rooms/${roomPin}/world/sea_resources/${nearbyFish.id}`);
-                    await runTransaction(nodeRef, (currentData) => {
-                        if (currentData === null) return;
-                        return null; // Claim it
-                    });
-
-                    const newAmount = (player.resources['fish_raw'] || 0) + nearbyFish.amount;
-                    await update(ref(simulationDb, `simulation_rooms/${roomPin}/players/${player.id}/resources`), {
-                        'fish_raw': newAmount
-                    });
-                    console.log(`CAUGHT ${nearbyFish.amount} ${nearbyFish.type}!`);
-                } catch (e) {
-                    console.log("Fishing failed.");
-                }
-            }
+            setNet({ ...p.net });
+            setShakeIntensity(2);
+            setTimeout(() => setShakeIntensity(0), 100);
         }
+    };
+
+    // --- EASING FUNCTIONS ---
+    const easeOutBack = (x: number): number => {
+        const c1 = 1.70158;
+        const c3 = c1 + 1;
+        return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    };
+
+    const easeInBack = (x: number): number => {
+        const c1 = 1.70158;
+        const c3 = c1 + 1;
+        return c3 * x * x * x - c1 * x * x;
     };
 
     // --- PHYSICS ENGINE V2 ---
@@ -435,6 +451,78 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
             lastTrailPos.current = { x: sx, y: sy };
         }
 
+        // 4. Fishing Net Logic
+        if (p.net && p.net.active) {
+            p.net.t += dt * 0.8; // Duration approx 1.25s
+
+            if (p.net.t < 0.5) {
+                // Expanding
+                const progress = p.net.t * 2;
+                p.net.radius = easeOutBack(progress) * 120;
+            } else if (p.net.t < 0.6) {
+                // Peek / Collision Frame
+                if (!p.net.caught) {
+                    const checkX = p.net.x;
+                    const checkY = p.net.y;
+                    const nearbyFish = fishNodes.find(f => {
+                        const dx = f.x - checkX;
+                        const dy = f.y - checkY;
+                        return Math.sqrt(dx * dx + dy * dy) < 120;
+                    });
+
+                    if (nearbyFish) {
+                        p.net.caught = true;
+                        // Execute Capture
+                        const nodeRef = ref(simulationDb, `simulation_rooms/${roomPin}/world/sea_resources/${nearbyFish.id}`);
+                        runTransaction(nodeRef, (currentData) => {
+                            if (currentData === null) return;
+                            return null; // Claim
+                        }).then(() => {
+                            const newAmount = (player.resources['fish_raw'] || 0) + nearbyFish.amount;
+                            update(ref(simulationDb, `simulation_rooms/${roomPin}/players/${player.id}/resources`), {
+                                'fish_raw': newAmount
+                            });
+                            playSFX('SPLASH');
+                        }).catch(() => {
+                            p.net!.caught = false; // Reset if transaction failed
+                        });
+
+                        // Trigger visual feedback (toast/tooltip)
+                        if (onActionResult) {
+                            onActionResult({
+                                success: true,
+                                timestamp: Date.now(),
+                                message: `Du fanget ${nearbyFish.amount} stk ${nearbyFish.type}!`,
+                                utbytte: [{
+                                    resource: 'fish_raw',
+                                    amount: nearbyFish.amount,
+                                    name: nearbyFish.type,
+                                    icon: '🐟'
+                                }],
+                                xp: [{
+                                    skill: 'SAILING',
+                                    amount: 15
+                                }],
+                                durability: []
+                            });
+                        }
+                    }
+                }
+                p.net.radius = 120;
+            } else {
+                // Retracting
+                const progress = (p.net.t - 0.6) / 0.4;
+                p.net.radius = (1 - easeInBack(progress)) * 120;
+            }
+
+            if (p.net.t >= 1.0) {
+                p.net.active = false;
+                setIsFishing(false);
+                p.net = null;
+            }
+            setNet(p.net ? { ...p.net } : null);
+        }
+
         requestRef.current = requestAnimationFrame(updatePhysics);
     };
 
@@ -452,6 +540,9 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                     rotation: physics.current.rotation,
                     speed: physics.current.speed,
                     stage: player.boat?.stage || 1,
+                    model: player.boat?.model || 'standard',
+                    componentLevels: player.boat?.componentLevels || { sails: 0, hull: 0, cannons: 0, nets: 0 },
+                    customization: player.boat?.customization || { color: '#4b2c20', flagId: 'none', figurehead: 'none', unlocked: [] }, // TODO: Hash this for prod
                     isFishing: isFishing,
                     timestamp: now,
                 });
@@ -593,6 +684,58 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                 ))}
             </div>
 
+            {/* FISHING NET */}
+            {net && net.active && (
+                <div className="absolute pointer-events-none" style={{ transform: `translate3d(${net.x - pos.x + window.innerWidth / 2}px, ${net.y - pos.y + window.innerHeight / 2}px, 0)` }}>
+                    {/* Splash Effect when at max radius */}
+                    {net.t >= 0.5 && net.t < 0.7 && (
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0.8 }}
+                            animate={{ scale: 1.2, opacity: 0 }}
+                            className="absolute inset-0 rounded-full border-4 border-white/40 blur-sm"
+                            style={{ width: 240, height: 240, transform: 'translate(-50%, -50%)' }}
+                        />
+                    )}
+
+                    {/* The Net (Brown Ring) */}
+                    <svg width={net.radius * 2.5} height={net.radius * 2.5} viewBox="0 0 100 100" className="absolute" style={{ transform: 'translate(-50%, -50%)' }}>
+                        <circle
+                            cx="50" cy="50" r="40"
+                            fill="none"
+                            stroke="hsl(28, 55%, 35%)"
+                            strokeWidth="3"
+                            strokeDasharray="4 2"
+                            className="opacity-80"
+                        />
+                        <circle
+                            cx="50" cy="50" r="38"
+                            fill="hsl(28, 55%, 20%)"
+                            fillOpacity="0.1"
+                            stroke="hsl(28, 55%, 45%)"
+                            strokeWidth="1"
+                        />
+                        {/* Inner Webbing */}
+                        <path
+                            d="M 50 10 L 50 90 M 10 50 L 90 50 M 22 22 L 78 78 M 22 78 L 78 22"
+                            stroke="hsl(28, 55%, 35%)"
+                            strokeWidth="1"
+                            strokeOpacity="0.3"
+                        />
+                    </svg>
+
+                    {/* Catch Indicator */}
+                    {net.caught && (
+                        <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: [0, 1.5, 1] }}
+                            className="absolute -top-12 left-1/2 -translate-x-1/2 text-cyan-400 font-black text-xs uppercase tracking-widest bg-black/60 px-2 py-1 rounded backdrop-blur-md border border-cyan-500/30"
+                        >
+                            Fangst!
+                        </motion.div>
+                    )}
+                </div>
+            )}
+
             {/* OTHER PLAYERS */}
             {
                 Object.values(others).map(other => {
@@ -601,7 +744,13 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                     return (
                         <div key={other.id} className="absolute w-32 h-32" style={{ transform: `translate3d(${other.x - pos.x + window.innerWidth / 2}px, ${other.y - pos.y + window.innerHeight / 2}px, 0) translate(-50%, -50%)` }}>
                             <motion.div style={{ rotate: other.rotation }} className="w-full h-full">
-                                <ModularBoatSVG stage={other.stage} rotation={0} customization={{ color: "#64748b" }} />
+                                <ModularBoatSVG
+                                    stage={other.stage}
+                                    model={other.model}
+                                    componentLevels={other.componentLevels}
+                                    customization={other.customization || { color: "#64748b" }}
+                                    rotation={0}
+                                />
                             </motion.div>
                             <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-center w-48">
                                 <div className="text-[10px] font-black text-white/40 uppercase tracking-widest shadow-black drop-shadow-md">{other.name}</div>
@@ -613,11 +762,20 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
 
             {/* PLAYER BOAT */}
             <motion.div
-                animate={{ scale: lastFireTime > Date.now() - 200 ? [1, 0.92, 1] : 1 }}
+                animate={{
+                    scale: lastFireTime > Date.now() - 200 ? [1, 0.92, 1] : (net?.active ? [1, 1.05, 1] : 1),
+                    opacity: isFishing ? 0.9 : 1
+                }}
                 transition={{ duration: 0.2 }}
                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 z-10 pointer-events-none"
             >
-                <ModularBoatSVG stage={player.boat?.stage || 1} rotation={rotation} customization={{ color: player.boat?.customization?.color || '#8b5cf6' }} />
+                <ModularBoatSVG
+                    stage={player.boat?.stage || 1}
+                    model={player.boat?.model}
+                    componentLevels={player.boat?.componentLevels}
+                    customization={player.boat?.customization}
+                    rotation={rotation}
+                />
             </motion.div>
 
             {/* HP HUD - CENTER BOTTOM GLASSMORPHISM */}

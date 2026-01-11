@@ -7,7 +7,6 @@
 - [ ] 
 ## Low Priority
 - Ekte ammo på båten. Bruker kanonballer, lages med stein og jerbarre. Må legges til i Båt-UI på kai. 
-- Båten SVG på Kai-hub må rendres fra siden, ikke top down. Oppdatere hele kai UI også. 
 - Mang
 - [x] Sjekke at systemene for å bytte baroner og konge faktisk eksisterer og at de virker skikkelig. 
 - [ ] Dart i vertshuset (andre etasje)

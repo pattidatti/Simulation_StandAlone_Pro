@@ -68,7 +68,7 @@ export const SimulationPlayer: React.FC = () => {
     } = useSimulationData(pin, impersonateId) as any;
 
     const {
-        handleAction, actionResult, handleClearActionResult
+        handleAction, actionResult, setActionResult, handleClearActionResult
     } = useSimulationActions(pin, player, world, setActiveMinigame as any, setActiveMinigameMethod, setActiveMinigameAction, activeMinigame as any);
 
     const [isCreating, setIsCreating] = useState(false);
@@ -334,6 +334,7 @@ export const SimulationPlayer: React.FC = () => {
                                             player={player}
                                             roomPin={room.pin}
                                             onExit={() => setActiveMinigame(null)}
+                                            onActionResult={setActionResult}
                                         />
                                     </motion.div>
                                 )}

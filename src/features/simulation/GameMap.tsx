@@ -378,7 +378,7 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                         player={player}
                         room={room}
                         onClose={() => setIsShipyardOpen(false)}
-                        onContribute={(stage, res) => onAction({ type: 'CONTRIBUTE_TO_BOAT', stage, resources: res })}
+                        onAction={onAction}
                     />
                 )}
                 {isWharfUpgradeOpen && (

@@ -174,6 +174,7 @@ export function useSimulationActions(
     return {
         actionLoading,
         actionResult,
+        setActionResult,
         handleAction,
         handleClearActionResult,
         setActionLoading

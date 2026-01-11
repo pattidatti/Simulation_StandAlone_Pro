@@ -2,7 +2,7 @@ import type { ActionRegistry } from './actionTypes';
 import { handleWork, handleChop, handleMiningAction, handleForage, handleHunt, handleGatherWool, handleGatherHoney, handlePlant, handleHarvest, handleFeedChickens, handleCollectEggs, handleMaintainCrop } from './handlers/GatheringHandlers';
 import { handleCraft, handleRefine, handleRepair } from './handlers/CraftingHandlers';
 import { handleEquipItem, handleUnequipItem, handleDiscardItem } from './handlers/InventoryHandlers';
-import { handleTax, handleDraft, handleDecree, handleContribute, handleUpgradeBuilding, handleUpgrade, handleJoinRole, handleContributeToBoat } from './handlers/ManagementHandlers';
+import { handleTax, handleDraft, handleDecree, handleContribute, handleUpgradeBuilding, handleUpgrade, handleJoinRole, handleContributeToBoat, handleUpgradeBoatComponent, handleBuyBoatModel, handleBuyBoatCosmetic } from './handlers/ManagementHandlers';
 import { handleStartSiege, handleJoinSiege, handleSiegeAction, handleReinforceGarrison, handleRepairWalls, handleUpgradeFortification } from './handlers/SiegeHandlers';
 import { handleRaid, handlePatrol, handleRefillAmmo } from './handlers/CombatHandlers';
 import { handleBuy, handleSell, handleTradeRoute } from './handlers/MarketHandlers';
@@ -49,6 +49,9 @@ export const ACTION_REGISTRY: ActionRegistry = {
     UPGRADE: handleUpgrade,
     JOIN_ROLE: handleJoinRole,
     CONTRIBUTE_TO_BOAT: handleContributeToBoat,
+    UPGRADE_BOAT_COMPONENT: handleUpgradeBoatComponent,
+    BUY_BOAT_MODEL: handleBuyBoatModel,
+    BUY_BOAT_COSMETIC: handleBuyBoatCosmetic,
 
     // Siege
     START_SIEGE: handleStartSiege,
