@@ -6,11 +6,15 @@ import { Anchor, LifeBuoy, Compass, Wind } from 'lucide-react';
 import { ref, update, onValue, off } from 'firebase/database';
 import { simulationDb } from '../simulationFirebase';
 
-interface SailingMinigameProps {
-    player: SimulationPlayer;
-    roomPin: string;
-    onExit: () => void;
-}
+// --- WORLD CONSTANTS ---
+const WORLD_SIZE = 5000;
+const ISLANDS = [
+    { id: 1, x: 1200, y: 800, r: 180, color: '#064e3b', name: 'Pine Rock' },
+    { id: 2, x: 3500, y: 1200, r: 250, color: '#14532d', name: 'Jungle Atoll' },
+    { id: 3, x: 800, y: 3800, r: 120, color: '#451a03', name: 'Smuggler Cove' },
+    { id: 4, x: 4200, y: 4000, r: 200, color: '#0f172a', name: 'Iron Fortress' },
+    { id: 5, x: 2500, y: 2500, r: 150, color: '#1e3a8a', name: 'Central Outpost' },
+];
 
 interface OtherPlayerBoat {
     id: string;
@@ -40,6 +44,8 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         rotation: 0,
         speed: 0,
         targetSpeed: 0,
+        targetRotation: 0,
+        turnSpeed: 0.1,
         velocity: { x: 0, y: 0 }
     });
     const requestRef = useRef<number>(0);
@@ -91,31 +97,52 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         const p = physics.current;
 
         // 1. Smooth Speed (Acceleration/Deceleration)
-        const accel = p.targetSpeed > p.speed ? 1.5 : 2.5; // Decel is faster than accel
-        p.speed += (p.targetSpeed - p.speed) * Math.min(dt * accel, 1);
+        // 2. Update Boat State
+        p.speed = p.speed * 0.98 + p.targetSpeed * 0.02;
+        p.rotation = p.rotation * (1 - p.turnSpeed) + p.targetRotation * p.turnSpeed;
 
-        // 2. Rudder Inertia & Turning (Nautical Correction)
-        // Nautical: 0 deg is North (-Y), 90 deg is East (+X).
-        // Standard math: 0 is East, 90 is South.
-        // Conversion: AngleInMath = rotation - 90
-        const moveRad = (p.rotation - 90) * (Math.PI / 180);
+        const moveRad = (p.rotation * Math.PI) / 180;
+        const dx = Math.cos(moveRad) * p.speed;
+        const dy = Math.sin(moveRad) * p.speed;
 
-        // Update Position
-        p.x += Math.cos(moveRad) * p.speed;
-        p.y += Math.sin(moveRad) * p.speed;
+        // --- COLLISION LOGIC ---
+        let nextX = p.x + dx;
+        let nextY = p.y + dy;
+        let collision = false;
+
+        // Island Collision
+        for (const island of ISLANDS) {
+            const dist = Math.hypot(nextX - island.x, nextY - island.y);
+            if (dist < island.r + 30) { // 30 is boat radius
+                collision = true;
+                break;
+            }
+        }
+
+        // Boundary Collision
+        if (nextX < 0 || nextX > WORLD_SIZE || nextY < 0 || nextY > WORLD_SIZE) {
+            collision = true;
+        }
+
+        if (!collision) {
+            p.x = nextX;
+            p.y = nextY;
+        } else {
+            p.speed *= 0.5; // Bounce back / slow down
+            p.targetSpeed *= 0.5;
+        }
 
         // 3. Sync to state for rendering
         setPos({ x: p.x, y: p.y });
         setRotation(p.rotation);
 
         // 4. Trail Logic (Persistent Stern Wake)
-        // Calculate stern position in world space for realistic trailing
-        const sternLength = 40; // Approx distance from center to stern
+        const sternLength = 40;
         const sx = p.x - Math.cos(moveRad) * sternLength;
         const sy = p.y - Math.sin(moveRad) * sternLength;
 
-        const dist = Math.hypot(sx - lastTrailPos.current.x, sy - lastTrailPos.current.y);
-        if (dist > 25) {
+        const distTravelled = Math.hypot(sx - lastTrailPos.current.x, sy - lastTrailPos.current.y);
+        if (distTravelled > 25) {
             setTrail(prev => {
                 const newTrail = [...prev, { x: sx, y: sy, id: trailIdCounter.current++ }];
                 if (newTrail.length > 40) newTrail.shift();
@@ -137,12 +164,12 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         const handleKeyDown = (e: KeyboardEvent) => {
             const p = physics.current;
             if (e.key === 'a' || e.key === 'ArrowLeft') {
-                p.rotation -= 3; // Turn left
-                setRotation(p.rotation);
+                p.targetRotation -= 5; // Turn left
+                setRotation(p.targetRotation);
             }
             if (e.key === 'd' || e.key === 'ArrowRight') {
-                p.rotation += 3; // Turn right
-                setRotation(p.rotation);
+                p.targetRotation += 5; // Turn right
+                setRotation(p.targetRotation);
             }
             if (e.key === 'w' || e.key === 'ArrowUp') p.targetSpeed = Math.min(p.targetSpeed + 0.5, 5);
             if (e.key === 's' || e.key === 'ArrowDown') p.targetSpeed = Math.max(p.targetSpeed - 0.5, 0);
@@ -230,11 +257,33 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                         })}
                     </svg>
 
-                    {/* Example Island */}
-                    <div
-                        className="absolute w-64 h-64 bg-emerald-800 rounded-full blur-xl opacity-40"
-                        style={{ left: 1500 - pos.x, top: 1500 - pos.y }}
-                    />
+                    {/* ARCHIPELAGO (Islands) */}
+                    {ISLANDS.map(island => (
+                        <div key={island.id} className="absolute pointer-events-none" style={{ left: island.x - pos.x + window.innerWidth / 2, top: island.y - pos.y + window.innerHeight / 2 }}>
+                            {/* Coastal Foam */}
+                            <div className="absolute inset-0 bg-white/20 blur-3xl opacity-50 rounded-full animate-pulse" style={{ width: island.r * 2.5, height: island.r * 2.5, transform: 'translate(-50%, -50%)' }} />
+
+                            {/* The Landmass */}
+                            <div
+                                className="absolute rounded-full shadow-2xl"
+                                style={{
+                                    width: island.r * 2,
+                                    height: island.r * 2,
+                                    backgroundColor: island.color,
+                                    transform: 'translate(-50%, -50%)',
+                                    border: '10px solid rgba(0,0,0,0.1)'
+                                }}
+                            >
+                                {/* Jungle/Trees texture (Mock) */}
+                                <div className="absolute inset-4 rounded-full bg-black/10 blur-md" />
+                            </div>
+
+                            {/* Island Label */}
+                            <div className="absolute top-[120%] left-1/2 -translate-x-1/2 text-white/40 text-sm font-bold tracking-widest uppercase whitespace-nowrap">
+                                {island.name}
+                            </div>
+                        </div>
+                    ))}
                 </div>
 
                 {/* OTHER PLAYERS */}
@@ -383,6 +432,48 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                     >
                         <Anchor /> Gå i Land
                     </button>
+                </div>
+
+                {/* MINIMAP HUD */}
+                <div className="fixed top-6 right-6 w-48 h-48 bg-black/60 border border-white/10 rounded-xl overflow-hidden backdrop-blur-md p-1 shadow-2xl z-50">
+                    <div className="relative w-full h-full bg-[#081829] rounded-lg overflow-hidden border border-white/5">
+                        {/* Map Grid */}
+                        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+
+                        {/* Islands on Minimap */}
+                        {ISLANDS.map(island => (
+                            <div
+                                key={`mini-${island.id}`}
+                                className="absolute rounded-full opacity-60"
+                                style={{
+                                    left: `${(island.x / WORLD_SIZE) * 100}%`,
+                                    top: `${(island.y / WORLD_SIZE) * 100}%`,
+                                    width: `${(island.r / WORLD_SIZE) * 200}%`,
+                                    height: `${(island.r / WORLD_SIZE) * 200}%`,
+                                    backgroundColor: island.color,
+                                    transform: 'translate(-50%, -50%)'
+                                }}
+                            />
+                        ))}
+
+                        {/* Player Position */}
+                        <motion.div
+                            className="absolute w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-[0_0_10px_#ef4444]"
+                            style={{
+                                left: `${(pos.x / WORLD_SIZE) * 100}%`,
+                                top: `${(pos.y / WORLD_SIZE) * 100}%`,
+                                transform: 'translate(-50%, -50%)'
+                            }}
+                        >
+                            {/* Radar Sweep */}
+                            <div className="absolute inset-[-100%] border border-red-500/50 rounded-full animate-ping" />
+                        </motion.div>
+
+                        {/* Coordinates Label */}
+                        <div className="absolute bottom-1 right-2 text-[10px] text-white/40 font-mono">
+                            {Math.round(pos.x)} : {Math.round(pos.y)}
+                        </div>
+                    </div>
                 </div>
 
                 {/* FISHING OVERLAY */}
