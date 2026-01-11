@@ -119,6 +119,11 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                                 // Dynamic Price Logic
                                 const currentUnitPrice = getDynamicPrice(item);
                                 const totalCost = calculateBulkPrice(item, qty, true);
+                                const totalGain = calculateBulkPrice(item, qty, false);
+
+                                // High-Slippage Detection (15%+)
+                                const isHighBuySlippage = totalCost > currentUnitPrice * qty * 1.15;
+                                const isHighSellSlippage = totalGain < (currentUnitPrice * (GAME_BALANCE.MARKET.SELL_RATIO || 0.8)) * qty * 0.85;
 
                                 // Sentiment Colors (Avant-Garde HSL)
                                 let priceColor = 'text-game-gold'; // Default
@@ -134,7 +139,6 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                                     setQty(Math.max(1, isNaN(val) ? 1 : val));
                                 };
 
-                                const totalVal = totalCost.toFixed(1);
 
                                 return (
                                     <div key={resId} className="grid grid-cols-12 gap-1 px-6 py-1.5 items-center group hover:bg-white/[0.02] transition-colors relative">
@@ -205,29 +209,21 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                                                     variant="primary"
                                                     onClick={() => onAction({ type: 'BUY', resource: resId, amount: qty })}
                                                     disabled={(player.resources?.gold || 0) < totalCost || stock < qty || !!actionLoading}
-                                                    className="flex-1 py-0 h-8 font-black text-[10px] tracking-widest"
+                                                    className={`flex-1 py-0 h-8 font-black text-[9px] tracking-tight transition-all duration-300 ${isHighBuySlippage ? 'ring-2 ring-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : ''}`}
                                                 >
-                                                    KJØP
+                                                    KJØP | {totalCost.toFixed(1)}g
                                                 </GameButton>
                                                 <GameButton
                                                     variant="wood"
                                                     onClick={() => onAction({ type: 'SELL', resource: resId, amount: qty })}
                                                     disabled={playerStock < qty || !!actionLoading}
-                                                    className="flex-1 py-0 h-8 font-black text-[10px] tracking-widest"
+                                                    className={`flex-1 py-0 h-8 font-black text-[9px] tracking-tight transition-all duration-300 ${isHighSellSlippage ? 'ring-2 ring-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : ''}`}
                                                 >
-                                                    SELG
+                                                    SELG | {totalGain.toFixed(1)}g
                                                 </GameButton>
                                             </div>
                                         </div>
 
-                                        {/* DYNAMIC TOTAL OVERLAY - Very compact */}
-                                        {qty > 1 && (
-                                            <div className="absolute right-6 -top-1 animate-in fade-in slide-in-from-top-1 duration-300 pointer-events-none">
-                                                <div className="bg-game-gold text-black px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tight shadow-sm">
-                                                    {totalVal}g
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 );
                             })}

@@ -39,6 +39,14 @@ export const MercantileDashboard: React.FC<MercantileDashboardProps> = ({ player
     // SCARCITY-BASED PRICING LOGIC
     const totalCost = marketItem && quantity > 0 ? calculateBulkPrice(marketItem as unknown as MarketItem, quantity, transactionMode === 'BUY') : 0;
 
+    // SLIPPAGE CALCULATION (For "Ghost" transparency)
+    const currentMarketPrice = marketItem ? getDynamicPrice(marketItem as unknown as MarketItem) : 0;
+    const idealExchangeVal = transactionMode === 'BUY'
+        ? currentMarketPrice * quantity
+        : currentMarketPrice * (GAME_BALANCE.MARKET.SELL_RATIO || 0.8) * quantity;
+    const slippageDelta = Math.abs(totalCost - idealExchangeVal);
+    const showSlippage = slippageDelta > 0.1; // Only show significant slippage
+
     // Lazy Initialization for Legacy Players
     React.useEffect(() => {
         if (!player.homeRegionId && pin) {
@@ -320,11 +328,18 @@ export const MercantileDashboard: React.FC<MercantileDashboardProps> = ({ player
                                                     onChange={(e) => setQuantity(parseInt(e.target.value))}
                                                     className="w-full accent-amber-500"
                                                 />
-                                                <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
+                                                <div className="pt-4 border-t border-slate-800 flex justify-between items-center group relative">
                                                     <span className="text-xs font-bold text-slate-500 uppercase">Totalsum</span>
-                                                    <span className={`text-xl font-black transition-all duration-500 ease-[cubic-bezier(0.17,0.89,0.32,1.49)] ${player.resources.gold < totalCost && transactionMode === 'BUY' ? 'text-rose-500' : 'text-white'}`}>
-                                                        {Number(totalCost).toLocaleString('nb-NO', { maximumFractionDigits: 2 })}g
-                                                    </span>
+                                                    <div className="flex flex-col items-end">
+                                                        <span className={`text-xl font-black transition-all duration-500 ease-[cubic-bezier(0.17,0.89,0.32,1.49)] ${player.resources.gold < totalCost && transactionMode === 'BUY' ? 'text-rose-500' : 'text-white'}`}>
+                                                            {Number(totalCost).toLocaleString('nb-NO', { maximumFractionDigits: 2 })}g
+                                                        </span>
+                                                        {showSlippage && quantity > 1 && (
+                                                            <span className="text-[9px] font-bold text-amber-500/60 animate-in fade-in slide-in-from-right-1 duration-500 uppercase tracking-tighter">
+                                                                +{slippageDelta.toFixed(1)}g glidning
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -337,7 +352,7 @@ export const MercantileDashboard: React.FC<MercantileDashboardProps> = ({ player
                                                     : 'bg-amber-500 text-slate-950 hover:bg-amber-400'
                                                     }`}
                                             >
-                                                {transactionMode === 'BUY' ? 'Bekreft Kjøp' : 'Bekreft Salg'}
+                                                {transactionMode === 'BUY' ? `Bekreft Kjøp | ${totalCost.toFixed(1)}g` : `Bekreft Salg | ${totalCost.toFixed(1)}g`}
                                             </button>
                                         </>
                                     )}
