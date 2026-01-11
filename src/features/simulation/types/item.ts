@@ -19,9 +19,13 @@ export interface Resources {
     manpower: number;
     egg: number;
     omelette: number;
+    minor_stamina_potion: number;
+    herbal_balm: number;
+    focus_brew: number;
+    strength_tincture: number;
+    masters_draught: number;
+    elixir_of_life: number;
     // Maritime Resources
-    oak_log: number;
-    oak_lumber: number;
     flax: number;
     linen_canvas: number;
     tar: number;

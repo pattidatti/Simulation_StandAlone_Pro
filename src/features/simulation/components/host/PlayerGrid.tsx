@@ -184,7 +184,7 @@ export const PlayerGrid: React.FC<PlayerGridProps> = React.memo(({
                                     </optgroup>
 
                                     <optgroup label="MARITIMT" className="bg-slate-900 text-slate-500">
-                                        {['oak_log', 'oak_lumber', 'flax', 'linen_canvas', 'tar', 'fish_raw', 'fish_cooked', 'silk', 'spice'].map(key => (
+                                        {['flax', 'linen_canvas', 'tar', 'fish_raw', 'fish_cooked', 'silk', 'spice', 'cannonball'].map(key => (
                                             <option key={key} value={key} className="text-white">
                                                 {(RESOURCE_DETAILS as any)[key]?.icon} {(RESOURCE_DETAILS as any)[key]?.label}
                                             </option>

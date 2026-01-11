@@ -37,8 +37,7 @@ export interface SimulationMarket {
     siege_sword: MarketItem;
     siege_armor: MarketItem;
     // Maritime Items
-    oak_log: MarketItem;
-    oak_lumber: MarketItem;
+
     flax: MarketItem;
     linen_canvas: MarketItem;
     tar: MarketItem;

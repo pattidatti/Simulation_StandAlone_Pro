@@ -546,7 +546,7 @@ export const handleContributeToBoat = (ctx: ActionContext) => {
             stage: 0,
             model: 'standard', // NEW
             componentLevels: { sails: 0, hull: 0, cannons: 0, nets: 0 }, // NEW
-            hullType: 'oak_standard',
+            hullType: 'standard',
             stamina: 100,
             durability: 100,
             upgrades: [],

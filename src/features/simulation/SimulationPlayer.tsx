@@ -63,9 +63,34 @@ export const SimulationPlayer: React.FC = () => {
         };
     }, [setHideHeader, setFullWidth]);
 
+
+
     const {
         player, world, players, roomStatus, markets, messages, diplomacy, activeVote, worldEvents, trades, regions, hasAttemptedPlayerLoad, isRetired
     } = useSimulationData(pin, impersonateId) as any;
+
+    // MIGRATION: Remove Oak Resources (Legacy)
+    React.useEffect(() => {
+        if (!player || !pin || !player.resources) return;
+
+        const resources = player.resources as any;
+        const oakLog = resources['oak_log'] || 0;
+        const oakLumber = resources['oak_lumber'] || 0;
+
+        if (oakLog > 0 || oakLumber > 0) {
+            console.log("MIGRATION: Converting Legacy Oak...", { oakLog, oakLumber });
+            const updates: any = {};
+            updates[`players/${player.id}/resources/oak_log`] = null;
+            updates[`players/${player.id}/resources/oak_lumber`] = null;
+            updates[`players/${player.id}/resources/wood`] = (resources.wood || 0) + oakLog;
+            updates[`players/${player.id}/resources/plank`] = (resources.plank || 0) + oakLumber;
+
+            const roomRef = ref(db, `simulation_rooms/${pin}`);
+            update(roomRef, updates)
+                .then(() => console.log("MIGRATION: Success"))
+                .catch(err => console.error("MIGRATION: Failed", err));
+        }
+    }, [player?.id, player?.resources, pin]);
 
     const {
         handleAction, actionResult, setActionResult, handleClearActionResult

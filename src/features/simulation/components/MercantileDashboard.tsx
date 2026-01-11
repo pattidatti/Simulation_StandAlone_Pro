@@ -371,7 +371,7 @@ export const MercantileDashboard: React.FC<MercantileDashboardProps> = ({ player
                                     {Object.entries(caravan.inventory).length === 0 && <p className="text-[10px] text-slate-700 font-bold uppercase text-center mt-8">Tomt lasterom</p>}
                                     <div className="grid grid-cols-4 gap-2">
                                         {Object.entries(caravan.inventory).map(([res, amt]) => (
-                                            (amt && amt > 0) ? (
+                                            (amt && amt > 0 && RESOURCE_DETAILS[res]) ? (
                                                 <div key={res} className="relative group bg-slate-900 p-2 rounded-lg border border-slate-800 flex flex-col items-center gap-1 hover:border-slate-600 transition-colors" title={RESOURCE_DETAILS[res]?.label}>
                                                     <span className="text-lg">{RESOURCE_DETAILS[res]?.icon}</span>
                                                     <span className="text-[10px] font-bold text-amber-400">{amt}</span>
@@ -410,7 +410,7 @@ export const MercantileDashboard: React.FC<MercantileDashboardProps> = ({ player
                                 <div className="bg-slate-950/50 rounded-xl border border-slate-800 p-2">
                                     <div className="grid grid-cols-4 gap-2">
                                         {Object.entries(player.resources).map(([res, amt]) => (
-                                            (amt && amt > 0 && res !== 'gold') ? (
+                                            (amt && amt > 0 && res !== 'gold' && RESOURCE_DETAILS[res]) ? (
                                                 <div key={res} className="relative group bg-slate-900 p-2 rounded-lg border border-slate-800 flex flex-col items-center gap-1 hover:border-slate-600 transition-colors" title={RESOURCE_DETAILS[res]?.label}>
                                                     <span className="text-lg">{RESOURCE_DETAILS[res]?.icon}</span>
                                                     <span className="text-[10px] font-bold text-slate-300">{amt}</span>

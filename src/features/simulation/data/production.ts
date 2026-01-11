@@ -206,8 +206,8 @@ export const VILLAGE_BUILDINGS: Record<string, { id: string, name: string, icon:
         description: 'Sentrum for maritim handel. Oppgraderinger låser opp flere maritime ressurser og bedre båter.',
         levels: {
             1: { requirements: {}, unlocks: ['OPEN_SHIPYARD', 'START_SAILING'], bonus: 'Grunnleggende sjøfart' },
-            2: { requirements: { oak_lumber: 100, tar: 50, gold: 5000 }, unlocks: ['OPEN_WHARF_UPGRADE_MASTER'], bonus: '+20% Fiske-utbytte' },
-            3: { requirements: { oak_lumber: 250, linen_canvas: 100, iron_ingot: 100, gold: 15000 }, unlocks: ['OPEN_OCEAN_SAILING'], bonus: 'Låser opp Havseilas' }
+            2: { requirements: { plank: 100, tar: 50, gold: 5000 }, unlocks: ['OPEN_WHARF_UPGRADE_MASTER'], bonus: '+20% Fiske-utbytte' },
+            3: { requirements: { plank: 250, linen_canvas: 100, iron_ingot: 100, gold: 15000 }, unlocks: ['OPEN_OCEAN_SAILING'], bonus: 'Låser opp Havseilas' }
         }
     }
 };
@@ -231,7 +231,6 @@ export const REFINERY_RECIPES: Record<string, any> = {
     elixir_of_life: { label: 'Livseliksir', icon: '🏺', input: { gold: 250, honey: 20, glass: 5 }, outputResource: 'elixir_of_life', outputAmount: 1, buildingId: 'apothecary', requiredLevel: 3, stamina: 100, xp: 250, skill: 'CRAFTING', duration: 300000 },
 
     // Maritime Refinery Recipes
-    oak_lumber: { label: 'Eikeplekker', icon: '🪵', input: { oak_log: 1 }, outputResource: 'oak_lumber', outputAmount: 2, buildingId: 'sawmill', stamina: 10, xp: 15, skill: 'WOODCUTTING' },
     linen_canvas: { label: 'Seilduk', icon: '📜', input: { flax: 5 }, outputResource: 'linen_canvas', outputAmount: 1, buildingId: 'weavery', stamina: 15, xp: 20, skill: 'CRAFTING' },
     tar: { label: 'Tjære', icon: '⚱️', input: { wood: 5 }, outputResource: 'tar', outputAmount: 1, buildingId: 'smeltery', stamina: 20, xp: 10, skill: 'CRAFTING' },
     fish_cooked: { label: 'Stekt Fisk', icon: '🍳', input: { fish_raw: 1 }, outputResource: 'fish_cooked', outputAmount: 1, buildingId: 'bakery', stamina: 10, xp: 5, skill: 'CRAFTING' }

@@ -16,8 +16,7 @@ export const INITIAL_MARKET: SimulationMarket = {
     siege_sword: { price: 40, stock: 20, demand: 1.0 },
     siege_armor: { price: 40, stock: 20, demand: 1.0 },
     // Maritime Items (Start with 0 stock)
-    oak_log: { price: 40, stock: 0, demand: 1.0 },
-    oak_lumber: { price: 75, stock: 0, demand: 1.0 },
+
     flax: { price: 15, stock: 0, demand: 1.0 },
     linen_canvas: { price: 90, stock: 0, demand: 1.0 },
     tar: { price: 50, stock: 0, demand: 1.0 },

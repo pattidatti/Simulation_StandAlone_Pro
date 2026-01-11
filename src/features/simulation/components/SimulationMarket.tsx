@@ -107,9 +107,8 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                             .filter(key => !['iron', 'swords', 'armor'].includes(key))
                             .map((resId) => {
                                 const item = (market || {})[resId] || (INITIAL_MARKET as any)[resId];
-                                if (!item) return null;
-
-                                const details = (RESOURCE_DETAILS as any)[resId] || { label: resId, icon: '📦' };
+                                const details = (RESOURCE_DETAILS as any)[resId];
+                                if (!item || !details) return null;
                                 const price = item.price || 0;
                                 const stock = item.stock || 0;
                                 const playerStock = (player.resources as any)?.[resId] || 0;

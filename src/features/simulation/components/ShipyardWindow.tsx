@@ -214,10 +214,10 @@ const ConstructionView = ({ boat, player, onAction }: any) => {
         stage: stage + 1,
         name: currentStageName,
         reqs: ([
-            { oak_lumber: 20 },
-            { oak_lumber: 40, linen_canvas: 10 },
-            { oak_lumber: 30, iron_ingot: 10 },
-            { oak_lumber: 50, tar: 20 }
+            { plank: 20 },
+            { plank: 40, linen_canvas: 10 },
+            { plank: 30, iron_ingot: 10 },
+            { plank: 50, tar: 20 }
         ][stage]) || {} // Fallback to empty object if out of bounds
     } : null;
 
@@ -229,7 +229,7 @@ const ConstructionView = ({ boat, player, onAction }: any) => {
 
     const missingHp = maxHp - hp;
     const itemsNeeded = Math.ceil(missingHp / 10);
-    const repairCost = isDamaged ? { oak_lumber: itemsNeeded, tar: itemsNeeded } : {};
+    const repairCost = isDamaged ? { plank: itemsNeeded, tar: itemsNeeded } : {};
 
     return (
         <div className="p-8 flex flex-col gap-6 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-stone-400 scrollbar-track-transparent">
@@ -275,7 +275,7 @@ const ConstructionView = ({ boat, player, onAction }: any) => {
                                 <span className="text-stone-400 text-sm font-serif italic">Reparasjonskostnad:</span>
                                 <div className="flex gap-4">
                                     <div className="flex items-center gap-2">
-                                        <ResourceIcon resource="oak_lumber" size="sm" amount={repairCost.oak_lumber} className={player.resources.oak_lumber >= itemsNeeded ? "text-[#e7ded0]" : "text-rose-500 font-bold"} />
+                                        <ResourceIcon resource="plank" size="sm" amount={repairCost.plank} className={player.resources.plank >= itemsNeeded ? "text-[#e7ded0]" : "text-rose-500 font-bold"} />
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <ResourceIcon resource="tar" size="sm" amount={repairCost.tar} className={player.resources.tar >= itemsNeeded ? "text-[#e7ded0]" : "text-rose-500 font-bold"} />
@@ -285,7 +285,7 @@ const ConstructionView = ({ boat, player, onAction }: any) => {
 
                             <InkButton
                                 onClick={() => onAction({ type: 'REPAIR_BOAT' }, "Reparer Skrog", repairCost)}
-                                disabled={(player.resources.oak_lumber || 0) < itemsNeeded || (player.resources.tar || 0) < itemsNeeded}
+                                disabled={(player.resources.plank || 0) < itemsNeeded || (player.resources.tar || 0) < itemsNeeded}
                                 className="w-full py-4 text-sm"
                             >
                                 Utfør Reparasjon
