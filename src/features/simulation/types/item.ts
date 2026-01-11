@@ -29,6 +29,7 @@ export interface Resources {
     fish_cooked: number;
     silk: number;
     spice: number;
+    cannonball: number;
 }
 
 export type EquipmentSlot = 'MAIN_HAND' | 'OFF_HAND' | 'HEAD' | 'BODY' | 'FEET' | 'TRINKET' | 'AXE' | 'PICKAXE' | 'SCYTHE' | 'HAMMER' | 'BOW' | 'TRAP' | 'CHISEL' | 'CONSUMABLE';

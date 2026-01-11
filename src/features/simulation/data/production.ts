@@ -257,5 +257,6 @@ export const CRAFTING_RECIPES: Record<string, any> = {
     omelette: { label: 'Omelett', icon: '🍳', input: { egg: 3 }, outputItemId: 'omelette', buildingId: 'bakery', level: 1, stamina: 10, xp: 8, description: 'En mettende frokost. Gir energi-buff.', skill: 'CRAFTING' },
     hunting_trap: { label: 'Jaktfelle', icon: '🕸️', input: { wood: 13, iron_ingot: 3, gold: 39 }, outputItemId: 'hunting_trap', buildingId: 'great_forge', level: 1, stamina: 20, xp: 15, description: 'En enkel snare for småvilt.', skill: 'CRAFTING' },
     hunting_bow: { label: 'Jaktbue', icon: '🏹', input: { plank: 7, cloth: 7, gold: 65 }, outputItemId: 'hunting_bow', buildingId: 'sawmill', level: 1, stamina: 25, xp: 20, description: 'En stødig bue for jakt.', skill: 'CRAFTING' },
-    longbow: { label: 'Langbue', icon: '🏹', input: { plank: 20, cloth: 13, iron_ingot: 1, gold: 325 }, outputItemId: 'longbow', buildingId: 'sawmill', level: 3, stamina: 40, xp: 45, description: 'En kraftig bue med lang rekkevidde.', skill: 'CRAFTING' }
+    longbow: { label: 'Langbue', icon: '🏹', input: { plank: 20, cloth: 13, iron_ingot: 1, gold: 325 }, outputItemId: 'longbow', buildingId: 'sawmill', level: 3, stamina: 40, xp: 45, description: 'En kraftig bue med lang rekkevidde.', skill: 'CRAFTING' },
+    cannonball: { label: 'Kanonkuler (x5)', icon: '💣', input: { stone: 5, iron_ingot: 1, gold: 10 }, outputItemId: 'cannonball', outputAmount: 5, buildingId: 'great_forge', level: 2, stamina: 30, xp: 25, description: 'Tunge kuler for skipsartilleri.', skill: 'CRAFTING' }
 };

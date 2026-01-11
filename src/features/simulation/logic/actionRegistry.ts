@@ -4,7 +4,7 @@ import { handleCraft, handleRefine, handleRepair } from './handlers/CraftingHand
 import { handleEquipItem, handleUnequipItem, handleDiscardItem } from './handlers/InventoryHandlers';
 import { handleTax, handleDraft, handleDecree, handleContribute, handleUpgradeBuilding, handleUpgrade, handleJoinRole, handleContributeToBoat } from './handlers/ManagementHandlers';
 import { handleStartSiege, handleJoinSiege, handleSiegeAction, handleReinforceGarrison, handleRepairWalls, handleUpgradeFortification } from './handlers/SiegeHandlers';
-import { handleRaid, handlePatrol } from './handlers/CombatHandlers';
+import { handleRaid, handlePatrol, handleRefillAmmo } from './handlers/CombatHandlers';
 import { handleBuy, handleSell, handleTradeRoute } from './handlers/MarketHandlers';
 import { handleLoadCaravan, handleUnloadCaravan, handleUpgradeCaravan, handleRepairCaravan, handleCaravanTravelResult, handleBuyCaravanCosmetic, handleEquipCaravanCosmetic } from './handlers/CaravanHandlers';
 import { handleSleep, handleRest, handlePray, handleChat, handleGamble, handleResourceGamble, handleBuyMeal, handleRetire, handleConsume, handleMountHorse, handleBuyHorseCosmetic, handleSelectHorseCosmetic } from './handlers/SocialRestHandlers';
@@ -61,6 +61,7 @@ export const ACTION_REGISTRY: ActionRegistry = {
     // Combat
     RAID: handleRaid,
     PATROL: handlePatrol,
+    REFILL_AMMO: handleRefillAmmo,
 
     // Social & Rest
     SLEEP: handleSleep,

@@ -25,7 +25,6 @@ import { SimulationContributionModal } from './components/SimulationContribution
 import { RackSvg } from './components/WeaponRackWindow';
 import { DockView } from './components/DockView';
 import { ShipyardWindow } from './components/ShipyardWindow';
-import { SailingMinigame } from './components/SailingMinigame';
 import { HarvestingGame } from './minigames/HarvestingGame';
 
 interface WorldMapProps {
@@ -76,8 +75,6 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
         setIsGrainGameOpen,
         isShipyardOpen,
         setIsShipyardOpen,
-        isSailingOpen,
-        setIsSailingOpen,
         isWharfUpgradeOpen,
         setIsWharfUpgradeOpen,
         isFlaxGameOpen,
@@ -382,13 +379,6 @@ export const GameMap: React.FC<WorldMapProps> = React.memo(({ player, room, worl
                         room={room}
                         onClose={() => setIsShipyardOpen(false)}
                         onContribute={(stage, res) => onAction({ type: 'CONTRIBUTE_TO_BOAT', stage, resources: res })}
-                    />
-                )}
-                {isSailingOpen && (
-                    <SailingMinigame
-                        player={player}
-                        roomPin={room.pin}
-                        onExit={() => setIsSailingOpen(false)}
                     />
                 )}
                 {isWharfUpgradeOpen && (

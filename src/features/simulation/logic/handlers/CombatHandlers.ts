@@ -80,3 +80,31 @@ export const handlePatrol = (ctx: ActionContext) => {
     localResult.message = "Utførte patrulje.";
     return true;
 };
+
+/**
+ * handleRefillAmmo - Transfers cannonballs from personal inventory to boat storage.
+ * Ensures the player has a boat and sufficient resources.
+ */
+export const handleRefillAmmo = (ctx: ActionContext) => {
+    const { actor, localResult } = ctx;
+
+    if (!actor.boat) {
+        localResult.success = false;
+        localResult.message = "Du trenger en båt for å laste ammunisjon!";
+        return false;
+    }
+
+    const inventoryAmmo = actor.resources.cannonball || 0;
+    if (inventoryAmmo <= 0) {
+        localResult.success = false;
+        localResult.message = "Du har ingen kanonkuler i ryggsekken!";
+        return false;
+    }
+
+    // Transfer all
+    actor.boat.cannonballs = (actor.boat.cannonballs || 0) + inventoryAmmo;
+    actor.resources.cannonball = 0;
+
+    localResult.message = `Lastet ${inventoryAmmo} kanonkuler ombord. Båtlager: ${actor.boat.cannonballs} stk.`;
+    return true;
+};

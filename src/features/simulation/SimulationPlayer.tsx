@@ -5,6 +5,7 @@ import { useSimulationActions } from './hooks/useSimulationActions';
 import { useSimulationAuth } from './SimulationAuthContext';
 import { useSimulation } from './SimulationContext';
 import { useLayout } from '../../context/LayoutContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { SimulationRoom } from './simulationTypes';
 
 import { SimHeader as SimulationHeader } from './components/SimHeader';
@@ -20,6 +21,7 @@ import { ChatSystem } from './components/ChatSystem';
 import { PlayerProfileModal } from './components/PlayerProfileModal';
 import { WeaponRackWindow } from './components/WeaponRackWindow';
 import { CaravanWindow } from './components/CaravanWindow';
+import { SailingMinigame } from './components/SailingMinigame';
 import { Trophy } from 'lucide-react';
 import { INITIAL_RESOURCES, INITIAL_SKILLS, INITIAL_EQUIPMENT } from './constants';
 import { ref, update } from 'firebase/database';
@@ -67,7 +69,7 @@ export const SimulationPlayer: React.FC = () => {
 
     const {
         handleAction, actionResult, handleClearActionResult
-    } = useSimulationActions(pin, player, world, setActiveMinigame as any, setActiveMinigameMethod, setActiveMinigameAction, activeMinigame);
+    } = useSimulationActions(pin, player, world, setActiveMinigame as any, setActiveMinigameMethod, setActiveMinigameAction, activeMinigame as any);
 
     const [isCreating, setIsCreating] = useState(false);
     const [levelUpData, setLevelUpData] = useState<{ level: number, title: string } | null>(null);
@@ -231,7 +233,7 @@ export const SimulationPlayer: React.FC = () => {
                         />
                     )}
 
-                    {activeMinigame && (
+                    {activeMinigame && activeMinigame !== 'SAILING' && (
                         <MinigameOverlay
                             type={activeMinigame}
                             player={player}
@@ -319,6 +321,23 @@ export const SimulationPlayer: React.FC = () => {
                                 actionResult={actionResult}
                                 onClearActionResult={handleClearActionResult}
                             />
+                            <AnimatePresence>
+                                {activeMinigame === 'SAILING' && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 1.05 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                                        className="absolute inset-0 z-50 bg-slate-950"
+                                    >
+                                        <SailingMinigame
+                                            player={player}
+                                            roomPin={room.pin}
+                                            onExit={() => setActiveMinigame(null)}
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </main>
                     </div>
                 </div>

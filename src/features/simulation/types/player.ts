@@ -142,6 +142,7 @@ export interface SimulationPlayer {
         hp: number;
         maxHp: number;
         cannons: number;
+        cannonballs: number;
         isDamaged: boolean;
         position?: { x: number, y: number, rotation: number };
     };

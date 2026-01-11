@@ -40,7 +40,7 @@ const useCountUp = (target: number, duration: number = 800) => {
 };
 
 export const SimHeader: React.FC<SimulationHeaderProps> = ({ room, player, onAction }) => {
-    const { activeTab, setActiveTab } = useSimulation();
+    const { activeTab, setActiveTab, activeMinigame } = useSimulation();
     const { playSfx } = useAudio();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -68,6 +68,8 @@ export const SimHeader: React.FC<SimulationHeaderProps> = ({ room, player, onAct
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            if (activeMinigame) return;
+
             const key = e.key.toLowerCase();
             const tabMap: Record<string, any> = {
                 'm': 'MAP',
@@ -87,7 +89,7 @@ export const SimHeader: React.FC<SimulationHeaderProps> = ({ room, player, onAct
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [setActiveTab, player.role, playSfx]);
+    }, [setActiveTab, player.role, playSfx, activeMinigame]);
 
     // --- HIGH-FREQUENCY CLOCK TICKER ---
     // Forces re-render every second to allow smooth clock interpolation

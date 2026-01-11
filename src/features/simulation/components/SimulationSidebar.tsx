@@ -44,7 +44,7 @@ const useCountUp = (target: number, duration: number = 800) => {
 };
 
 export const SimulationSidebar: React.FC<SimulationSidebarProps> = ({ player, room }) => {
-    const { activeTab, setActiveTab } = useSimulation();
+    const { activeTab, setActiveTab, activeMinigame } = useSimulation();
     const { playSfx } = useAudio();
     const [isCollapsed, setIsCollapsed] = React.useState(false);
 
@@ -61,6 +61,9 @@ export const SimulationSidebar: React.FC<SimulationSidebarProps> = ({ player, ro
         const handleKeyDown = (e: KeyboardEvent) => {
             // Ignore if typing in input
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+            // Block hotkeys if minigame is active
+            if (activeMinigame) return;
 
             const key = e.key.toLowerCase();
             const tabMap: Record<string, any> = {
@@ -85,7 +88,7 @@ export const SimulationSidebar: React.FC<SimulationSidebarProps> = ({ player, ro
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [setActiveTab, player.role, playSfx]);
+    }, [setActiveTab, player.role, playSfx, activeMinigame]);
 
     const staminaWidth = player.status.stamina || 0;
     const healthWidth = player.status.hp || 0;

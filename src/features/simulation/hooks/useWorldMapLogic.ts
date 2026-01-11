@@ -13,6 +13,7 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
         setViewMode,
         viewingRegionId: ctxViewingRegionId,
         setViewingRegionId,
+        setActiveMinigame,
         activeTab
     } = useSimulation();
 
@@ -30,7 +31,6 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
     const [isGambleGameOpen, setIsGambleGameOpen] = useState(false);
     const [isGrainGameOpen, setIsGrainGameOpen] = useState(false);
     const [isShipyardOpen, setIsShipyardOpen] = useState(false);
-    const [isSailingOpen, setIsSailingOpen] = useState(false);
     const [isWharfUpgradeOpen, setIsWharfUpgradeOpen] = useState(false);
     const [isFlaxGameOpen, setIsFlaxGameOpen] = useState(false);
 
@@ -64,7 +64,6 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
                 if (isGambleGameOpen) { setIsGambleGameOpen(false); return; }
                 if (isGrainGameOpen) { setIsGrainGameOpen(false); return; }
                 if (isShipyardOpen) { setIsShipyardOpen(false); return; }
-                if (isSailingOpen) { setIsSailingOpen(false); return; }
                 if (isFlaxGameOpen) { setIsFlaxGameOpen(false); return; }
                 if (dialogNPC) { setDialogNPC(null); return; }
                 if (selectedEvent) { setSelectedEvent(null); return; }
@@ -133,7 +132,7 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
         }
 
         if (actId === 'START_SAILING') {
-            setIsSailingOpen(true);
+            setActiveMinigame('SAILING');
             setSelectedPOI(null);
             return;
         }
@@ -230,8 +229,6 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
         setIsGrainGameOpen,
         isShipyardOpen,
         setIsShipyardOpen,
-        isSailingOpen,
-        setIsSailingOpen,
         isWharfUpgradeOpen,
         setIsWharfUpgradeOpen,
         isFlaxGameOpen,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SimulationPlayer } from '../simulationTypes';
+import { useSimulation } from '../SimulationContext';
 import { FishResourceNode } from '../types/world';
 import { ModularBoatSVG } from './ModularBoatSVG';
 import { Fish, Skull } from 'lucide-react';
@@ -10,11 +11,11 @@ import { simulationDb } from '../simulationFirebase';
 // --- WORLD CONSTANTS ---
 const WORLD_SIZE = 5000;
 const ISLANDS = [
-    { id: 1, x: 1200, y: 800, r: 180, color: '#064e3b', name: 'Pine Rock' },
-    { id: 2, x: 3500, y: 1200, r: 250, color: '#14532d', name: 'Jungle Atoll' },
-    { id: 3, x: 800, y: 3800, r: 120, color: '#451a03', name: 'Smuggler Cove' },
-    { id: 4, x: 4200, y: 4000, r: 200, color: '#0f172a', name: 'Iron Fortress' },
-    { id: 5, x: 2500, y: 2500, r: 150, color: '#1e3a8a', name: 'Central Outpost' },
+    { id: 1, x: 1200, y: 800, r: 180, color: '#064e3b', name: 'Furuøy' },
+    { id: 2, x: 3500, y: 1200, r: 250, color: '#14532d', name: 'Jungel-atollen' },
+    { id: 3, x: 800, y: 3800, r: 120, color: '#451a03', name: 'Smuglerbukta' },
+    { id: 4, x: 4200, y: 4000, r: 200, color: '#0f172a', name: 'Jernfestningen' },
+    { id: 5, x: 2500, y: 2500, r: 150, color: '#1e3a8a', name: 'Hovedposten' },
 ];
 
 interface Projectile {
@@ -51,6 +52,8 @@ interface SailingMinigameProps {
 }
 
 export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPin, onExit }) => {
+    const { setActiveMinigame } = useSimulation();
+
     // --- STATE ---
     const [pos, setPos] = useState({ x: 1000, y: 1000 });
     const [rotation, setRotation] = useState(0);
@@ -65,6 +68,7 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
     const [lastFireTime, setLastFireTime] = useState(0);
     const [projectiles, setProjectiles] = useState<Projectile[]>([]);
     const [explosions, setExplosions] = useState<Explosion[]>([]);
+    const [shakeIntensity, setShakeIntensity] = useState(0);
 
     const [trail, setTrail] = useState<{ x: number, y: number, id: number }[]>([]);
     const trailIdCounter = useRef(0);
@@ -76,11 +80,11 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         x: 1000,
         y: 1000,
         rotation: 0,
+        angularVelocity: 0,
         speed: 0,
         targetSpeed: 0,
         targetRotation: 0,
-        turnSpeed: 0.1,
-        velocity: { x: 0, y: 0 },
+        velocityVector: { x: 0, y: 0 },
         projectiles: [] as Projectile[],
         explosions: [] as Explosion[]
     });
@@ -95,6 +99,18 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         down: false,
         action: false,
     });
+
+    // --- V12 INFINITE HORIZON: ENTITY SYSTEM ---
+    const [cloudEntities] = useState(() => Array.from({ length: 15 }, (_, i) => ({
+        id: i,
+        x: Math.random() * 4000,
+        y: Math.random() * 4000,
+        scale: 0.8 + Math.random() * 1.5,
+        opacityBase: 0.1 + Math.random() * 0.2, // Base opacity for cloud depth
+        speedFactor: 0.005 + Math.random() * 0.015,
+        blur: 20 + Math.random() * 40,
+        hue: 190 + Math.random() * 20
+    })));
 
     // --- DATA SUBSCRIPTIONS ---
     useEffect(() => {
@@ -131,6 +147,19 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
             }
         });
 
+        // Fetch Last Known Position (Persistence)
+        const myStateRef = ref(simulationDb, `simulation_rooms/${roomPin}/sea_state/${player.id}`);
+        onValue(myStateRef, (snap) => {
+            const data = snap.val();
+            if (data && data.x && data.y && physics.current.x === 1000 && physics.current.y === 1000) {
+                physics.current.x = data.x;
+                physics.current.y = data.y;
+                physics.current.rotation = data.rotation || 0;
+                setPos({ x: data.x, y: data.y });
+                setRotation(data.rotation || 0);
+            }
+        }, { onlyOnce: true });
+
         return () => {
             unsub();
             unsubFish();
@@ -138,11 +167,29 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         };
     }, [roomPin, player.id]);
 
+    // Set Active Minigame State
+    useEffect(() => {
+        setActiveMinigame('SAILING');
+        return () => setActiveMinigame(null);
+    }, []);
+
+    // Tab-Close / Refresh Cleanup
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            // Quick sync remove to prevent ghost boats
+            const seaStateRef = ref(simulationDb, `simulation_rooms/${roomPin}/sea_state/${player.id}`);
+            update(seaStateRef, { isOffline: true, timestamp: Date.now() });
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [roomPin, player.id]);
+
     // Update HP in sea_state loop (Initial Sync)
     useEffect(() => {
         update(ref(simulationDb, `simulation_rooms/${roomPin}/sea_state/${player.id}`), {
             hp: hp,
-            maxHp: maxHp
+            maxHp: maxHp,
+            isOffline: false
         });
     }, []);
 
@@ -181,7 +228,8 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         if (isFishing || isDead) return;
 
         setLastFireTime(now);
-        setLastFireTime(now);
+        setShakeIntensity(5);
+        setTimeout(() => setShakeIntensity(0), 200);
         playSFX('CANNON');
 
         const p = physics.current;
@@ -268,30 +316,68 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         }
         if (isDead) return;
 
-        // 1. Boat Movement
-        p.speed = p.speed * 0.98 + p.targetSpeed * 0.02;
-        p.rotation = p.rotation * (1 - p.turnSpeed) + p.targetRotation * p.turnSpeed;
+        // 1. Boat Movement (Elite Angular + Drift)
+        const ANGULAR_DRAG = 0.92;
+        const STEER_FORCE = 0.2;
+        const DRIFT_COEFF = 0.15;
+        const SPEED_DRAG = 0.985;
+        const ACCEL = 0.05;
 
+        // Apply Steering Torque
+        if (inputState.current.left) p.angularVelocity -= STEER_FORCE;
+        if (inputState.current.right) p.angularVelocity += STEER_FORCE;
+
+        p.angularVelocity *= ANGULAR_DRAG;
+        p.rotation += p.angularVelocity;
+
+        // Linear Speed
+        if (inputState.current.up) p.targetSpeed = Math.min(p.targetSpeed + ACCEL, 5);
+        if (inputState.current.down) p.targetSpeed = Math.max(p.targetSpeed - ACCEL, 0);
+        p.speed = p.speed * SPEED_DRAG + p.targetSpeed * (1 - SPEED_DRAG);
+
+        // Lateral Drift Vector
         const moveRad = (p.rotation * Math.PI) / 180;
-        const dx = Math.cos(moveRad) * p.speed;
-        const dy = Math.sin(moveRad) * p.speed;
+        const desiredVx = Math.cos(moveRad) * p.speed;
+        const desiredVy = Math.sin(moveRad) * p.speed;
+
+        p.velocityVector.x = p.velocityVector.x * (1 - DRIFT_COEFF) + desiredVx * DRIFT_COEFF;
+        p.velocityVector.y = p.velocityVector.y * (1 - DRIFT_COEFF) + desiredVy * DRIFT_COEFF;
 
         // Collision Logic
-        let nextX = p.x + dx;
-        let nextY = p.y + dy;
-        let collision = false;
+        let nextX = p.x + p.velocityVector.x;
+        let nextY = p.y + p.velocityVector.y;
+        let collisionIsland: any = null;
 
         for (const island of ISLANDS) {
             const dist = Math.hypot(nextX - island.x, nextY - island.y);
             if (dist < island.r + 30) {
-                collision = true;
+                collisionIsland = island;
                 break;
             }
         }
-        if (nextX < 0 || nextX > WORLD_SIZE || nextY < 0 || nextY > WORLD_SIZE) collision = true;
 
-        if (!collision) { p.x = nextX; p.y = nextY; }
-        else { p.speed *= 0.5; p.targetSpeed *= 0.5; }
+        if (!collisionIsland && nextX > 0 && nextX < WORLD_SIZE && nextY > 0 && nextY < WORLD_SIZE) {
+            p.x = nextX;
+            p.y = nextY;
+        } else {
+            // Elastic Bounce
+            if (collisionIsland) {
+                const nx = (p.x - collisionIsland.x) / Math.hypot(p.x - collisionIsland.x, p.y - collisionIsland.y);
+                const ny = (p.y - collisionIsland.y) / Math.hypot(p.x - collisionIsland.x, p.y - collisionIsland.y);
+
+                // Reflect velocity vector
+                const dot = p.velocityVector.x * nx + p.velocityVector.y * ny;
+                p.velocityVector.x = (p.velocityVector.x - 2 * dot * nx) * 0.5;
+                p.velocityVector.y = (p.velocityVector.y - 2 * dot * ny) * 0.5;
+                p.speed *= 0.5;
+                p.targetSpeed *= 0.3;
+                setShakeIntensity(8);
+                setTimeout(() => setShakeIntensity(0), 300);
+            } else {
+                p.velocityVector.x *= -0.5;
+                p.velocityVector.y *= -0.5;
+            }
+        }
 
         setPos({ x: p.x, y: p.y });
         setRotation(p.rotation);
@@ -327,7 +413,7 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                     physics.current.explosions.push({ id: Math.random(), x: proj.x, y: proj.y, createdAt: now });
                     playSFX('EXPLOSION');
 
-                    const victimRef = ref(simulationDb, `simulation_sea_state/${roomPin}/${otherId}/hp`);
+                    const victimRef = ref(simulationDb, `simulation_rooms/${roomPin}/sea_state/${otherId}/hp`);
                     runTransaction(victimRef, (currentHp) => {
                         if (currentHp === null) return 100;
                         return Math.max(0, currentHp - 25);
@@ -364,24 +450,10 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         requestRef.current = requestAnimationFrame(updatePhysics);
     };
 
-    // --- GAME LOOP & INPUT ---
-    const handleInput = () => {
-        const p = physics.current;
-        if (inputState.current.left) p.targetRotation -= 5;
-        if (inputState.current.right) p.targetRotation += 5;
-        if (inputState.current.up) p.targetSpeed = Math.min(p.targetSpeed + 0.5, 5);
-        if (inputState.current.down) p.targetSpeed = Math.max(p.targetSpeed - 0.5, 0);
-    };
-
+    // --- GAME LOOP & SYNC ---
     useEffect(() => {
         let animationFrameId: number;
         const loop = () => {
-            handleInput();
-            // sync is handled inside updatePhysics or here?
-            // Original code had updatePhysics inside loop? No, requestRef for updatePhysics.
-            // Let's consolidate: updatePhysics handles movement. handleInput updates targets.
-            // We need to call sync here.
-
             const now = Date.now();
             if (now - lastSync.current > 100) {
                 update(ref(simulationDb, `simulation_rooms/${roomPin}/sea_state/${player.id}`), {
@@ -394,7 +466,6 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                     stage: player.boat?.stage || 1,
                     isFishing: isFishing,
                     timestamp: now,
-                    // hp is synced separately/reactively, but good to ensure presence
                 });
                 lastSync.current = now;
             }
@@ -402,9 +473,6 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         };
         loop();
 
-        // Start physics loop separate or same? 
-        // Original used recursive requestAnimationFrame in updatePhysics.
-        // Let's stick to that for physics consistency.
         requestRef.current = requestAnimationFrame(updatePhysics);
 
         return () => {
@@ -477,30 +545,95 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
     }
 
     return (
-        <div className="fixed inset-0 z-[200] bg-sky-900 overflow-hidden cursor-crosshair"
+        <div className="absolute inset-0 z-0 bg-[#051a2e] overflow-hidden cursor-crosshair font-sans"
             onMouseDown={() => handleAction('FIRE')}
+            style={{
+                background: 'radial-gradient(circle at 50% 50%, #0a2e4d 0%, #051a2e 100%)',
+                transform: shakeIntensity > 0 ? `translate(${(Math.random() - 0.5) * shakeIntensity}px, ${(Math.random() - 0.5) * shakeIntensity}px)` : 'none',
+                transition: 'transform 0.05s linear',
+                contain: 'strict'
+            }}
         >
-            {/* SEA LAYERS */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute inset-x-[-10%] inset-y-[-10%] bg-[#020a14]"
+            {/* 🌊 PHASE 12: THE INFINITE HORIZON (V12) - ZERO-TILE EXECUTION */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true" style={{ contain: 'strict' }}>
+
+                {/* 1. LAYER ONE: THE ABYSS (Single-Entity 5000px Sea) */}
+                <div
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[5000px] h-[5000px] opacity-[0.08] mix-blend-overlay"
                     style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='f1'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.01' numOctaves='3'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0.15 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23f1)'/%3E%3C/svg%3E")`,
-                        backgroundPosition: `${-pos.x * 0.05}px ${-pos.y * 0.05}px`
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2000' height='2000'%3E%3Cfilter id='seaAbyss'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.003' numOctaves='3' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='2000' height='2000' filter='url(%23seaAbyss)'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundSize: '5000px 5000px',
+                        transform: `translate3d(${-pos.x * 0.2}px, ${-pos.y * 0.2}px, 0)`,
+                        willChange: 'transform'
                     }}
                 />
-                <div className="absolute inset-0 opacity-25 mix-blend-screen"
+
+                {/* 2. LAYER TWO: HIGH-FREQUENCY SURFACE GRAIN */}
+                <div
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[4000px] h-[4000px] opacity-[0.12] mix-blend-soft-light"
                     style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='f2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='2'/%3E%3CfeDiffuseLighting lighting-color='%2338bdf8' surfaceScale='2'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23f2)'/%3E%3C/svg%3E")`,
-                        backgroundPosition: `${-pos.x * 0.15}px ${-pos.y * 0.15}px`
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1000' height='1000'%3E%3Cfilter id='seaGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='2' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='1000' height='1000' filter='url(%23seaGrain)'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundSize: '4000px 4000px',
+                        transform: `translate3d(${-pos.x}px, ${-pos.y}px, 0)`,
+                        willChange: 'transform'
                     }}
                 />
-                <div className="absolute inset-0 opacity-30 mix-blend-overlay"
+
+                {/* 3. INFINITE CLOUD ENTITIES (Individual Objects with Fading) */}
+                {cloudEntities.map(cloud => {
+                    // Logic Area (The "Horizon Box")
+                    const AREA_SIZE = 4000;
+                    const HALF_AREA = AREA_SIZE / 2;
+                    const SAFE_MARGIN = 500; // Clouds begin fading at this distance from boundary
+
+                    let cx = (cloud.x - pos.x * cloud.speedFactor) % AREA_SIZE;
+                    let cy = (cloud.y - pos.y * cloud.speedFactor) % AREA_SIZE;
+                    if (cx < 0) cx += AREA_SIZE;
+                    if (cy < 0) cy += AREA_SIZE;
+
+                    // Calculate Opacity Dropoff near boundaries to prevent "pop"
+                    const edgeDistX = Math.min(cx, AREA_SIZE - cx);
+                    const edgeDistY = Math.min(cy, AREA_SIZE - cy);
+                    const fadeX = Math.min(1, edgeDistX / SAFE_MARGIN);
+                    const fadeY = Math.min(1, edgeDistY / SAFE_MARGIN);
+                    const finalOpacity = cloud.opacityBase * fadeX * fadeY;
+
+                    return (
+                        <div
+                            key={cloud.id}
+                            className="absolute left-1/2 top-1/2 rounded-full mix-blend-screen"
+                            style={{
+                                width: 500 * cloud.scale,
+                                height: 350 * cloud.scale,
+                                background: `radial-gradient(circle, hsla(${cloud.hue}, 10%, 95%, 1) 0%, transparent 70%)`,
+                                opacity: finalOpacity,
+                                filter: `blur(${cloud.blur}px)`,
+                                transform: `translate3d(${cx - HALF_AREA}px, ${cy - HALF_AREA}px, 0)`,
+                                willChange: 'transform'
+                            }}
+                        />
+                    );
+                })}
+
+                {/* 4. DEPTH OVERLAY (Horizon Fog) */}
+                <div
+                    className="absolute inset-0 pointer-events-none"
                     style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='f3'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.1' numOctaves='1'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 1 0 1 0 0 1 0 0 1 0 1 0 0 0 0.3 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23f3)'/%3E%3C/svg%3E")`,
-                        backgroundPosition: `${-pos.x * 0.4}px ${-pos.y * 0.4}px`
+                        background: 'radial-gradient(circle at 50% 50%, transparent 10%, rgba(5, 26, 46, 0.3) 50%, rgba(2, 8, 23, 0.95) 100%)'
+                    }}
+                />
+
+                {/* 5. SEAFARER'S GLOW (Hull Base) */}
+                <div
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none opacity-30 mix-blend-soft-light"
+                    style={{
+                        background: 'radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, transparent 70%)'
                     }}
                 />
             </div>
+
 
             {/* TRAIL */}
             <svg className="absolute inset-0 w-full h-full overflow-visible blur-md pointer-events-none">
@@ -509,81 +642,122 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                     const prev = trail[i - 1];
                     const opacity = i / trail.length;
                     return (
-                        <line key={pt.id} x1={prev.x - pos.x + window.innerWidth / 2} y1={prev.y - pos.y + window.innerHeight / 2} x2={pt.x - pos.x + window.innerWidth / 2} y2={pt.y - pos.y + window.innerHeight / 2} stroke="#fff" strokeWidth={25 * opacity} strokeOpacity={0.1 * opacity} strokeLinecap="round" />
+                        <line key={pt.id} x1={prev.x - pos.x + window.innerWidth / 2} y1={prev.y - pos.y + window.innerHeight / 2} x2={pt.x - pos.x + window.innerWidth / 2} y2={pt.y - pos.y + window.innerHeight / 2} stroke="#fff" strokeWidth={25 * opacity} strokeOpacity={0.08 * opacity} strokeLinecap="round" />
                     );
                 })}
             </svg>
 
             {/* ISLANDS */}
-            {ISLANDS.map(island => (
-                <div key={island.id} className="absolute pointer-events-none" style={{ left: island.x - pos.x + window.innerWidth / 2, top: island.y - pos.y + window.innerHeight / 2 }}>
-                    <div className="absolute inset-0 bg-white/20 blur-3xl opacity-50 rounded-full animate-pulse" style={{ width: island.r * 2.5, height: island.r * 2.5, transform: 'translate(-50%, -50%)' }} />
-                    <div className="absolute rounded-full shadow-2xl" style={{ width: island.r * 2, height: island.r * 2, backgroundColor: island.color, transform: 'translate(-50%, -50%)', border: '10px solid rgba(0,0,0,0.1)' }}></div>
-                    <div className="absolute top-[120%] left-1/2 -translate-x-1/2 text-white/40 text-sm font-bold tracking-widest uppercase whitespace-nowrap">{island.name}</div>
-                </div>
-            ))}
+            {
+                ISLANDS.map(island => (
+                    <div key={island.id} className="absolute pointer-events-none" style={{ transform: `translate3d(${island.x - pos.x + window.innerWidth / 2}px, ${island.y - pos.y + window.innerHeight / 2}px, 0)` }}>
+                        <div className="absolute inset-0 bg-white/5 blur-3xl opacity-30 rounded-full" style={{ width: island.r * 3, height: island.r * 3, transform: 'translate(-50%, -50%)' }} />
+                        <div className="absolute rounded-full shadow-[0_0_50px_rgba(0,0,0,0.5)]" style={{ width: island.r * 2, height: island.r * 2, backgroundColor: island.color, transform: 'translate(-50%, -50%)', border: '8px solid rgba(255,255,255,0.05)' }}></div>
+                        <div className="absolute top-[110%] left-1/2 -translate-x-1/2 text-white/20 text-[10px] uppercase tracking-[0.3em] font-black whitespace-nowrap">{island.name}</div>
+                    </div>
+                ))
+            }
 
             {/* FISH NODES */}
-            {fishNodes.map(fish => (
-                <div key={fish.id} className="absolute pointer-events-none" style={{ left: fish.x - pos.x + window.innerWidth / 2, top: fish.y - pos.y + window.innerHeight / 2 }}>
-                    <div className="absolute inset-0 bg-white/30 blur-md rounded-full animate-ping" style={{ width: 40, height: 40, transform: 'translate(-50%, -50%)', animationDuration: '3s' }} />
-                    <div className="absolute flex flex-col items-center" style={{ transform: 'translate(-50%, -50%)' }}>
-                        <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}>
-                            <Fish size={24} className="text-sky-200 drop-shadow-[0_0_5px_rgba(56,189,248,0.8)]" />
-                        </motion.div>
-                        <div className="text-[10px] font-black text-sky-200/80 uppercase tracking-widest mt-1 bg-black/40 px-1 rounded backdrop-blur-sm">{fish.amount} {fish.type}</div>
+            {
+                fishNodes.map(fish => (
+                    <div key={fish.id} className="absolute pointer-events-none" style={{ transform: `translate3d(${fish.x - pos.x + window.innerWidth / 2}px, ${fish.y - pos.y + window.innerHeight / 2}px, 0)` }}>
+                        <div className="absolute inset-0 bg-white/30 blur-md rounded-full animate-ping" style={{ width: 40, height: 40, transform: 'translate(-50%, -50%)', animationDuration: '3s' }} />
+                        <div className="absolute flex flex-col items-center" style={{ transform: 'translate(-50%, -50%)' }}>
+                            <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}>
+                                <Fish size={20} className="text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                            </motion.div>
+                            <div className="text-[9px] font-black text-cyan-200/60 uppercase tracking-widest mt-1 bg-black/40 px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/5">{fish.amount} {fish.type}</div>
+                        </div>
                     </div>
-                </div>
-            ))}
+                ))
+            }
 
-            {/* PROJECTILES */}
+            {/* PROJECTILES & EXPLOSIONS */}
             <div className="absolute inset-0 pointer-events-none">
                 {projectiles.map(p => (
-                    <div key={p.id} className="absolute w-2 h-2 bg-black rounded-full shadow-lg" style={{ left: p.x - pos.x + window.innerWidth / 2, top: p.y - pos.y + window.innerHeight / 2 }} />
+                    <div key={p.id} className="absolute w-2 h-2 bg-black rounded-full shadow-lg" style={{ transform: `translate3d(${p.x - pos.x + window.innerWidth / 2}px, ${p.y - pos.y + window.innerHeight / 2}px, 0)` }} />
                 ))}
                 {explosions.map(e => (
-                    <div key={e.id} className="absolute w-12 h-12 bg-orange-500 rounded-full animate-ping opacity-75" style={{ left: e.x - pos.x + window.innerWidth / 2, top: e.y - pos.y + window.innerHeight / 2, transform: 'translate(-50%, -50%)' }} />
+                    <div key={e.id} className="absolute w-16 h-16 bg-orange-500 rounded-full animate-ping opacity-60" style={{ transform: `translate3d(${e.x - pos.x + window.innerWidth / 2}px, ${e.y - pos.y + window.innerHeight / 2}px, 0) translate(-50%, -50%)` }} />
                 ))}
             </div>
 
             {/* OTHER PLAYERS */}
-            {Object.values(others).map(other => (
-                <div key={other.id} className="absolute w-32 h-32" style={{ left: other.x - pos.x + window.innerWidth / 2, top: other.y - pos.y + window.innerHeight / 2, transform: 'translate(-50%, -50%)' }}>
-                    <motion.div style={{ rotate: other.rotation }} className="w-full h-full">
-                        <ModularBoatSVG stage={other.stage} rotation={0} customization={{ color: "#64748b" }} />
-                    </motion.div>
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-center w-48">
-                        <div className="text-xs font-bold text-white shadow-black drop-shadow-md">{other.name}</div>
-                    </div>
-                </div>
-            ))}
+            {
+                Object.values(others).map(other => {
+                    const isOffline = (other as any).isOffline;
+                    if (isOffline) return null;
+                    return (
+                        <div key={other.id} className="absolute w-32 h-32" style={{ transform: `translate3d(${other.x - pos.x + window.innerWidth / 2}px, ${other.y - pos.y + window.innerHeight / 2}px, 0) translate(-50%, -50%)` }}>
+                            <motion.div style={{ rotate: other.rotation }} className="w-full h-full">
+                                <ModularBoatSVG stage={other.stage} rotation={0} customization={{ color: "#64748b" }} />
+                            </motion.div>
+                            <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-center w-48">
+                                <div className="text-[10px] font-black text-white/40 uppercase tracking-widest shadow-black drop-shadow-md">{other.name}</div>
+                            </div>
+                        </div>
+                    );
+                })
+            }
 
             {/* PLAYER BOAT */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 z-10 pointer-events-none">
+            <motion.div
+                animate={{ scale: lastFireTime > Date.now() - 200 ? [1, 0.92, 1] : 1 }}
+                transition={{ duration: 0.2 }}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 z-10 pointer-events-none"
+            >
                 <ModularBoatSVG stage={player.boat?.stage || 1} rotation={rotation} customization={{ color: player.boat?.customization?.color || '#8b5cf6' }} />
+            </motion.div>
+
+            {/* HP HUD - CENTER BOTTOM GLASSMORPHISM */}
+            <AnimatePresence>
+                <motion.div
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none"
+                >
+                    <div className="px-3 py-1 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full text-[10px] font-black uppercase text-red-500 tracking-[0.2em]">Skrog</div>
+                    <div className="w-80 h-3 bg-black/60 border border-white/5 rounded-full overflow-hidden shadow-2xl backdrop-blur-md"
+                        role="progressbar"
+                        aria-valuenow={hp}
+                        aria-valuemin={0}
+                        aria-valuemax={maxHp}
+                        aria-label="Skipets holdbarhet"
+                    >
+                        <motion.div
+                            className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-red-600 shadow-[0_0_20px_rgba(220,38,38,0.5)]"
+                            animate={{ width: `${(hp / maxHp) * 100}%` }}
+                            transition={{ type: 'spring', stiffness: 50, damping: 15 }}
+                        />
+                    </div>
+                    <div className="text-[10px] text-white/30 font-bold uppercase tracking-widest">{hp} / {maxHp} HP</div>
+                </motion.div>
+            </AnimatePresence>
+
+            {/* EXIT BUTTON - TOP LEFT ANTIQUE GOLD */}
+            <motion.button
+                whileHover={{ scale: 1.05, backgroundColor: 'rgba(127, 29, 29, 0.6)' }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSafeExit}
+                aria-label="Tilbake til kai"
+                className="absolute top-8 left-8 z-[110] px-6 py-2 bg-red-950/40 backdrop-blur-md border border-[#c29d0b]/40 rounded-sm text-[10px] text-[#e5e7eb] font-black uppercase tracking-[0.25em] transition-all hover:border-[#c29d0b] shadow-2xl"
+            >
+                Tilbake til kai
+            </motion.button>
+
+            {/* HUD LABELS */}
+            <div className="absolute bottom-6 right-8 flex gap-8 text-white/20 text-[9px] font-black uppercase tracking-[0.2em]">
+                <div className="flex items-center gap-2"><span className="text-white/40">WASD</span> Manøvrering</div>
+                <div className="flex items-center gap-2"><span className="text-white/40">SPACE</span> Fisking</div>
+                <div className="flex items-center gap-2"><span className="text-white/40">F</span> Avfyr Kanon</div>
             </div>
 
-            {/* HP HUD */}
-            <div className="absolute bottom-8 left-8 flex flex-col gap-1 pointer-events-none">
-                <div className="text-[10px] font-black uppercase text-red-500 tracking-wider">Skrog</div>
-                <div className="w-64 h-4 bg-black/50 border border-white/10 rounded overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-red-600 to-orange-600 transition-all duration-300" style={{ width: `${(hp / maxHp) * 100}%` }} />
-                </div>
-                <div className="text-xs text-white/50">{hp} / {maxHp} HP</div>
-            </div>
-
-            {/* CONTROLS HUD */}
-            <div className="absolute bottom-4 right-4 flex gap-4 text-white/50 text-xs font-mono">
-                <div className="flex items-center gap-1"><span className="bg-white/10 px-1 rounded">WASD</span> STYR</div>
-                <div className="flex items-center gap-1"><span className="bg-white/10 px-1 rounded">SPACE</span> FISK</div>
-                <div className="flex items-center gap-1"><span className="bg-white/10 px-1 rounded">F</span> ILD</div>
-            </div>
-
-            {/* MINIMAP */}
-            <div className="absolute top-24 right-4 w-48 h-48 bg-black/50 rounded-full border-2 border-white/10 backdrop-blur-sm overflow-hidden z-50">
-                <div className="relative w-full h-full">
+            {/* MINIMAP - REDUCED OPACITY */}
+            <div className="absolute top-6 right-6 w-44 h-44 bg-black/30 rounded-full border border-white/5 backdrop-blur-md overflow-hidden z-50 pointer-events-none opacity-60">
+                <div className="relative w-full h-full p-6">
                     {ISLANDS.map(island => (
-                        <div key={island.id} className="absolute rounded-full bg-emerald-500/50" style={{
+                        <div key={island.id} className="absolute rounded-full bg-emerald-500/20" style={{
                             width: (island.r / WORLD_SIZE) * 100 + '%',
                             height: (island.r / WORLD_SIZE) * 100 + '%',
                             left: (island.x / WORLD_SIZE) * 100 + '%',
@@ -591,23 +765,75 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                             transform: 'translate(-50%, -50%)'
                         }} />
                     ))}
-                    <div className="absolute w-2 h-2 bg-white rounded-full shadow-[0_0_10px_white]" style={{
+                    <div className="absolute w-1.5 h-1.5 bg-cyan-400 rounded-full shadow-[0_0_10px_cyan]" style={{
                         left: (pos.x / WORLD_SIZE) * 100 + '%',
                         top: (pos.y / WORLD_SIZE) * 100 + '%',
                         transform: 'translate(-50%, -50%)'
                     }} />
                 </div>
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-white/50 uppercase tracking-widest">Kart</div>
             </div>
 
-            {/* EXIT BUTTON */}
-            <button
-                onClick={handleSafeExit}
-                className="absolute top-4 right-4 z-[100] px-4 py-2 bg-red-900/40 hover:bg-red-900/60 border border-red-500/30 rounded text-xs text-red-200 font-bold uppercase tracking-widest transition-all"
-            >
-                Forlat Havet
-            </button>
-
+            {/* VIRTUAL CONTROLS (MOBILE) */}
+            {
+                window.matchMedia("(pointer: coarse)").matches && (
+                    <div className="absolute inset-0 pointer-events-none">
+                        {/* D-PAD Bottom Right */}
+                        <div className="absolute bottom-12 right-12 flex flex-col items-center gap-2 pointer-events-auto scale-75 md:scale-100 origin-bottom-right">
+                            <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                onTouchStart={() => { inputState.current.up = true; }}
+                                onTouchEnd={() => { inputState.current.up = false; }}
+                                aria-label="Manøvrer opp"
+                                className="w-16 h-16 bg-white/5 backdrop-blur-md rounded-full border border-white/10 flex items-center justify-center text-white/40 font-black"
+                            >W</motion.button>
+                            <div className="flex gap-2">
+                                <motion.button
+                                    whileTap={{ scale: 0.9 }}
+                                    onTouchStart={() => { inputState.current.left = true; }}
+                                    onTouchEnd={() => { inputState.current.left = false; }}
+                                    aria-label="Snu til venstre"
+                                    className="w-16 h-16 bg-white/5 backdrop-blur-md rounded-full border border-white/10 flex items-center justify-center text-white/40 font-black"
+                                >A</motion.button>
+                                <motion.button
+                                    whileTap={{ scale: 0.9 }}
+                                    onTouchStart={() => { inputState.current.down = true; }}
+                                    onTouchEnd={() => { inputState.current.down = false; }}
+                                    aria-label="Manøvrer ned"
+                                    className="w-16 h-16 bg-white/5 backdrop-blur-md rounded-full border border-white/10 flex items-center justify-center text-white/40 font-black"
+                                >S</motion.button>
+                                <motion.button
+                                    whileTap={{ scale: 0.9 }}
+                                    onTouchStart={() => { inputState.current.right = true; }}
+                                    onTouchEnd={() => { inputState.current.right = false; }}
+                                    aria-label="Snu til høyre"
+                                    className="w-16 h-16 bg-white/5 backdrop-blur-md rounded-full border border-white/10 flex items-center justify-center text-white/40 font-black"
+                                >D</motion.button>
+                            </div>
+                        </div>
+                        {/* Action Buttons Bottom Left */}
+                        <div className="absolute bottom-12 left-12 flex gap-4 pointer-events-auto scale-75 md:scale-100 origin-bottom-left">
+                            <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleAction('FIRE')}
+                                aria-label="Avfyr kanon"
+                                className="w-20 h-20 bg-red-900/20 backdrop-blur-md rounded-full border border-red-500/20 flex flex-col items-center justify-center text-red-500/60 font-black text-[10px] tracking-widest"
+                            >
+                                <span>F</span>
+                                <span>ILD</span>
+                            </motion.button>
+                            <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleAction('FISH')}
+                                aria-label="Fiske"
+                                className="w-20 h-20 bg-blue-900/20 backdrop-blur-md rounded-full border border-blue-500/20 flex flex-col items-center justify-center text-blue-500/60 font-black text-[10px] tracking-widest"
+                            >
+                                <span>SPACE</span>
+                                <span>FISK</span>
+                            </motion.button>
+                        </div>
+                    </div>
+                )
+            }
         </div>
     );
 };
