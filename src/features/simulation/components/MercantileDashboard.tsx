@@ -180,7 +180,7 @@ export const MercantileDashboard: React.FC<MercantileDashboardProps> = ({ player
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <div className={`font-black text-lg transition-all duration-700 ease-[cubic-bezier(0.17,0.89,0.32,1.49)] ${(() => {
+                                            <div className={`font-black text-xl transition-all duration-700 ease-[cubic-bezier(0.17,0.89,0.32,1.49)] ${(() => {
                                                 const currentItemPrice = getDynamicPrice(data as unknown as MarketItem);
                                                 const basePrice = (data as any).basePrice;
                                                 if (!basePrice) return 'text-amber-400';
