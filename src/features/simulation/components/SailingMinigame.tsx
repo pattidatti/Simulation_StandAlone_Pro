@@ -158,33 +158,32 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
 
     return (
         <div className="fixed inset-0 z-[200] bg-sky-900 overflow-hidden cursor-crosshair">
-            {/* THE LIVING SEA (Poseidon Engine V2 - Multi-Depth Parallax) */}
+            {/* THE LIVING SEA (Poseidon Engine V6 - The Deep Resonance) */}
             <div className="absolute inset-0 pointer-events-none">
-                {/* Layer 1: The Abyss (Deepest, Slowest) */}
+                {/* Layer 1: The Abyss (Stable Foundation) */}
                 <div
-                    className="absolute inset-0 bg-[#020a14]"
+                    className="absolute inset-x-[-10%] inset-y-[-10%] bg-[#020a14]"
                     style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='f1'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.03' numOctaves='2'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0.1 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23f1)'/%3E%3C/svg%3E")`,
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='f1'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.01' numOctaves='3'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0.15 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23f1)'/%3E%3C/svg%3E")`,
                         backgroundPosition: `${-pos.x * 0.05}px ${-pos.y * 0.05}px`
                     }}
                 />
 
-                {/* Layer 2: The Shelf (Medium Depth/Speed) */}
+                {/* Layer 2: The Caustic Shelf (Luminous Mid-Depth) */}
                 <div
-                    className="absolute inset-0 opacity-40 mix-blend-screen"
+                    className="absolute inset-0 opacity-25 mix-blend-screen"
                     style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='f2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02' numOctaves='3'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.1 0 0 0 0 0.2 0 0 0 0 0.4 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23f2)'/%3E%3C/svg%3E")`,
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='f2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='2'/%3E%3CfeDiffuseLighting lighting-color='%2338bdf8' surfaceScale='2'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23f2)'/%3E%3C/svg%3E")`,
                         backgroundPosition: `${-pos.x * 0.15}px ${-pos.y * 0.15}px`
                     }}
                 />
 
-                {/* Layer 3: Surface Ripples (Fastest/Top Depth) */}
+                {/* Layer 3: Surface Specularity (Active Texture) */}
                 <div
-                    className="absolute inset-0 opacity-20"
+                    className="absolute inset-0 opacity-30 mix-blend-overlay"
                     style={{
-                        backgroundImage: `radial-gradient(circle at center, #38bdf8 1.5px, transparent 0)`,
-                        backgroundSize: '100px 100px',
-                        backgroundPosition: `${-pos.x * 0.3}px ${-pos.y * 0.3}px`
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='f3'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.1' numOctaves='1'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 1 0 1 0 0 1 0 0 1 0 1 0 0 0 0.3 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23f3)'/%3E%3C/svg%3E")`,
+                        backgroundPosition: `${-pos.x * 0.4}px ${-pos.y * 0.4}px`
                     }}
                 />
 
@@ -205,8 +204,8 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                     ))}
                 </div>
 
-                {/* Atmospheric Vignette (Depth Shadow - Softened) */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_50%,rgba(0,0,0,0.4)_100%)]" />
+                {/* Atmospheric Vignette (Soft Depth) */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.5)_100%)]" />
                 {/* WORLD OBJECTS (Islands, Wrecks - Placeholder) */}
                 <div className="absolute inset-0 pointer-events-none">
                     {/* WAKE TRAIL (Persistent Path) */}
@@ -260,61 +259,77 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                 }
 
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="relative w-64 h-64">
-                        {/* V-Wake (Poseidon VFX) - Aligned to Stern */}
-                        {speed > 0.5 && (
+                    <div className="relative w-64 h-64 flex items-center justify-center">
+                        {/* THE HULL ANCHOR (Shadow and Displacement) */}
+                        <div
+                            className="absolute w-48 h-20 bg-black/40 blur-2xl rounded-full"
+                            style={{
+                                transform: `rotate(${rotation - 90}deg) translate(5px, 15px)`,
+                                opacity: 0.6 + Math.sin(Date.now() / 400) * 0.1
+                            }}
+                        />
+
+                        {/* REACTIVE WATERLINE (The "Wet" look) */}
+                        <div
+                            className="absolute w-64 h-24 bg-sky-400/10 blur-3xl rounded-full"
+                            style={{
+                                scale: 1 + (speed * 0.1),
+                                transform: `rotate(${rotation - 90}deg)`
+                            }}
+                        />
+
+                        {/* V-Wake (Poseidon Engine V6 - Under-Hull Hydrodynamics) */}
+                        {speed > 0.4 && (
                             <div
-                                className="absolute top-1/2 left-0 w-full h-full -translate-y-1/2 pointer-events-none -z-10"
+                                className="absolute inset-0 pointer-events-none"
                                 style={{
-                                    transform: `rotate(${rotation - 90}deg) translate(20%, -50%)`, // Shifted FORWARD (was -20%) to sit under hull
-                                    transformOrigin: 'center center'
+                                    transform: `rotate(${rotation - 90}deg)`,
+                                    zIndex: -1
                                 }}
                             >
-                                {/* Left Wake (Under Hull) */}
+                                {/* Left Bow Wave (Prow Cut) */}
                                 <motion.div
                                     animate={{
-                                        opacity: [0.1, 0.5, 0],
-                                        scale: [0.6, 1.4],
-                                        x: [0, -140],
-                                        y: [-5, -25]
+                                        opacity: [0.3, 0.6, 0.3],
+                                        scale: [0.8, 1.1, 0.8],
+                                        x: [70, 40],
+                                        skewY: [0, -10]
                                     }}
-                                    transition={{ repeat: Infinity, duration: 1.1 / (speed + 0.1) }}
-                                    className="absolute top-1/2 left-0 w-12 h-16 bg-white/30 blur-xl rounded-full origin-right"
-                                    style={{ rotate: 12 }}
+                                    transition={{ repeat: Infinity, duration: 0.6 }}
+                                    className="absolute top-1/2 left-1/2 w-16 h-8 bg-white/20 blur-lg rounded-full origin-right"
+                                    style={{ transform: 'translate(40px, -30px) rotate(25deg)' }}
                                 />
-                                {/* Right Wake (Under Hull) */}
+                                {/* Right Bow Wave (Prow Cut) */}
                                 <motion.div
                                     animate={{
-                                        opacity: [0.1, 0.5, 0],
-                                        scale: [0.6, 1.4],
-                                        x: [0, -140],
-                                        y: [5, 25]
+                                        opacity: [0.3, 0.6, 0.3],
+                                        scale: [0.8, 1.1, 0.8],
+                                        x: [70, 40],
+                                        skewY: [0, 10]
                                     }}
-                                    transition={{ repeat: Infinity, duration: 1.1 / (speed + 0.1) }}
-                                    className="absolute top-1/2 left-0 w-12 h-16 bg-white/30 blur-xl rounded-full origin-right"
-                                    style={{ rotate: -12 }}
+                                    transition={{ repeat: Infinity, duration: 0.6 }}
+                                    className="absolute top-1/2 left-1/2 w-16 h-8 bg-white/20 blur-lg rounded-full origin-right"
+                                    style={{ transform: 'translate(40px, 15px) rotate(-25deg)' }}
                                 />
 
-                                {/* Prow Spray (Tucked at Bow) */}
-                                {speed > 2.5 && (
-                                    <motion.div
-                                        animate={{
-                                            opacity: [0, 0.5, 0],
-                                            scale: [0.4, 0.9],
-                                            x: [80, 110]
-                                        }}
-                                        transition={{ repeat: Infinity, duration: 0.25 }}
-                                        className="absolute top-1/2 left-0 w-10 h-10 bg-white/40 blur-lg rounded-full"
-                                    />
-                                )}
+                                {/* Stern Churn (Engine/Rudder displacement) */}
+                                <motion.div
+                                    animate={{
+                                        opacity: [0.2, 0.5, 0.2],
+                                        scale: [1, 1.5, 1],
+                                        x: [-20, -60]
+                                    }}
+                                    transition={{ repeat: Infinity, duration: 0.8 }}
+                                    className="absolute top-1/2 left-1/2 w-24 h-12 bg-white/10 blur-xl rounded-full -translate-y-1/2"
+                                />
                             </div>
                         )}
 
                         <ModularBoatSVG
                             stage={player.boat?.stage || 1}
-                            rotation={rotation - 90} // CRITICAL: North offset to align Right-Side (Prow) to Forward vector
-                            scale={0.7} // Increased 3x (from 0.25)
-                            className="animate-hull-bob"
+                            rotation={rotation - 90}
+                            scale={0.7}
+                            className="animate-hull-bob relative z-10"
                         />
                     </div>
                 </div>
