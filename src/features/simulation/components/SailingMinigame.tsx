@@ -4,6 +4,7 @@ import { SimulationPlayer } from '../simulationTypes';
 import { useSimulation } from '../SimulationContext';
 import { FishResourceNode } from '../types/world';
 import { ModularBoatSVG } from './ModularBoatSVG';
+import { SeaBackground } from './SeaBackground';
 import { Fish, Skull } from 'lucide-react';
 import { ref, update, onValue, runTransaction } from 'firebase/database';
 import { simulationDb } from '../simulationFirebase';
@@ -100,19 +101,6 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
         action: false,
     });
 
-    // --- V12 INFINITE HORIZON: ENTITY SYSTEM ---
-    const [cloudEntities] = useState(() => Array.from({ length: 15 }, (_, i) => ({
-        id: i,
-        x: Math.random() * 4000,
-        y: Math.random() * 4000,
-        scale: 0.8 + Math.random() * 1.5,
-        opacityBase: 0.1 + Math.random() * 0.2, // Base opacity for cloud depth
-        speedFactor: 0.005 + Math.random() * 0.015,
-        blur: 20 + Math.random() * 40,
-        hue: 190 + Math.random() * 20
-    })));
-
-    // --- DATA SUBSCRIPTIONS ---
     useEffect(() => {
         // Subscribe to other players
         const othersRef = ref(simulationDb, `simulation_rooms/${roomPin}/sea_state`);
@@ -554,85 +542,7 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
                 contain: 'strict'
             }}
         >
-            {/* 🌊 PHASE 12: THE INFINITE HORIZON (V12) - ZERO-TILE EXECUTION */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true" style={{ contain: 'strict' }}>
-
-                {/* 1. LAYER ONE: THE ABYSS (Single-Entity 5000px Sea) */}
-                <div
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[5000px] h-[5000px] opacity-[0.08] mix-blend-overlay"
-                    style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2000' height='2000'%3E%3Cfilter id='seaAbyss'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.003' numOctaves='3' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='2000' height='2000' filter='url(%23seaAbyss)'/%3E%3C/svg%3E")`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '5000px 5000px',
-                        transform: `translate3d(${-pos.x * 0.2}px, ${-pos.y * 0.2}px, 0)`,
-                        willChange: 'transform'
-                    }}
-                />
-
-                {/* 2. LAYER TWO: HIGH-FREQUENCY SURFACE GRAIN */}
-                <div
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[4000px] h-[4000px] opacity-[0.12] mix-blend-soft-light"
-                    style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1000' height='1000'%3E%3Cfilter id='seaGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='2' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='1000' height='1000' filter='url(%23seaGrain)'/%3E%3C/svg%3E")`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '4000px 4000px',
-                        transform: `translate3d(${-pos.x}px, ${-pos.y}px, 0)`,
-                        willChange: 'transform'
-                    }}
-                />
-
-                {/* 3. INFINITE CLOUD ENTITIES (Individual Objects with Fading) */}
-                {cloudEntities.map(cloud => {
-                    // Logic Area (The "Horizon Box")
-                    const AREA_SIZE = 4000;
-                    const HALF_AREA = AREA_SIZE / 2;
-                    const SAFE_MARGIN = 500; // Clouds begin fading at this distance from boundary
-
-                    let cx = (cloud.x - pos.x * cloud.speedFactor) % AREA_SIZE;
-                    let cy = (cloud.y - pos.y * cloud.speedFactor) % AREA_SIZE;
-                    if (cx < 0) cx += AREA_SIZE;
-                    if (cy < 0) cy += AREA_SIZE;
-
-                    // Calculate Opacity Dropoff near boundaries to prevent "pop"
-                    const edgeDistX = Math.min(cx, AREA_SIZE - cx);
-                    const edgeDistY = Math.min(cy, AREA_SIZE - cy);
-                    const fadeX = Math.min(1, edgeDistX / SAFE_MARGIN);
-                    const fadeY = Math.min(1, edgeDistY / SAFE_MARGIN);
-                    const finalOpacity = cloud.opacityBase * fadeX * fadeY;
-
-                    return (
-                        <div
-                            key={cloud.id}
-                            className="absolute left-1/2 top-1/2 rounded-full mix-blend-screen"
-                            style={{
-                                width: 500 * cloud.scale,
-                                height: 350 * cloud.scale,
-                                background: `radial-gradient(circle, hsla(${cloud.hue}, 10%, 95%, 1) 0%, transparent 70%)`,
-                                opacity: finalOpacity,
-                                filter: `blur(${cloud.blur}px)`,
-                                transform: `translate3d(${cx - HALF_AREA}px, ${cy - HALF_AREA}px, 0)`,
-                                willChange: 'transform'
-                            }}
-                        />
-                    );
-                })}
-
-                {/* 4. DEPTH OVERLAY (Horizon Fog) */}
-                <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                        background: 'radial-gradient(circle at 50% 50%, transparent 10%, rgba(5, 26, 46, 0.3) 50%, rgba(2, 8, 23, 0.95) 100%)'
-                    }}
-                />
-
-                {/* 5. SEAFARER'S GLOW (Hull Base) */}
-                <div
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none opacity-30 mix-blend-soft-light"
-                    style={{
-                        background: 'radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, transparent 70%)'
-                    }}
-                />
-            </div>
+            <SeaBackground pos={pos} />
 
 
             {/* TRAIL */}
