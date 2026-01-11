@@ -225,7 +225,8 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                     handleCareerChange(pin, player.id, 'MERCHANT');
                     setIsWarningOpen(false);
                 }}
-                roleName="Kjøpmann"
+                roleId="MERCHANT"
+                cost={`${GAME_BALANCE.CAREERS.MERCHANT.COST}g`}
             />
         </SimulationMapWindow>
     );
