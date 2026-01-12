@@ -13,7 +13,7 @@ const SimulationProduction = safeLazy(() => import('./SimulationProduction').the
 const SimulationActivity = safeLazy(() => import('./SimulationActivity').then(module => ({ default: module.SimulationActivity })));
 const SimulationDiplomacy = safeLazy(() => import('./SimulationDiplomacy').then(module => ({ default: module.SimulationDiplomacy })));
 const SimulationHierarchy = safeLazy(() => import('./SimulationHierarchy').then(module => ({ default: module.SimulationHierarchy })));
-const SimulationProfile = safeLazy(() => import('./SimulationProfile').then(module => ({ default: module.SimulationProfile })));
+
 const SimulationSettings = safeLazy(() => import('./SimulationSettings').then(module => ({ default: module.SimulationSettings })));
 const PoliticalHub = safeLazy(() => import('./ui/PoliticalHub').then(module => ({ default: module.PoliticalHub })));
 const SimulationWarRoom = safeLazy(() => import('./SimulationWarRoom').then(module => ({ default: module.SimulationWarRoom })));
@@ -164,15 +164,7 @@ export const SimulationViewport: React.FC<SimulationViewportProps> = ({ player, 
                             </div>
                         )}
 
-                        {activeTab === 'PROFILE' && (
-                            <div className="pointer-events-auto w-full h-full md:max-w-2xl md:h-[85vh] overflow-hidden">
-                                <SimulationProfile
-                                    player={player}
-                                    regions={room.regions || {}}
-                                    allPlayers={room.players || {}}
-                                />
-                            </div>
-                        )}
+
 
                         {activeTab === 'POLITICS' && (
                             <div className="pointer-events-auto w-full h-full md:max-w-6xl md:h-[90vh] overflow-hidden">

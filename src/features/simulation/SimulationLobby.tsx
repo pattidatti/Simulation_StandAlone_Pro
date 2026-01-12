@@ -10,6 +10,7 @@ import { useSimulationAuth } from './SimulationAuthContext';
 import { SimulationServerBrowser } from './SimulationServerBrowser';
 import { Globe, Hash, User as UserIcon, Shield, ChevronRight, Trophy, Star, Edit2, Lock, ArrowRight } from 'lucide-react';
 import { SimulationAuthModal } from './SimulationAuthModal';
+import { GlobalProfileModal } from './components/GlobalProfileModal';
 import { generateInitialRoomState, syncServerMetadata } from './logic/roomInit';
 
 export const SimulationLobby: React.FC = () => {
@@ -25,6 +26,7 @@ export const SimulationLobby: React.FC = () => {
     const { user, account, loading: authLoading, isAnonymous } = useSimulationAuth();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [authModalMode, setAuthModalMode] = useState<'LOGIN' | 'REGISTER'>('REGISTER');
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const location = useLocation();
     const routerState = location.state as { prefilledName?: string, prefilledRole?: Role, isDeploying?: boolean } | null;
@@ -238,7 +240,7 @@ export const SimulationLobby: React.FC = () => {
                                 {account && (
                                     <div className="mt-6 flex justify-center md:justify-start">
                                         <button
-                                            onClick={() => navigate('/profile')}
+                                            onClick={() => setIsProfileOpen(true)}
                                             className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/60 hover:text-indigo-300 transition-colors"
                                         >
                                             <UserIcon size={12} />
@@ -289,7 +291,7 @@ export const SimulationLobby: React.FC = () => {
                                 </div>
 
                                 <button
-                                    onClick={() => navigate('/profile')}
+                                    onClick={() => setIsProfileOpen(true)}
                                     className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2"
                                 >
                                     <Edit2 size={12} /> Administrer Profil
@@ -402,6 +404,12 @@ export const SimulationLobby: React.FC = () => {
                 isOpen={isAuthModalOpen}
                 onClose={() => setIsAuthModalOpen(false)}
                 initialMode={authModalMode}
+            />
+
+            {/* Global Profile Grand Modal */}
+            <GlobalProfileModal
+                isOpen={isProfileOpen}
+                onClose={() => setIsProfileOpen(false)}
             />
         </div>
     );

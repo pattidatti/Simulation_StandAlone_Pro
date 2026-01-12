@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Award, Sparkles, X } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { getAchievement } from '../data/achievements';
 import { useSimulation } from '../SimulationContext';
+import { proceduralSound } from '../logic/ProceduralSoundGenerator';
 
 /**
  * A premium, glassmorphic notification component for achievements.
@@ -16,6 +17,9 @@ export const AchievementToast: React.FC = () => {
     useEffect(() => {
         if (currentAchievement) {
             setIsVisible(true);
+            // Play success sound when achievement pops up
+            // Using setTimeout to ensure it plays slightly after the animation starts if needed, or immediately
+            proceduralSound.playSuccess();
         } else {
             setIsVisible(false);
         }

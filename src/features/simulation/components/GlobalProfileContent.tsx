@@ -1,9 +1,6 @@
-import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
 import {
     User as UserIcon,
-    ArrowLeft,
-    Trophy,
     Star,
     History,
     Check,
@@ -11,25 +8,27 @@ import {
     ShieldAlert,
     LogOut,
     Crown,
-    Play
+    Play,
+    LayoutGrid,
+    ScrollText
 } from 'lucide-react';
 import { useSimulationAuth } from '../SimulationAuthContext';
-import { ACHIEVEMENTS } from '../data/achievements';
+import { AchievementGallery } from './AchievementGallery';
 
 interface GlobalProfileContentProps {
     onClose?: () => void;
-    isModal?: boolean;
     currentRoomPin?: string;
 }
 
-export const GlobalProfileContent: React.FC<GlobalProfileContentProps> = ({ onClose, isModal, currentRoomPin }) => {
+type ProfileTab = 'overview' | 'vessels' | 'achievements' | 'history';
+
+export const GlobalProfileContent: React.FC<GlobalProfileContentProps> = ({ onClose, currentRoomPin }) => {
     const { account, logout, isAnonymous } = useSimulationAuth();
-    const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
 
     // Sort active sessions (Active Vessels)
     const activeSessions = useMemo(() => {
         if (!account?.activeSessions) return [];
-        // Handle both Map (new) and Array (legacy) forms
         const sessions = Array.isArray(account.activeSessions)
             ? account.activeSessions
             : Object.values(account.activeSessions);
@@ -38,303 +37,256 @@ export const GlobalProfileContent: React.FC<GlobalProfileContentProps> = ({ onCl
     }, [account]);
 
     // Calculate global stats
-    const totalAchievements = ACHIEVEMENTS.length;
-    const unlockedAchievements = account?.unlockedAchievements || {};
-    const unlockedCount = Array.isArray(unlockedAchievements)
-        ? unlockedAchievements.length
-        : Object.keys(unlockedAchievements).length;
-
-    const isUnlocked = (id: string) => {
-        if (Array.isArray(unlockedAchievements)) return unlockedAchievements.includes(id);
-        return !!unlockedAchievements[id];
-    };
-
-    const completionPercentage = Math.round((unlockedCount / totalAchievements) * 100);
-
-    // Calculate Potential XP (Harvestable) from all active sessions
     const potentialXp = useMemo(() => {
         return activeSessions.reduce((acc, session) => acc + (session.xp || 0), 0);
     }, [activeSessions]);
 
     const totalXp = (account?.globalXp || 0);
     const combinedXp = totalXp + potentialXp;
-
     const currentGlobalLevel = account?.globalLevel || 1;
-    // Formula: Lvl = Math.floor(Math.sqrt(GlobalXP / 100)) + 1
-    // Next Level XP Requirement: (lvl)^2 * 100
     const nextLevelXp = Math.pow(currentGlobalLevel, 2) * 100;
     const prevLevelXp = Math.pow(currentGlobalLevel - 1, 2) * 100;
     const progressToNext = Math.min(100, Math.max(0, ((combinedXp - prevLevelXp) / (nextLevelXp - prevLevelXp)) * 100));
 
-    return (
-        <div className="relative z-10 max-w-5xl mx-auto p-6 md:p-12">
+    // --- SUB-COMPONENTS (RENDER FUNCTIONS) ---
 
-            {/* Header (Only show if NOT modal, or if modal needs specific header) */}
-            {!isModal && (
-                <div className="flex items-center justify-between mb-12">
-                    <button
-                        onClick={() => navigate('/sim')}
-                        className="group flex items-center gap-3 text-slate-500 hover:text-white transition-colors pl-2"
-                    >
-                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
-                            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-                        </div>
-                        <span className="font-black uppercase tracking-[0.2em] text-xs">Tilbake til Lobby</span>
-                    </button>
-
-                    {/* Logout / Secure Account actions */}
-                    <div className="flex items-center gap-4">
-                        {isAnonymous ? (
-                            <button className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20">
-                                <ShieldAlert size={14} /> Sikre Profil
-                            </button>
-                        ) : (
-                            <button onClick={async () => {
-                                await logout();
-                                navigate('/sim');
-                            }} className="px-5 py-2.5 bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/5 transition-all flex items-center gap-2">
-                                <LogOut size={14} /> Logg Ut
-                            </button>
-                        )}
+    const renderOverview = () => (
+        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Identity Hero */}
+            <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-10">
+                <div className="relative group">
+                    <div className="absolute inset-0 bg-indigo-500 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity rounded-full" />
+                    <div className="w-40 h-40 bg-slate-900 border border-white/10 rounded-full flex items-center justify-center relative overflow-hidden shadow-2xl">
+                        <UserIcon size={80} className="text-slate-200" />
                     </div>
+                    <div className="absolute bottom-0 right-0 bg-indigo-500 text-white text-xs font-black px-3 py-1 rounded-full border-4 border-[#0A0A15] uppercase tracking-wider">
+                        Operator
+                    </div>
+                </div>
+
+                <div className="flex-1 space-y-8 pt-4 max-w-5xl">
+                    <div>
+                        <h1 className="text-sm font-bold text-indigo-400 uppercase tracking-[0.4em] mb-2">Global Profil</h1>
+                        <h2 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 uppercase tracking-tighter">
+                            {account?.displayName || 'Ukjent Identitet'}
+                        </h2>
+                    </div>
+
+                    <div className="flex flex-wrap gap-6 justify-center md:justify-start">
+                        {/* Soul Level */}
+                        <div className="px-8 py-5 bg-white/5 border border-white/10 rounded-3xl flex items-center gap-6 relative overflow-hidden group/lvl min-w-[200px]">
+                            <div className="p-3 bg-indigo-500/20 rounded-2xl text-indigo-400"><Award size={24} /></div>
+                            <div>
+                                <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black mb-1">Sjelsnivå</p>
+                                <p className="text-4xl font-black text-white italic">{currentGlobalLevel}</p>
+                            </div>
+                            <div className="absolute bottom-0 left-0 h-1.5 bg-indigo-600/30 w-full">
+                                <div
+                                    className="h-full bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)]"
+                                    style={{ width: `${progressToNext}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Total XP */}
+                        <div className="px-8 py-5 bg-white/5 border border-white/10 rounded-3xl flex items-center gap-6 min-w-[200px]">
+                            <div className="p-3 bg-amber-500/20 rounded-2xl text-amber-400"><Star size={24} /></div>
+                            <div>
+                                <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black mb-1">Total Erfaring</p>
+                                <p className="text-3xl font-black text-white italic flex items-baseline gap-2">
+                                    {totalXp}
+                                    {potentialXp > 0 && (
+                                        <span className="text-indigo-400 text-sm opacity-60 font-bold" title="Høstbar XP">
+                                            (+{potentialXp})
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Quick Stats Summary */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-8 border-t border-white/5">
+                <div className="p-6 bg-slate-900/50 rounded-2xl border border-white/5 text-center">
+                    <p className="text-3xl font-black text-white">{activeSessions.length}</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mt-1">Aktive Spill</p>
+                </div>
+                <div className="p-6 bg-slate-900/50 rounded-2xl border border-white/5 text-center">
+                    <p className="text-3xl font-black text-white">{account?.characterHistory?.length || 0}</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mt-1">Falne Helter</p>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderVessels = () => (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400"><UserIcon size={20} /></div>
+                Dine Vessels
+            </h3>
+
+            {activeSessions.length === 0 ? (
+                <div className="p-16 border border-white/5 border-dashed rounded-[2rem] text-center text-slate-500">
+                    <p className="text-sm font-black uppercase tracking-widest">Ingen aktive spill funnet</p>
+                    <p className="text-base mt-2 opacity-60">Gå til lobbyen for å starte din reise.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                    {activeSessions.map((session, i) => (
+                        <div key={i} className="group bg-slate-800/40 hover:bg-slate-800/80 border border-white/5 hover:border-indigo-500/30 p-8 rounded-[2rem] transition-all relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                                {session.role === 'KING' ? <Crown size={120} /> : <UserIcon size={120} />}
+                            </div>
+
+                            <div className="relative z-10 space-y-6">
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-2 py-1 bg-indigo-500/10 rounded-md">{session.role}</span>
+                                        <span className="text-[10px] font-mono text-slate-500">{session.roomPin}</span>
+                                    </div>
+                                    <h4 className="text-3xl font-black text-white tracking-tight">{session.name}</h4>
+                                    <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-2"><History size={12} /> Sist spilt: {new Date(session.lastPlayed).toLocaleDateString()}</p>
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        if (currentRoomPin && session.roomPin === currentRoomPin) {
+                                            onClose?.();
+                                            return;
+                                        }
+                                        if (confirm(`Vil du fortlate nåværende spill for å bytte til ${session.name}?`)) {
+                                            window.location.href = `/play/${session.roomPin}`;
+                                        }
+                                    }}
+                                    className={`w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-lg transition-all
+                                        ${(currentRoomPin && session.roomPin === currentRoomPin)
+                                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20 hover:scale-[1.02] active:scale-95'
+                                        }`}
+                                >
+                                    {(currentRoomPin && session.roomPin === currentRoomPin) ? (
+                                        <><Check size={14} fill="currentColor" /> Du spiller denne</>
+                                    ) : (
+                                        <><Play size={14} fill="currentColor" /> Fortsett</>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
+        </div>
+    );
 
-            <div className="space-y-16">
+    const renderHistory = () => (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400"><History size={20} /></div>
+                Hall of Fame
+            </h3>
 
-                {/* Identity Hero */}
-                <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-8">
-                    <div className="relative group">
-                        <div className="absolute inset-0 bg-indigo-500 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity rounded-full" />
-                        <div className="w-32 h-32 bg-slate-900 border border-white/10 rounded-full flex items-center justify-center relative overflow-hidden shadow-2xl">
-                            <UserIcon size={64} className="text-slate-200" />
-                        </div>
-                        <div className="absolute bottom-0 right-0 bg-indigo-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full border border-slate-900 uppercase tracking-wider">
-                            Operator
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {(!account?.characterHistory || account.characterHistory.length === 0) ? (
+                    <div className="col-span-full py-20 text-center opacity-30 border-2 border-dashed border-white/10 rounded-[2rem]">
+                        <p className="text-sm font-bold uppercase tracking-widest">Ingen falne helter i historiebøkene</p>
                     </div>
-
-                    <div className="flex-1 space-y-6 pt-2">
-                        <div>
-                            <h1 className="text-sm font-bold text-indigo-400 uppercase tracking-[0.4em] mb-2">Global Profil</h1>
-                            <h2 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 uppercase tracking-tighter">
-                                {account?.displayName || 'Ukjent Identitet'}
-                            </h2>
-                        </div>
-
-                        <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                            <div className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-4 relative overflow-hidden group/lvl">
-                                <div className="p-2 bg-indigo-500/20 rounded-xl text-indigo-400"><Award size={18} /></div>
+                ) : (
+                    account.characterHistory.slice().reverse().map((history, i) => (
+                        <div key={i} className="flex items-center justify-between p-6 bg-slate-900/60 rounded-2xl border border-white/5 hover:border-white/10 transition-colors group">
+                            <div className="flex items-center gap-5">
+                                <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center text-2xl grayscale group-hover:grayscale-0 transition-all shadow-inner">
+                                    {history.role === 'KING' ? '👑' : history.role === 'BARON' ? '🏰' : '💀'}
+                                </div>
                                 <div>
-                                    <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black mb-0.5">Sjelsnivå</p>
-                                    <p className="text-2xl font-black text-white italic">{currentGlobalLevel}</p>
-                                </div>
-                                {/* Mini Progress Bar */}
-                                <div className="absolute bottom-0 left-0 h-1 bg-indigo-600/30 w-full">
-                                    <div
-                                        className="h-full bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)] transition-all duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                                        style={{ width: `${progressToNext}%` }}
-                                    />
+                                    <p className="text-sm font-black text-white uppercase tracking-wide group-hover:text-indigo-400 transition-colors">{history.name}</p>
+                                    <div className="flex items-center gap-2 text-[10px] text-slate-500 uppercase font-bold mt-0.5">
+                                        <span className="bg-white/5 px-1.5 py-0.5 rounded text-slate-400">{history.role}</span>
+                                        <span>•</span>
+                                        <span className="text-indigo-400">Lvl {history.level}</span>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-4">
-                                <div className="p-2 bg-amber-500/20 rounded-xl text-amber-400"><Star size={18} /></div>
-                                <div>
-                                    <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black mb-0.5">Total Erfaring</p>
-                                    <p className="text-2xl font-black text-white italic flex items-baseline gap-2">
-                                        {totalXp}
-                                        {potentialXp > 0 && (
-                                            <span className="text-indigo-400 text-sm opacity-60 font-bold" title="Høstbar XP fra levende karakterer">
-                                                (+{potentialXp})
-                                            </span>
-                                        )}
-                                    </p>
-                                </div>
+                            <div className="text-right">
+                                <p className="text-[10px] font-mono text-slate-600 block">{new Date(history.timestamp).toLocaleDateString()}</p>
+                                <p className="text-[10px] font-black text-indigo-900 group-hover:text-indigo-500 transition-colors uppercase pt-1">{history.roomPin}</p>
                             </div>
                         </div>
-                    </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="relative z-10 flex flex-col h-full bg-[#0A0A15]">
+
+            {/* HEADER & TABS */}
+            <div className="sticky top-0 z-50 bg-[#0A0A15]/95 backdrop-blur-xl border-b border-white/5 shadow-2xl transition-all px-8 md:px-12 pt-8 pb-4">
+
+                {/* TAB BAR */}
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-4">
+                    <button
+                        onClick={() => setActiveTab('overview')}
+                        className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${activeTab === 'overview' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
+                    >
+                        <LayoutGrid size={14} />
+                        <span>Oversikt</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('vessels')}
+                        className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${activeTab === 'vessels' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
+                    >
+                        <Play size={14} />
+                        <span>Vessels</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('achievements')}
+                        className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${activeTab === 'achievements' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
+                    >
+                        <Award size={14} />
+                        <span>Bragder</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${activeTab === 'history' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
+                    >
+                        <ScrollText size={14} />
+                        <span>Historikk</span>
+                    </button>
                 </div>
+            </div>
 
-                <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-                {/* ACTIVE VESSELS LIST */}
-                <div className="space-y-6">
-                    <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400"><UserIcon size={16} /></div>
-                        Active Vessels
-                    </h3>
-
-                    {activeSessions.length === 0 ? (
-                        <div className="p-8 border border-white/5 border-dashed rounded-3xl text-center text-slate-500">
-                            <p className="text-xs font-black uppercase tracking-widest">Ingen aktive spill</p>
-                            <p className="text-sm mt-2">Start et nytt spill i lobbyen for å se karakteren din her.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {activeSessions.map((session, i) => (
-                                <div key={i} className="group bg-slate-800/40 hover:bg-slate-800/80 border border-white/5 hover:border-indigo-500/30 p-6 rounded-2xl transition-all relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        {session.role === 'KING' ? <Crown size={64} /> : <UserIcon size={64} />}
-                                    </div>
-
-                                    <div className="relative z-10 space-y-4">
-                                        <div>
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{session.role}</span>
-                                                <span className="text-[10px] font-mono text-slate-500">{session.roomPin}</span>
-                                            </div>
-                                            <h4 className="text-2xl font-black text-white">{session.name}</h4>
-                                            <p className="text-xs text-slate-400 flex items-center gap-1 mt-1"><History size={10} /> {new Date(session.lastPlayed).toLocaleDateString()}</p>
-                                        </div>
-
-                                        <button
-                                            onClick={() => {
-                                                if (isModal) {
-                                                    // If we are already playing this session, just close the modal
-                                                    if (currentRoomPin && session.roomPin === currentRoomPin) {
-                                                        onClose?.();
-                                                        return;
-                                                    }
-
-                                                    // Switching to a different character/room
-                                                    if (confirm(`Vil du fortlate nåværende spill for å bytte til ${session.name}?`)) {
-                                                        window.location.href = `/play/${session.roomPin}`;
-                                                    }
-                                                } else {
-                                                    navigate(`/play/${session.roomPin}`);
-                                                }
-                                            }}
-                                            className={`w-full py-3 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 shadow-lg transition-all
-                                                ${(currentRoomPin && session.roomPin === currentRoomPin)
-                                                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
-                                                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20 active:scale-95'
-                                                }`}
-                                        >
-                                            {currentRoomPin && session.roomPin === currentRoomPin ? (
-                                                <><Check size={12} fill="currentColor" /> Du spiller denne</>
-                                            ) : (
-                                                <><Play size={12} fill="currentColor" /> Fortsett</>
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+            {/* CONTENT AREA */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar pb-16 pt-8">
+                <div className="mx-auto w-full max-w-[95%] xl:max-w-[90%] 2xl:max-w-[2000px]">
+                    {activeTab === 'overview' && renderOverview()}
+                    {activeTab === 'vessels' && renderVessels()}
+                    {activeTab === 'achievements' && <div className="animate-in fade-in slide-in-from-bottom-4 duration-500"><AchievementGallery inGameMode={true} /></div>}
+                    {activeTab === 'history' && renderHistory()}
                 </div>
+            </div>
 
-                {/* Legacy & Achievements Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-                    {/* ACHIEVEMENTS - The Constellation */}
-                    <div className="bg-slate-900 shadow-2xl border border-white/5 rounded-3xl p-8 space-y-8 relative overflow-hidden group/starry">
-                        {/* Background Star Effect */}
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.05)_0%,transparent_70%)] opacity-50 pointer-events-none" />
-
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-                            <div className="space-y-1">
-                                <h4 className="text-xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
-                                    <Trophy size={20} className="text-amber-400" /> Sjels-meritter
-                                </h4>
-                                <p className="text-xs text-slate-500 font-medium">Fullførte bragder i {account?.displayName || 'sjelen'}s historie.</p>
-                            </div>
-                            <div className="flex items-center gap-3 bg-white/5 p-1 rounded-xl border border-white/5">
-                                <span className="text-[10px] font-black text-indigo-400 px-3 py-1.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20 shadow-lg shadow-indigo-600/10">
-                                    {unlockedCount} / {totalAchievements}
-                                </span>
-                                <div className="h-4 w-px bg-white/10" />
-                                <span className="text-[10px] font-bold text-slate-400 pr-3">{completionPercentage}% Fullført</span>
-                            </div>
-                        </div>
-
-                        {/* CATEGORY TABS (Future expansion: filter achievements by category) */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 relative z-10">
-                            {ACHIEVEMENTS.map((ach) => {
-                                const unlocked = isUnlocked(ach.id);
-
-                                const rarityStyles = {
-                                    COMMON: 'border-slate-500/20 text-slate-400 bg-slate-500/5 hover:border-slate-400/50',
-                                    RARE: 'border-indigo-500/20 text-indigo-400 bg-indigo-500/5 hover:border-indigo-400/50',
-                                    EPIC: 'border-amber-500/20 text-amber-400 bg-amber-500/5 hover:border-amber-400/50',
-                                    LEGENDARY: 'border-rose-500/20 text-rose-400 bg-rose-500/5 hover:border-rose-400/50'
-                                };
-
-                                const glowStyles = {
-                                    COMMON: 'shadow-slate-500/10',
-                                    RARE: 'shadow-indigo-500/10',
-                                    EPIC: 'shadow-amber-500/20',
-                                    LEGENDARY: 'shadow-rose-500/30'
-                                };
-
-                                return (
-                                    <div
-                                        key={ach.id}
-                                        title={`${ach.name}: ${ach.description}`}
-                                        className={`group relative flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-500 cursor-help
-                                            ${unlocked
-                                                ? `${rarityStyles[ach.rarity]} shadow-xl ${glowStyles[ach.rarity]}`
-                                                : 'border-white/5 grayscale opacity-30 hover:opacity-50 hover:grayscale-0'
-                                            }`}
-                                    >
-                                        <div className={`text-2xl mb-2 transition-transform duration-500 group-hover:scale-125 ${unlocked ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]' : ''}`}>
-                                            {ach.icon}
-                                        </div>
-                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-px bg-current opacity-20" />
-
-                                        {/* Hover Details Popover */}
-                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-48 p-4 bg-slate-900 border border-white/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-1">{ach.rarity}</p>
-                                            <h5 className="text-white font-black italic mb-2 tracking-tight">{ach.name}</h5>
-                                            <p className="text-[11px] text-slate-400 leading-tight">{ach.description}</p>
-                                            <div className="mt-3 flex items-center justify-between pt-3 border-t border-white/5">
-                                                <span className="text-[9px] font-black text-slate-500 uppercase">{ach.category}</span>
-                                                <span className="text-[10px] font-black text-amber-400 italic">+{ach.xp} XP</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* HALL OF FAME */}
-                    <div className="bg-white/5 border border-white/5 rounded-3xl p-8 space-y-6">
-                        <h4 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                            <History size={14} /> Hall of Fame
-                        </h4>
-                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                            {(!account?.characterHistory || account.characterHistory.length === 0) ? (
-                                <div className="text-center py-12 opacity-30 border-2 border-dashed border-white/10 rounded-xl">
-                                    <p className="text-xs font-bold uppercase">Ingen falne helter</p>
-                                </div>
-                            ) : (
-                                account.characterHistory.slice().reverse().map((history, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 bg-slate-900/60 rounded-xl border border-white/5 hover:border-white/10 transition-colors group">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-xl grayscale group-hover:grayscale-0 transition-all">
-                                                {history.role === 'KING' ? '👑' : history.role === 'BARON' ? '🏰' : '💀'}
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-black text-white uppercase tracking-wide group-hover:text-indigo-400 transition-colors">{history.name}</p>
-                                                <div className="flex items-center gap-2 text-[9px] text-slate-500 uppercase font-bold">
-                                                    <span>{history.role}</span>
-                                                    <span>•</span>
-                                                    <span>Lvl {history.level}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-[10px] font-mono text-slate-600 block">{new Date(history.timestamp).toLocaleDateString()}</p>
-                                            <p className="text-[9px] font-black text-indigo-900 group-hover:text-indigo-500 transition-colors uppercase pt-1">{history.roomPin}</p>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-
-                </div>
+            {/* FOOTER ACTIONS (Persistent) */}
+            <div className="mt-auto px-8 md:px-12 py-8 flex justify-end border-t border-white/5 bg-[#0A0A15]/50 backdrop-blur-md">
+                {isAnonymous ? (
+                    <button className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg flex items-center gap-2">
+                        <ShieldAlert size={14} /> Sikre Profil
+                    </button>
+                ) : (
+                    <button
+                        onClick={async () => {
+                            await logout();
+                            onClose?.();
+                            window.location.href = '/';
+                        }}
+                        className="px-6 py-3 bg-white/5 text-rose-400 hover:bg-rose-500/10 rounded-xl font-bold uppercase text-xs tracking-widest border border-white/5 flex items-center gap-2"
+                    >
+                        <LogOut size={14} /> Logg Ut
+                    </button>
+                )}
             </div>
         </div>
     );

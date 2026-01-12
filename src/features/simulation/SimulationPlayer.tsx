@@ -19,11 +19,11 @@ import { TavernWindow } from './components/TavernWindow';
 import { SimulationDestinySplash } from './components/SimulationDestinySplash';
 import { ChatSystem } from './components/ChatSystem';
 import { PlayerProfileModal } from './components/PlayerProfileModal';
+import { GlobalProfileModal } from './components/GlobalProfileModal';
 import { WeaponRackWindow } from './components/WeaponRackWindow';
 import { CaravanWindow } from './components/CaravanWindow';
 import { SailingMinigame } from './components/SailingMinigame';
 import { Trophy } from 'lucide-react';
-import { AchievementToast } from './components/AchievementToast';
 import { INITIAL_RESOURCES, INITIAL_SKILLS, INITIAL_EQUIPMENT } from './constants';
 import { ref, update } from 'firebase/database';
 import { simulationDb as db } from './simulationFirebase';
@@ -36,8 +36,23 @@ export const SimulationPlayer: React.FC = () => {
     const navigate = useNavigate();
 
     const { user, account, loading: authLoading } = useSimulationAuth();
-    const { activeMinigame, setActiveMinigame, activeMinigameAction, setActiveMinigameAction, activeMinigameMethod, setActiveMinigameMethod } = useSimulation();
+    const {
+        activeMinigame, setActiveMinigame, activeMinigameAction, setActiveMinigameAction, activeMinigameMethod, setActiveMinigameMethod,
+        activeTab, setActiveTab
+    } = useSimulation();
     const { setHideHeader, setFullWidth } = useLayout();
+
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+    // Sync Global Profile with Tab System
+    React.useEffect(() => {
+        if (activeTab === 'PROFILE') {
+            setIsProfileOpen(true);
+            // We set tab back to MAP immediately so the viewport doesn't try to render an overlay, 
+            // but the modal stays open on top.
+            setActiveTab('MAP');
+        }
+    }, [activeTab, setActiveTab]);
 
     React.useEffect(() => {
         setHideHeader(true);
@@ -67,7 +82,7 @@ export const SimulationPlayer: React.FC = () => {
 
 
     const {
-        player, world, players, roomStatus, markets, messages, diplomacy, activeVote, worldEvents, trades, regions, hasAttemptedPlayerLoad, isRetired
+        player, world, players, roomStatus, markets, messages, diplomacy, activeVote, worldEvents, trades, regions, isRetired
     } = useSimulationData(pin, impersonateId) as any;
 
     // MIGRATION: Remove Oak Resources (Legacy)
@@ -497,6 +512,17 @@ export const SimulationPlayer: React.FC = () => {
                     pin={pin || ''}
                 />
             )}
+
+            {/* ULTRATHINK: Unified Global Profile (Grand Modal) */}
+            <GlobalProfileModal
+                isOpen={isProfileOpen}
+                onClose={() => {
+                    setIsProfileOpen(false);
+                    // Ensure we don't get stuck in a weird tab state
+                    if (activeTab === 'PROFILE') setActiveTab('MAP');
+                }}
+                currentRoomPin={pin}
+            />
         </div>
     );
 };
