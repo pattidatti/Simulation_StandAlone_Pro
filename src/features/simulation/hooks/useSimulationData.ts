@@ -12,6 +12,7 @@ export function useSimulationData(pin: string | undefined, impersonateId: string
     const [world, setWorld] = useState<SimulationRoom['world'] | null>(null);
     const [players, setPlayers] = useState<Record<string, SimulationPlayer>>({});
     const [roomStatus, setRoomStatus] = useState<SimulationRoom['status']>('LOBBY');
+    const [roomName, setRoomName] = useState<string>('');
     const [markets, setMarkets] = useState<Record<string, any>>({});
     const [regions, setRegions] = useState<Record<string, any>>({});
     const [messages, setMessages] = useState<string[]>([]);
@@ -87,6 +88,11 @@ export function useSimulationData(pin: string | undefined, impersonateId: string
             if (data) setRoomStatus(data || 'LOBBY');
         });
 
+        const nameRef = ref(db, `${baseUrl}/name`);
+        const unsubName = onValue(nameRef, (snap) => {
+            setRoomName(snap.val() || '');
+        });
+
         const marketsRef = ref(db, `${baseUrl}/markets`);
         const unsubMarkets = onValue(marketsRef, (snap) => {
             const data = snap.val();
@@ -129,6 +135,7 @@ export function useSimulationData(pin: string | undefined, impersonateId: string
             unsubPlayer();
             unsubWorld();
             unsubStatus();
+            unsubName();
             unsubMarkets();
             unsubMessages();
             unsubVote();
@@ -263,6 +270,7 @@ export function useSimulationData(pin: string | undefined, impersonateId: string
         world,
         players,
         roomStatus,
+        roomName,
         markets,
         regions,
         messages,

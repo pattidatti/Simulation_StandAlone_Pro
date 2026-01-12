@@ -10,9 +10,14 @@ import {
     Crown,
     Play,
     LayoutGrid,
-    ScrollText
+    ScrollText,
+    Coins,
+    Trophy,
+    MapPin,
+    Server,
 } from 'lucide-react';
 import { useSimulationAuth } from '../SimulationAuthContext';
+import { useSimulation } from '../SimulationContext';
 import { AchievementGallery } from './AchievementGallery';
 
 interface GlobalProfileContentProps {
@@ -24,7 +29,13 @@ type ProfileTab = 'overview' | 'vessels' | 'achievements' | 'history';
 
 export const GlobalProfileContent: React.FC<GlobalProfileContentProps> = ({ onClose, currentRoomPin }) => {
     const { account, logout, isAnonymous } = useSimulationAuth();
-    const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
+    const { profileTab } = useSimulation(); // Get from context
+    const [activeTab, setActiveTab] = useState<ProfileTab>(profileTab || 'overview');
+
+    // Sync with Context (Deep Linking)
+    React.useEffect(() => {
+        if (profileTab) setActiveTab(profileTab);
+    }, [profileTab]);
 
     // Sort active sessions (Active Vessels)
     const activeSessions = useMemo(() => {
@@ -123,59 +134,119 @@ export const GlobalProfileContent: React.FC<GlobalProfileContentProps> = ({ onCl
 
     const renderVessels = () => (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400"><UserIcon size={20} /></div>
-                Dine Vessels
-            </h3>
+            <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400"><UserIcon size={20} /></div>
+                    Mine Karakterer
+                </h3>
+                <span className="text-slate-500 text-xs font-bold uppercase tracking-widest">{activeSessions.length} Aktive</span>
+            </div>
 
             {activeSessions.length === 0 ? (
                 <div className="p-16 border border-white/5 border-dashed rounded-[2rem] text-center text-slate-500">
-                    <p className="text-sm font-black uppercase tracking-widest">Ingen aktive spill funnet</p>
+                    <p className="text-sm font-black uppercase tracking-widest">Ingen aktive karakterer</p>
                     <p className="text-base mt-2 opacity-60">Gå til lobbyen for å starte din reise.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                    {activeSessions.map((session, i) => (
-                        <div key={i} className="group bg-slate-800/40 hover:bg-slate-800/80 border border-white/5 hover:border-indigo-500/30 p-8 rounded-[2rem] transition-all relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
-                                {session.role === 'KING' ? <Crown size={120} /> : <UserIcon size={120} />}
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {activeSessions.map((session, i) => {
+                        const isCurrent = currentRoomPin && session.roomPin === currentRoomPin;
+                        // Colors
+                        const isKing = session.role === 'KING';
+                        const isBaron = session.role === 'BARON';
+                        const roleColor = isKing ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' :
+                            isBaron ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' :
+                                'text-slate-400 bg-slate-500/10 border-slate-500/20';
 
-                            <div className="relative z-10 space-y-6">
-                                <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-2 py-1 bg-indigo-500/10 rounded-md">{session.role}</span>
-                                        <span className="text-[10px] font-mono text-slate-500">{session.roomPin}</span>
-                                    </div>
-                                    <h4 className="text-3xl font-black text-white tracking-tight">{session.name}</h4>
-                                    <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-2"><History size={12} /> Sist spilt: {new Date(session.lastPlayed).toLocaleDateString()}</p>
+                        return (
+                            <div key={i} className={`group relative overflow-hidden rounded-[2rem] border transition-all duration-300
+                                ${isCurrent ? 'bg-indigo-900/20 border-indigo-500/50 shadow-lg shadow-indigo-500/10' : 'bg-[#0F0F1A] border-white/5 hover:border-white/10 hover:bg-[#131320]'}
+                            `}>
+                                {/* Role Background Icon */}
+                                <div className={`absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-10 transition-all transform scale-150 rotate-12 duration-500 ${isKing ? 'text-amber-500 opactiy-5' : 'text-white'}`}>
+                                    {isKing ? <Crown size={140} /> : <UserIcon size={140} />}
                                 </div>
 
-                                <button
-                                    onClick={() => {
-                                        if (currentRoomPin && session.roomPin === currentRoomPin) {
-                                            onClose?.();
-                                            return;
-                                        }
-                                        if (confirm(`Vil du fortlate nåværende spill for å bytte til ${session.name}?`)) {
-                                            window.location.href = `/play/${session.roomPin}`;
-                                        }
-                                    }}
-                                    className={`w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-lg transition-all
-                                        ${(currentRoomPin && session.roomPin === currentRoomPin)
-                                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
-                                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20 hover:scale-[1.02] active:scale-95'
-                                        }`}
-                                >
-                                    {(currentRoomPin && session.roomPin === currentRoomPin) ? (
-                                        <><Check size={14} fill="currentColor" /> Du spiller denne</>
-                                    ) : (
-                                        <><Play size={14} fill="currentColor" /> Fortsett</>
-                                    )}
-                                </button>
+                                <div className="relative z-10 p-6 flex flex-col h-full">
+                                    {/* Header */}
+                                    <div className="flex items-start justify-between mb-6">
+                                        <div>
+                                            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-[10px] font-black uppercase tracking-widest mb-3 ${roleColor}`}>
+                                                {isKing && <Crown size={10} />}
+                                                {session.role}
+                                            </div>
+                                            <h4 className="text-2xl font-black text-white leading-none tracking-tight truncate max-w-[200px]" title={session.name}>
+                                                {session.name}
+                                            </h4>
+                                        </div>
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 border border-white/5">
+                                            {isKing ? <Crown size={14} className="text-amber-500" /> : <UserIcon size={14} />}
+                                        </div>
+                                    </div>
+
+                                    {/* Stats Grid */}
+                                    <div className="grid grid-cols-2 gap-3 mb-6">
+                                        <div className="bg-slate-950/50 rounded-xl p-3 border border-white/5">
+                                            <div className="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-1 flex items-center gap-1.5">
+                                                <Trophy size={12} /> Level
+                                            </div>
+                                            <div className="text-lg font-black text-cyan-400">
+                                                {session.level ? `Lvl ${session.level}` : <span className="text-slate-600">-</span>}
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-950/50 rounded-xl p-3 border border-white/5">
+                                            <div className="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-1 flex items-center gap-1.5">
+                                                <Coins size={12} /> Gull
+                                            </div>
+                                            <div className="text-lg font-black text-amber-400">
+                                                {session.gold !== undefined ? `${Math.floor(Number(session.gold))}` : <span className="text-slate-600">-</span>}
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-950/50 rounded-xl p-3 border border-white/5 col-span-2">
+                                            <div className="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-1 flex items-center gap-1.5">
+                                                <MapPin size={12} /> Region
+                                            </div>
+                                            <div className="text-sm font-bold text-slate-200 truncate">
+                                                {session.regionName || session.regionId || 'Ukjent'}
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-950/50 rounded-xl p-3 border border-white/5 col-span-2 flex items-center justify-between">
+                                            <div className="text-[11px] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5">
+                                                <Server size={12} /> Server
+                                            </div>
+                                            <div className="text-xs font-bold text-slate-300">
+                                                {session.roomName || session.roomPin}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action */}
+                                    <button
+                                        onClick={() => {
+                                            if (isCurrent) {
+                                                onClose?.();
+                                                return;
+                                            }
+                                            if (confirm(`Vil du fortlate nåværende spill for å bytte til ${session.name}?`)) {
+                                                window.location.href = `/play/${session.roomPin}`;
+                                            }
+                                        }}
+                                        className={`mt-auto w-full py-3 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 border transition-all
+                                            ${isCurrent
+                                                ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'
+                                                : 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-500 hover:border-indigo-400 shadow-lg shadow-indigo-600/20'
+                                            }`}
+                                    >
+                                        {isCurrent ? (
+                                            <><Check size={14} /> Du spiller denne</>
+                                        ) : (
+                                            <><Play size={14} /> Spill Nå</>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>
@@ -224,44 +295,45 @@ export const GlobalProfileContent: React.FC<GlobalProfileContentProps> = ({ onCl
         <div className="relative z-10 flex flex-col h-full bg-[#0A0A15]">
 
             {/* HEADER & TABS */}
-            <div className="sticky top-0 z-50 bg-[#0A0A15]/95 backdrop-blur-xl border-b border-white/5 shadow-2xl transition-all px-8 md:px-12 pt-8 pb-4">
-
-                {/* TAB BAR */}
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-4">
-                    <button
-                        onClick={() => setActiveTab('overview')}
-                        className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${activeTab === 'overview' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
-                    >
-                        <LayoutGrid size={14} />
-                        <span>Oversikt</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('vessels')}
-                        className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${activeTab === 'vessels' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
-                    >
-                        <Play size={14} />
-                        <span>Vessels</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('achievements')}
-                        className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${activeTab === 'achievements' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
-                    >
-                        <Award size={14} />
-                        <span>Bragder</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('history')}
-                        className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${activeTab === 'history' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
-                    >
-                        <ScrollText size={14} />
-                        <span>Historikk</span>
-                    </button>
+            <div className="sticky top-0 z-50 bg-[#0A0A15]/95 backdrop-blur-xl border-b border-white/5 shadow-2xl transition-all pt-8 pb-4">
+                <div className="w-full px-6 md:px-16 lg:px-24">
+                    {/* TAB BAR */}
+                    <div className="flex flex-wrap md:flex-nowrap items-center justify-center md:justify-start gap-3 md:gap-4 overflow-x-auto no-scrollbar pb-1">
+                        <button
+                            onClick={() => setActiveTab('overview')}
+                            className={`px-4 py-2 md:px-8 md:py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border whitespace-nowrap ${activeTab === 'overview' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
+                        >
+                            <LayoutGrid size={14} />
+                            <span>Oversikt</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('vessels')}
+                            className={`px-4 py-2 md:px-8 md:py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border whitespace-nowrap ${activeTab === 'vessels' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
+                        >
+                            <Play size={14} />
+                            <span>Karakterer</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('achievements')}
+                            className={`px-4 py-2 md:px-8 md:py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border whitespace-nowrap ${activeTab === 'achievements' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
+                        >
+                            <Award size={14} />
+                            <span>Bragder</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('history')}
+                            className={`px-4 py-2 md:px-8 md:py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border whitespace-nowrap ${activeTab === 'history' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
+                        >
+                            <ScrollText size={14} />
+                            <span>Historikk</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* CONTENT AREA */}
             <div className="flex-1 overflow-y-auto custom-scrollbar pb-16 pt-8">
-                <div className="mx-auto w-full max-w-[95%] xl:max-w-[90%] 2xl:max-w-[2000px]">
+                <div className="w-full px-6 md:px-16 lg:px-24">
                     {activeTab === 'overview' && renderOverview()}
                     {activeTab === 'vessels' && renderVessels()}
                     {activeTab === 'achievements' && <div className="animate-in fade-in slide-in-from-bottom-4 duration-500"><AchievementGallery inGameMode={true} /></div>}
@@ -270,23 +342,25 @@ export const GlobalProfileContent: React.FC<GlobalProfileContentProps> = ({ onCl
             </div>
 
             {/* FOOTER ACTIONS (Persistent) */}
-            <div className="mt-auto px-8 md:px-12 py-8 flex justify-end border-t border-white/5 bg-[#0A0A15]/50 backdrop-blur-md">
-                {isAnonymous ? (
-                    <button className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg flex items-center gap-2">
-                        <ShieldAlert size={14} /> Sikre Profil
-                    </button>
-                ) : (
-                    <button
-                        onClick={async () => {
-                            await logout();
-                            onClose?.();
-                            window.location.href = '/';
-                        }}
-                        className="px-6 py-3 bg-white/5 text-rose-400 hover:bg-rose-500/10 rounded-xl font-bold uppercase text-xs tracking-widest border border-white/5 flex items-center gap-2"
-                    >
-                        <LogOut size={14} /> Logg Ut
-                    </button>
-                )}
+            <div className="mt-auto py-8 border-t border-white/5 bg-[#0A0A15]/50 backdrop-blur-md">
+                <div className="w-full px-6 md:px-16 lg:px-24 flex justify-end">
+                    {isAnonymous ? (
+                        <button className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg flex items-center gap-2">
+                            <ShieldAlert size={14} /> Sikre Profil
+                        </button>
+                    ) : (
+                        <button
+                            onClick={async () => {
+                                await logout();
+                                onClose?.();
+                                window.location.href = '/';
+                            }}
+                            className="px-6 py-3 bg-white/5 text-rose-400 hover:bg-rose-500/10 rounded-xl font-bold uppercase text-xs tracking-widest border border-white/5 flex items-center gap-2"
+                        >
+                            <LogOut size={14} /> Logg Ut
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

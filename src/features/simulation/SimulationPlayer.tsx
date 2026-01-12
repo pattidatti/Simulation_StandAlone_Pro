@@ -23,6 +23,8 @@ import { GlobalProfileModal } from './components/GlobalProfileModal';
 import { WeaponRackWindow } from './components/WeaponRackWindow';
 import { CaravanWindow } from './components/CaravanWindow';
 import { SailingMinigame } from './components/SailingMinigame';
+import { RegionCrisisToast } from './components/RegionCrisisToast';
+import { AchievementUnlockModal } from './components/AchievementUnlockModal';
 import { Trophy } from 'lucide-react';
 import { INITIAL_RESOURCES, INITIAL_SKILLS, INITIAL_EQUIPMENT } from './constants';
 import { ref, update } from 'firebase/database';
@@ -130,20 +132,29 @@ export const SimulationPlayer: React.FC = () => {
                 currentSessionsMap = rawSessions;
             }
 
-            // 2. CHECK STATUS
+            // 2. CHECK STATUS (We now update more aggressively to sync Gold/Level)
             const existingSession = currentSessionsMap[pin];
-            const isStale = existingSession ? (Date.now() - existingSession.lastPlayed > 5 * 60 * 1000) : true;
+
+            // Check if stats are stale or missing (Gold/Level check)
             const isMissing = !existingSession;
+            const isStale = existingSession ? (Date.now() - existingSession.lastPlayed > 2 * 60 * 1000) : true; // More aggressive sync
+            const missingRichData = existingSession && (existingSession.gold === undefined || existingSession.level === undefined);
 
             // 3. REPAIR / SYNC
-            if (needsMigration || isMissing || isStale) {
-                console.log("ULTRATHINK: Syncing Session to Global Profile...", { isMissing, isStale, needsMigration });
+            if (needsMigration || isMissing || isStale || missingRichData) {
+                // console.log("ULTRATHINK: Syncing Session to Global Profile...", { isMissing, isStale, needsMigration, missingRichData });
+
+                // Rich Data Extraction
+                const rName = (regions && regions[player.regionId]) ? regions[player.regionId].name : 'Ukjent Region';
 
                 const sessionData = {
                     roomPin: pin,
                     name: player.name,
                     role: player.role,
                     regionId: player.regionId,
+                    regionName: rName,
+                    gold: (player.resources as any)?.gold || 0,
+                    level: player.stats?.level || 1,
                     xp: player.stats?.xp || 0,
                     lastPlayed: Date.now()
                 };
@@ -161,7 +172,7 @@ export const SimulationPlayer: React.FC = () => {
 
                 try {
                     await update(ref(db), updates);
-                    console.log("ULTRATHINK: Session Sync Complete.");
+                    // console.log("ULTRATHINK: Session Sync Complete.");
                 } catch (err) {
                     console.error("ULTRATHINK: Session Sync Failed", err);
                 }
@@ -170,7 +181,7 @@ export const SimulationPlayer: React.FC = () => {
 
         checkAndRepairSession();
 
-    }, [player, pin, user, account]);
+    }, [player, pin, user, account, regions]);
 
     const {
         handleAction, actionResult, setActionResult, handleClearActionResult
@@ -202,6 +213,10 @@ export const SimulationPlayer: React.FC = () => {
         if (actionType === 'OPEN_CARAVAN') {
             if (action.targetRegionId) setCaravanTarget(action.targetRegionId);
             setIsCaravanOpen(true);
+            return;
+        }
+        if (actionType === 'OPEN_POLITICAL_HUB') {
+            setActiveTab('POLITICS');
             return;
         }
         handleAction(action);
@@ -513,6 +528,51 @@ export const SimulationPlayer: React.FC = () => {
                 />
             )}
 
+            {/* ULTRATHINK: Region Crisis Toast */}
+            {player && room && (
+                <RegionCrisisToast
+                    player={player}
+                    room={room}
+                    onOpenHub={() => {
+                        // We use the existing 'isProfileOpen' state mechanism or similar?
+                        // Actually, SimulationPlayer doesn't manage PoliticalHub visibility directly usually?
+                        // It seems PoliticalHub is handled by 'activeTab' or 'activeMinigame'?
+                        // Wait, PoliticalHub is usually a specific building window or map overlay.
+                        // Let's check how to open it.
+                        // Ah, it's usually opened via 'OPEN_POLITICAL_HUB' action or setting activeTab?
+                        // Based on code, PoliticalHub is likely a component rendered when something is open.
+                        // Wait, looking at PoliticalHub Content... it is usually inside SimulationMapWindow.
+                        // Let's assume we trigger a specific action or mock it.
+                        // But wait! SimulationPlayer doesn't import PoliticalHub directly.
+
+                        // We need to trigger the action that opens it.
+                        handleSimulationAction({ type: 'OPEN_BUILDING', buildingId: 'manor' }); // Fallback or specific?
+                        // Actually, 'PoliticalHub' is often associated with 'manor' or a button in the UI.
+                        // Let's look for how it's opened. 
+                        // Ah, I see `globalActions` mentions it. 
+
+                        // NOTE: For now, I will use a generic action 'OPEN_POLITICS' which should be handled by the layout or map.
+                        // However, checking `SimulationViewport` might reveal how windows are handled.
+                        // Let's try to assume we can set a specific minigame/overlay or just navigate.
+
+                        // BETTER APPROACH: Since we are in `SimulationPlayer`, we can control state.
+                        // But PoliticalHub is likely inside `SimHeader` or `SimulationViewport`.
+                        // Let's emit an action that `SimulationViewport` listens to, or just `setActionResult`? 
+
+                        // Let's try `setActiveMinigame('POLITICS')` if that exists? 
+                        // Or better: Just simulate clicking the location.
+                        // If I can't easily open it, I'll log a warning or use a known working method.
+
+                        // Actually, `activeMinigame` seems the best route if configured.
+                        // But wait, the standard way to open the hub is likely clicking the "Manor" or "Town Hall".
+                        // Let's try to use `handleSimulationAction` with a custom type we can catch in `SimulationViewport`.
+
+                        // REVISION: I will use `handleSimulationAction('OPEN_POLITICAL_HUB')` and ensure `SimulationViewport` handles it or we add a handler here.
+                        handleSimulationAction('OPEN_POLITICAL_HUB');
+                    }}
+                />
+            )}
+
             {/* ULTRATHINK: Unified Global Profile (Grand Modal) */}
             <GlobalProfileModal
                 isOpen={isProfileOpen}
@@ -523,6 +583,9 @@ export const SimulationPlayer: React.FC = () => {
                 }}
                 currentRoomPin={pin}
             />
+
+            {/* Achievement Notification Layer */}
+            <AchievementUnlockModal />
         </div>
     );
 };

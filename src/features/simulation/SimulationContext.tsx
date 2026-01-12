@@ -35,7 +35,11 @@ interface SimulationContextType {
     setMusicWindowOpen: (isOpen: boolean) => void;
     // Achievements
     showAchievement: (id: string) => void;
+    dismissAchievement: () => void;
     currentAchievement: string | null;
+    // Deep Linking for Profile
+    profileTab: 'overview' | 'vessels' | 'achievements' | 'history';
+    setProfileTab: (tab: 'overview' | 'vessels' | 'achievements' | 'history') => void;
 }
 
 
@@ -72,9 +76,14 @@ export const SimulationProvider: React.FC<{ children: ReactNode }> = ({ children
     const [productionContext, setProductionContext] = useState<ProductionContext | null>(null);
     const [achievementQueue, setAchievementQueue] = useState<string[]>([]);
     const [currentAchievement, setCurrentAchievement] = useState<string | null>(null);
+    const [profileTab, setProfileTab] = useState<'overview' | 'vessels' | 'achievements' | 'history'>('overview');
 
     const showAchievement = (id: string) => {
         setAchievementQueue(prev => [...prev, id]);
+    };
+
+    const dismissAchievement = () => {
+        setCurrentAchievement(null);
     };
 
     // Process Achievement Queue
@@ -83,11 +92,7 @@ export const SimulationProvider: React.FC<{ children: ReactNode }> = ({ children
             const next = achievementQueue[0];
             setCurrentAchievement(next);
             setAchievementQueue(prev => prev.slice(1));
-
-            // Auto-clear after toast duration (6 seconds)
-            setTimeout(() => {
-                setCurrentAchievement(null);
-            }, 6000);
+            // No auto-dismiss anymore! User must close it.
         }
     }, [achievementQueue, currentAchievement]);
 
@@ -131,7 +136,10 @@ export const SimulationProvider: React.FC<{ children: ReactNode }> = ({ children
             productionContext,
             setProductionContext,
             showAchievement,
-            currentAchievement
+            dismissAchievement,
+            currentAchievement,
+            profileTab,
+            setProfileTab
         }}>
             {children}
         </SimulationContext.Provider>

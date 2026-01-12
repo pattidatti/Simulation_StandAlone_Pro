@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Settings, Map, MessageSquare, LayoutGrid, Scroll, Package, Menu, X, Truck } from 'lucide-react';
+import { ref, update } from 'firebase/database';
+import { simulationDb as db } from '../simulationFirebase';
+import { useSimulationAuth } from '../SimulationAuthContext';
 import { useSimulation } from '../SimulationContext';
 import { useAudio } from '../SimulationAudioContext';
 import type { SimulationPlayer, SimulationRoom } from '../simulationTypes';
@@ -40,9 +43,44 @@ const useCountUp = (target: number, duration: number = 800) => {
 };
 
 export const SimHeader: React.FC<SimulationHeaderProps> = ({ room, player, onAction }) => {
-    const { activeTab, setActiveTab, activeMinigame } = useSimulation();
+    const { activeTab, setActiveTab, activeMinigame, showAchievement } = useSimulation();
+    const { user } = useSimulationAuth();
     const { playSfx } = useAudio();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // Debug Achievement Trigger
+    const debugClicksRef = useRef(0);
+    const debugTimeoutRef = useRef<any>(null);
+
+    const handleGoldClick = () => {
+        // Always allow navigation
+        setActiveTab('INVENTORY');
+        playSfx('ui_click.ogg');
+
+        // Logic
+        debugClicksRef.current += 1;
+        const currentClicks = debugClicksRef.current;
+        console.log(`Debug Click: ${currentClicks} / 5`);
+
+        // Reset if idle
+        if (debugTimeoutRef.current) clearTimeout(debugTimeoutRef.current);
+        debugTimeoutRef.current = setTimeout(() => {
+            debugClicksRef.current = 0;
+            console.log("Debug Click Reset");
+        }, 2000);
+
+        if (currentClicks >= 5 && user?.uid) {
+            console.log("TRIGGERING GULLFEBER!");
+            showAchievement('debug_master'); // Manual Trigger
+            update(ref(db, `simulation_accounts/${user.uid}/unlockedAchievements`), {
+                debug_master: Date.now()
+            }).catch(e => console.error(e));
+
+            // Reset Immediately
+            debugClicksRef.current = 0;
+            if (debugTimeoutRef.current) clearTimeout(debugTimeoutRef.current);
+        }
+    };
 
     // --- SMOOTH CLOCK INTERPOLATION ---
     // We anchor the local time when a new tick arrives to allow smooth interpolation
@@ -211,7 +249,7 @@ export const SimHeader: React.FC<SimulationHeaderProps> = ({ room, player, onAct
                 {/* RESOURCES (Merged Stream) */}
                 <div className="hidden md:flex items-center bg-slate-900/50 rounded-full border border-white/5 overflow-hidden transition-all duration-300">
                     <button
-                        onClick={() => { setActiveTab('INVENTORY'); playSfx('ui_click.ogg'); }}
+                        onClick={handleGoldClick}
                         className="flex items-center gap-2 hover:bg-white/5 px-3 py-1.5 transition-colors cursor-pointer group active:scale-95"
                         title="Åpne Eiendeler (I)"
                     >

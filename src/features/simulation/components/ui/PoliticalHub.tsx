@@ -96,13 +96,17 @@ export const PoliticalHubContent: React.FC<PoliticalHubContentProps> = ({ player
                                 </Badge>
                             )}
                         </div>
-                        <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase">
-                            {isElectionActive ? 'Mandate of Chaos' : 'Folkets Vilje'}
+                        <h2 className={`text-3xl font-black italic tracking-tighter uppercase ${!region?.rulerId ? 'text-amber-500' : 'text-white'}`}>
+                            {isElectionActive
+                                ? 'Mandate of Chaos'
+                                : (!region?.rulerId ? 'Makt-Vakuum' : 'Folkets Vilje')}
                         </h2>
                         <p className="text-slate-400 text-sm max-w-md mt-1">
                             {isElectionActive
                                 ? "Styresettet har kollapset. Stem på en ny leder før vinduet lukkes!"
-                                : "Bestikk befolkningen for å svekke herskerens legitimitet og utløse en revolusjon."}
+                                : (!region?.rulerId
+                                    ? "Regionen mangler en leder. Grip sjansen, bestikk folket og start et nyvalg!"
+                                    : "Bestikk befolkningen for å svekke herskerens legitimitet og utløse en revolusjon.")}
                         </p>
                     </div>
 
@@ -143,10 +147,10 @@ export const PoliticalHubContent: React.FC<PoliticalHubContentProps> = ({ player
                         <GameCard className="bg-slate-900/40 border-indigo-500/20">
                             <div className="flex justify-between items-center mb-4">
                                 <h4 className="flex items-center gap-2 text-sm font-black text-white italic uppercase">
-                                    <AlertTriangle className="w-4 h-4 text-amber-500" />
-                                    Opprørsfremgang
+                                    <AlertTriangle className={`w-4 h-4 ${!region?.rulerId ? 'text-amber-500' : 'text-amber-500'}`} />
+                                    {!region?.rulerId ? 'Kaos-Nivå' : 'Opprørsfremgang'}
                                 </h4>
-                                <span className="text-2xl font-black text-indigo-400">{bribeProgress.toFixed(0)}%</span>
+                                <span className={`text-2xl font-black ${!region?.rulerId ? 'text-amber-500' : 'text-indigo-400'}`}>{bribeProgress.toFixed(0)}%</span>
                             </div>
                             <div className="h-4 bg-black/60 rounded-full overflow-hidden border border-white/5">
                                 <motion.div
@@ -156,7 +160,9 @@ export const PoliticalHubContent: React.FC<PoliticalHubContentProps> = ({ player
                                 />
                             </div>
                             <p className="text-[10px] text-slate-500 mt-3 italic text-center uppercase tracking-wider">
-                                Ved 100% utløses en revolusjon og setet blir vakant.
+                                {!region?.rulerId && bribeProgress >= 99
+                                    ? <span className="text-amber-500 font-bold animate-pulse">TOTALT KAOS! ETT BIDRAG TIL PÅTVINGER ET NYVALG.</span>
+                                    : "Ved 100% utløses en revolusjon og setet blir vakant."}
                             </p>
                         </GameCard>
 
@@ -164,23 +170,36 @@ export const PoliticalHubContent: React.FC<PoliticalHubContentProps> = ({ player
                             {/* ACTION AREA */}
                             <div className="space-y-4">
                                 <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Bestikk Folket</h4>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {[200, 500, 1000, 2500].map(amt => (
-                                        <button
-                                            key={amt}
-                                            onClick={() => handleBribe(amt)}
-                                            disabled={player.resources?.gold < amt || !!actionLoading || isElectionActive}
-                                            className="group relative p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-indigo-500/50 transition-all text-left overflow-hidden"
-                                        >
-                                            <div className="absolute -right-2 -bottom-2 opacity-5 scale-150 grayscale group-hover:grayscale-0 group-hover:opacity-10 transition-all">
-                                                <ResourceIcon resource="gold" size="lg" />
-                                            </div>
-                                            <div className="text-xs font-black text-slate-400 uppercase mb-1">Gi</div>
-                                            <div className="text-xl font-black text-white italic">{amt}g</div>
-                                            <div className="text-[9px] font-bold text-indigo-400 mt-2">+{(amt / GAME_BALANCE.COUP.BASE_BRIBE_COST * 10).toFixed(0)}% Revolt</div>
-                                        </button>
-                                    ))}
-                                </div>
+
+                                {(!region?.rulerId && (!room.world?.settlement?.buildings?.[regionId === 'capital' ? 'throne_room' : (regionId === 'region_ost' ? 'manor_ost' : 'manor_vest')]?.level)) ? (
+                                    <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-700/50 flex flex-col items-center justify-center text-center gap-2">
+                                        <ShieldAlert className="w-8 h-8 text-slate-600" />
+                                        <h4 className="text-sm font-black text-slate-400 uppercase">Ingen Administrasjon</h4>
+                                        <p className="text-xs text-slate-500 max-w-[200px]">
+                                            Slottet i denne regionen er ikke reist ennå. Du kan ikke bestikke folket før en administrasjon er på plass.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[200, 500, 1000, 2500].map(amt => (
+                                            <button
+                                                key={amt}
+                                                onClick={() => handleBribe(amt)}
+                                                disabled={player.resources?.gold < amt || !!actionLoading || isElectionActive}
+                                                className="group relative p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-indigo-500/50 transition-all text-left overflow-hidden"
+                                            >
+                                                <div className="absolute -right-2 -bottom-2 opacity-5 scale-150 grayscale group-hover:grayscale-0 group-hover:opacity-10 transition-all">
+                                                    <ResourceIcon resource="gold" size="lg" />
+                                                </div>
+                                                <div className="text-xs font-black text-slate-400 uppercase mb-1">
+                                                    {!region?.rulerId ? 'Grip Makten' : 'Gi'}
+                                                </div>
+                                                <div className="text-xl font-black text-white italic">{amt}g</div>
+                                                <div className="text-[9px] font-bold text-indigo-400 mt-2">+{(amt / GAME_BALANCE.COUP.BASE_BRIBE_COST * 10).toFixed(0)}% Revolt</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
 
                                 {player.role === 'BARON' && region?.rulerId === player.id && (
                                     <div className="mt-8 p-6 rounded-3xl bg-rose-950/20 border border-rose-500/30">

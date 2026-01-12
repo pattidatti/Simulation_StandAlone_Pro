@@ -1,6 +1,7 @@
 import React from 'react';
 import { AchievementDef } from '../data/achievements';
-import { Lock } from 'lucide-react';
+import { Lock, Zap } from 'lucide-react';
+import { IconMap } from '../data/iconMap';
 
 interface AchievementCardProps {
     achievement: AchievementDef;
@@ -9,125 +10,123 @@ interface AchievementCardProps {
 }
 
 export const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, unlocked, onClick }) => {
-    // Rarity-based styling using HSL-aligned colors
+    // Premium Gradients & Borders for Unlocked State
     const rarityStyles = {
         COMMON: {
-            border: 'border-slate-500/20',
-            bg: 'bg-slate-500/5',
-            glow: 'shadow-slate-500/5',
-            text: 'text-slate-400',
-            iconBg: 'bg-slate-500/10'
+            border: 'border-slate-600/50',
+            bg: 'bg-gradient-to-br from-slate-800/40 to-slate-900/60',
+            glow: 'shadow-slate-500/10',
+            text: 'text-slate-300',
+            iconBg: 'bg-slate-700/30'
         },
         RARE: {
-            border: 'border-indigo-500/20',
-            bg: 'bg-indigo-500/5',
-            glow: 'shadow-indigo-500/10',
-            text: 'text-indigo-400',
-            iconBg: 'bg-indigo-500/10'
+            border: 'border-cyan-500/40',
+            bg: 'bg-gradient-to-br from-cyan-900/40 to-slate-900/80',
+            glow: 'shadow-cyan-500/20',
+            text: 'text-cyan-400',
+            iconBg: 'bg-cyan-500/20'
         },
         EPIC: {
-            border: 'border-amber-500/20',
-            bg: 'bg-amber-500/5',
-            glow: 'shadow-amber-500/20',
-            text: 'text-amber-400',
-            iconBg: 'bg-amber-500/10'
+            border: 'border-fuchsia-500/40',
+            bg: 'bg-gradient-to-br from-fuchsia-900/40 to-slate-900/80',
+            glow: 'shadow-fuchsia-500/20',
+            text: 'text-fuchsia-400',
+            iconBg: 'bg-fuchsia-500/20'
         },
         LEGENDARY: {
-            border: 'border-rose-500/20',
-            bg: 'bg-rose-500/5',
-            glow: 'shadow-rose-500/30',
-            text: 'text-rose-400',
-            iconBg: 'bg-rose-500/10'
+            border: 'border-amber-500/50',
+            bg: 'bg-gradient-to-br from-amber-900/40 to-slate-900/80',
+            glow: 'shadow-amber-500/30',
+            text: 'text-amber-400',
+            iconBg: 'bg-amber-500/20'
         }
     };
 
     const style = rarityStyles[achievement.rarity];
 
+    // Determine State Config
+    const isSecretAndLocked = achievement.isSecret && !unlocked;
+
+    // Icon Logic
+    const rawIcon = IconMap[achievement.icon] || <Zap size={32} />;
+
+    let displayIcon = rawIcon;
+    let iconColorClass = style.text;
+
+    if (!unlocked) {
+        if (isSecretAndLocked) {
+            displayIcon = <Lock size={28} />;
+            iconColorClass = 'text-slate-800'; // Very dark for secret
+        } else {
+            // Visible but locked -> Dark Silhouette
+            iconColorClass = 'text-slate-800';
+        }
+    }
+
+    // Texts
+    const title = isSecretAndLocked ? 'Hemmelig Bragd' : achievement.name;
+    const description = unlocked
+        ? achievement.description
+        : (isSecretAndLocked ? '???' : `${achievement.requirementText}`);
+
+    // Locked Style Override - SOLID DARK, NO OPACITY
+    const computedClass = unlocked
+        ? `border ${style.border} ${style.bg} ${style.glow} hover:scale-[1.02] hover:shadow-2xl hover:border-opacity-100`
+        : `border border-slate-800 bg-slate-950 hover:bg-slate-900 hover:border-slate-700`;
+
     return (
         <div
             onClick={onClick}
             role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    onClick?.();
-                }
-            }}
             className={`
-                group relative flex flex-col items-center justify-center p-5 rounded-[1.5rem] 
-                transition-all duration-500 cursor-help overflow-hidden
-                focus:outline-none focus:ring-2 focus:ring-indigo-500/50
-                ${unlocked
-                    ? `border ${style.border} ${style.bg} hover:border-opacity-50 hover:scale-105 hover:shadow-2xl ${style.glow}`
-                    : 'border border-white/5 bg-slate-900/40 opacity-40 grayscale hover:opacity-60 hover:grayscale-0'
-                }
+                group relative flex flex-col items-center justify-between p-6 rounded-[1.5rem] min-h-[240px] text-center
+                transition-all duration-300 overflow-hidden select-none
+                ${computedClass}
             `}
         >
-            {/* Subtle Inner Glow for Unlocked High Tiers */}
-            {unlocked && (achievement.rarity === 'EPIC' || achievement.rarity === 'LEGENDARY') && (
-                <div className={`absolute inset-0 opacity-20 bg-gradient-to-br ${style.text.replace('text-', 'from-')}/0 to-transparent pointer-events-none`} />
+            {/* BACKGROUND EFFECTS (Unlocked Only) */}
+            {unlocked && (
+                <div className={`absolute inset-0 opacity-20 bg-gradient-to-tr ${style.text.replace('text-', 'from-')}/10 to-transparent pointer-events-none`} />
             )}
 
-            {/* Animated Pulse for Legendary */}
-            {unlocked && achievement.rarity === 'LEGENDARY' && (
-                <div className="absolute inset-0 animate-pulse opacity-10 bg-rose-500 blur-xl pointer-events-none" />
-            )}
-
-            {/* Icon Container */}
+            {/* ICON HEADER */}
             <div className={`
-                relative mb-3 w-14 h-14 flex items-center justify-center rounded-2xl text-3xl
-                transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3
-                ${unlocked ? style.iconBg : 'bg-white/5'}
+                relative w-20 h-20 rounded-3xl flex items-center justify-center mb-5 text-4xl
+                transition-transform duration-500 group-hover:scale-110
+                ${unlocked ? style.iconBg + ' ' + iconColorClass : 'bg-slate-900/50 border border-slate-800/50 ' + iconColorClass}
             `}>
-                {unlocked ? (
-                    <span className="drop-shadow-lg filter">{achievement.icon}</span>
-                ) : (
-                    <Lock size={20} className="opacity-50" />
-                )}
+                {displayIcon}
 
-                {/* Glint Effect on Hover */}
-                {unlocked && (
-                    <div className="absolute inset-0 bg-white/20 translate-y-full rotate-45 group-hover:translate-y-[-150%] transition-transform duration-700 w-full h-full pointer-events-none" />
+                {unlocked && achievement.rarity === 'LEGENDARY' && (
+                    <div className="absolute inset-0 animate-pulse bg-amber-400/20 blur-2xl rounded-full" />
                 )}
             </div>
 
-            {/* Content */}
-            <div className="text-center space-y-1 relative z-10">
-                <h5 className={`
-                    font-black italic tracking-tight text-sm
-                    ${unlocked ? 'text-white' : 'text-slate-500'}
-                `}>
-                    {unlocked ? achievement.name : 'Ukjent Bragd'}
+            {/* TEXT CONTENT */}
+            <div className="flex-1 flex flex-col items-center justify-start w-full gap-3">
+                <h5 className={`font-black uppercase tracking-wider text-xl leading-tight ${unlocked ? 'text-white' : 'text-slate-300'}`}>
+                    {title}
                 </h5>
 
-                {/* Category Badge */}
-                <div className="flex items-center justify-center gap-2 opacity-60">
-                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">
-                        {unlocked ? achievement.category : '???'}
-                    </span>
+                {/* Description / Requirement */}
+                <div className="flex-1 flex items-center justify-center">
+                    <p className={`text-sm font-medium leading-relaxed ${unlocked ? 'text-slate-300' : 'text-slate-500'}`}>
+                        {description}
+                    </p>
                 </div>
-            </div>
 
-            {/* Hover Popover (Ported from original plan, kept for context) */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-52 p-4 bg-slate-950/90 backdrop-blur-xl border border-white/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-50 shadow-2xl translate-y-4 group-hover:translate-y-0">
-                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${style.text}`}>
-                    {achievement.rarity}
-                </p>
-                <h5 className="text-white font-black italic mb-2 tracking-tight text-sm">
-                    {achievement.name}
-                </h5>
-                <p className="text-[11px] text-slate-400 leading-tight">
-                    {achievement.description}
-                </p>
-                <div className="mt-3 flex items-center justify-between pt-3 border-t border-white/5">
-                    <span className="text-[9px] font-black text-slate-500 uppercase">
-                        {achievement.category}
-                    </span>
-                    <div className="flex items-center gap-1 text-amber-400">
-                        <span className="text-[10px] font-black italic">+{achievement.xp} XP</span>
+                {/* XP Badge (Only if not secret) */}
+                {!isSecretAndLocked && (
+                    <div className="mt-auto px-3 py-1 rounded-full border border-slate-800 bg-black/20 text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-300 group-hover:border-slate-600 transition-colors">
+                        {achievement.xp} XP
                     </div>
-                </div>
+                )}
             </div>
+
+            {/* Rarity Stripe (Bottom - Unlocked Only) */}
+            {unlocked && (
+                <div className={`absolute bottom-0 left-0 right-0 h-1 ${style.text.replace('text-', 'bg-')} opacity-50`} />
+            )}
         </div>
     );
 };

@@ -315,12 +315,15 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
                 globalUpdates[`regions/capital/rulerId`] = winnerId;
                 globalUpdates[`regions/capital/rulerName`] = winner.name;
 
-                // 2. Clear previous baronies if any
+                // 2. Identify Vacated Region & Clear Title
                 const regionsSnap = await get(ref(db, `simulation_rooms/${pin}/regions`));
+                let vacatedRegionId: string | null = null;
+
                 if (regionsSnap.exists()) {
                     const regions = regionsSnap.val();
                     Object.entries(regions).forEach(([rid, rData]: [string, any]) => {
                         if (rData.rulerId === winnerId && rid !== 'capital') {
+                            vacatedRegionId = rid; // Capture for crisis trigger
                             globalUpdates[`regions/${rid}/rulerId`] = null;
                             globalUpdates[`regions/${rid}/rulerName`] = "VAKANT";
                         }
@@ -339,6 +342,18 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
                         }
                     });
                 }
+
+                // Atomic update first
+                await update(rootRef, globalUpdates);
+
+                // 4. Trigger Succession Crisis (Async but critical)
+                if (vacatedRegionId) {
+                    // Slight delay to ensure update propagates? Not needed with await update.
+                    await triggerSuccessionCrisis(pin, vacatedRegionId);
+                }
+            } else {
+                // Non-leadership roles (fallback)
+                await update(rootRef, globalUpdates);
             }
 
             // Atomic update for roll, profile, and region meta
@@ -588,15 +603,54 @@ export const handleCareerChange = async (pin: string, playerId: string, newRole:
 
 /* --- COUP & REVOLUTION HANDLERS --- */
 
-export const triggerRevolution = async (pin: string, regionId: string) => {
-    logSystemicStat(pin, 'coups', 'start', 1);
+export const triggerSuccessionCrisis = async (pin: string, regionId: string) => {
     const regionRef = ref(db, `simulation_rooms/${pin}/regions/${regionId}`);
-    const regionSnap = await get(regionRef);
-    const region = regionSnap.val();
 
-    const oldRulerId = region.rulerId;
-    const oldRulerName = region.rulerName;
+    await runTransaction(regionRef, (r: any) => {
+        if (!r) return;
+        // Only trigger if no election is active, to prevent overwriting
+        if (!r.activeElection) {
+            if (!r.coup) r.coup = {};
+            r.coup.bribeProgress = 80; // Instant instability
+        }
+        return r;
+    });
 
+    logSimulationMessage(pin, `⚠️ MAKT-VAKUUM: Baroniet i ${regionId === 'region_ost' ? 'Øst' : 'Vest'} står uten leder! Det er kaos i gatene.`);
+};
+
+export const triggerRevolution = async (pin: string, regionId: string) => {
+    const regionRef = ref(db, `simulation_rooms/${pin}/regions/${regionId}`);
+
+    // 1. ATOMIC CHECK & SETUP
+    // We use a transaction to ensure we don't double-trigger an election
+    let electionStarted = false;
+    let oldRulerId: string | null = null;
+    let oldRulerName: string = "";
+
+    await runTransaction(regionRef, (r: any) => {
+        if (!r) return;
+        if (r.activeElection) return; // Already active, abort
+
+        // Check triggers inside transaction
+        if ((r.coup?.bribeProgress || 0) < 100) return; // Not ready? (Optional safety)
+
+        oldRulerId = r.rulerId;
+        oldRulerName = r.rulerName;
+
+        // Reset Ruler immediately to prevent further 'Ruler Logic'
+        r.rulerId = null;
+        r.rulerName = "VAKANT";
+
+        electionStarted = true;
+        return r;
+    });
+
+    if (!electionStarted) return; // Race condition caught or conditions not met
+
+    logSystemicStat(pin, 'coups', 'start', 1);
+
+    // 2. Punish Old Ruler (If existed)
     if (oldRulerId) {
         const oldRulerRef = ref(db, `simulation_rooms/${pin}/players/${oldRulerId}`);
         await runTransaction(oldRulerRef, (p: any) => {
@@ -608,8 +662,19 @@ export const triggerRevolution = async (pin: string, regionId: string) => {
         await update(ref(db, `simulation_rooms/${pin}/public_profiles/${oldRulerId}`), { role: 'PEASANT' });
     }
 
+    // 3. Start Election Details
+    // We fetch the region AGAIN (or pass needed data) to setup the complex object
+    // Since we already cleared the ruler atomically, we can now safely generate the election object
+    const regionSnap = await get(regionRef);
+    const region = regionSnap.val();
+
     const autoVotes = await setupRegionElection(pin, regionId, region);
-    logSimulationMessage(pin, `⚠️ REVOLUSJON i ${region.name}! ${oldRulerName} er styrtet. ${autoVotes} skyggeløfter ble automatisk talt opp!`);
+
+    if (oldRulerId) {
+        logSimulationMessage(pin, `⚠️ REVOLUSJON i ${region.name}! ${oldRulerName} er styrtet. ${autoVotes} skyggeløfter ble automatisk talt opp!`);
+    } else {
+        logSimulationMessage(pin, `⚠️ ÅPENT VALG! Kaoset i ${region.name} har tvunget frem et nyvalg. ${autoVotes} forhåndsstemmer talt opp.`);
+    }
 };
 
 export const triggerSuccessionElection = async (pin: string, regionId: string) => {
@@ -713,6 +778,28 @@ export const handleGlobalBribe = async (pin: string, playerId: string, action: {
     const region = regionSnap.val();
     if (!region) return { success: false, error: "Region finnes ikke." };
 
+    // ULTRATHINK: Wilderness Guard
+    // Prevent players from bribing/starting elections in regions where the Manor hasn't been built yet.
+    // This preserves the "Build to become Baron" loop for the first ruler.
+    // ULTRATHINK: Wilderness Guard
+    // Prevent players from bribing/starting elections in regions where the Manor/Keep hasn't been built yet.
+    // This preserves the "Build to become Ruler" loop for the first ruler of ANY region.
+    let manorId: string | null = null;
+    if (regionId === 'region_ost') manorId = 'manor_ost';
+    else if (regionId === 'region_vest') manorId = 'manor_vest';
+    else if (regionId === 'capital') manorId = 'throne_room';
+
+    if (!region.rulerId && manorId) {
+        // Check building level
+        const manorRef = ref(db, `simulation_rooms/${pin}/world/settlement/buildings/${manorId}`);
+        const manorSnap = await get(manorRef);
+        const manorLevel = manorSnap.exists() ? (manorSnap.val().level || 0) : 0;
+
+        if (manorLevel < 1) {
+            return { success: false, error: "Slottet i denne regionen er ikke ferdigbygget. Du må bygge det for å kreve tittelen!" };
+        }
+    }
+
     // Honeymoon check
     const lastChange = region.coup?.lastRulerChange || 0;
     const now = Date.now();
@@ -787,7 +874,7 @@ export const handleGlobalBribe = async (pin: string, playerId: string, action: {
     let allPlayers: Record<string, SimulationPlayer> = {};
     if (allPlayersSnap.exists()) allPlayers = allPlayersSnap.val();
 
-    // 4. Identify & Punish Ruler
+    // 4. Identify Ruler (Optional)
     let rulerId = region.rulerId;
 
     // Fallback: If region doesn't know the ruler, find them in the player list
@@ -807,11 +894,11 @@ export const handleGlobalBribe = async (pin: string, playerId: string, action: {
         }
     }
 
+    // 5. Punish Ruler (If exists)
     if (rulerId) {
         const rulerRef = ref(db, `simulation_rooms/${pin}/players/${rulerId}`);
         const legLoss = Math.floor(amount / 100);
 
-        // Decrease Ruler Legitimacy
         await runTransaction(rulerRef, (p: any) => {
             if (!p) return;
             if (p.status) {
@@ -819,40 +906,39 @@ export const handleGlobalBribe = async (pin: string, playerId: string, action: {
             }
             return p;
         });
-
-        // 5. Distribute Stimulus (The "Folkegave")
-        if (Object.keys(allPlayers).length > 0) {
-            const targets = Object.keys(allPlayers).filter(id =>
-                allPlayers[id].regionId === regionId &&
-                id !== playerId && // Exclude self (Sender shouldn't get their own bribe back)
-                (allPlayers[id].role === 'PEASANT' || allPlayers[id].role === 'SOLDIER')
-            );
-
-            if (targets.length > 0) {
-                const share = Math.floor(amount / targets.length);
-                if (share > 0) {
-                    await Promise.all(targets.map(tid => {
-                        const playerResourcesRef = ref(db, `simulation_rooms/${pin}/players/${tid}/resources`);
-                        // Atomic increment is much safer for distribution than full transaction read-write cycles
-                        return update(playerResourcesRef, { gold: increment(share) });
-                    }));
-                }
-                logSimulationMessage(pin, `[FOLKEGAVE] ${player.name} donerte ${amount}g. ${targets.length} innbyggere fikk ${share}g hver! (Opprør: ${newProgress.toFixed(0)}%)`);
-            } else {
-                logSimulationMessage(pin, `[FOLKEGAVE] ${player.name} donerte ${amount}g til saken, men fant ingen trengende i ${region.name}. (Opprør: ${newProgress.toFixed(0)}%)`);
-            }
-        } else {
-            logSimulationMessage(pin, `[FOLKEGAVE] ${player.name} donerte ${amount}g. (Opprør: ${newProgress.toFixed(0)}%)`);
-        }
-
-        if (newProgress >= 100) {
-            await triggerRevolution(pin, regionId);
-        }
-
-        return { success: true, message: `Besteikkelse gjennomført! Opprør: ${newProgress.toFixed(1)}%` };
     }
 
-    return { success: true, message: "Besteikkelse registrert." };
+    // 6. Distribute Stimulus (The "Folkegave") - ALWAYS RUNS
+    if (Object.keys(allPlayers).length > 0) {
+        const targets = Object.keys(allPlayers).filter(id =>
+            allPlayers[id].regionId === regionId &&
+            id !== playerId && // Exclude self (Sender shouldn't get their own bribe back)
+            (allPlayers[id].role === 'PEASANT' || allPlayers[id].role === 'SOLDIER')
+        );
+
+        if (targets.length > 0) {
+            const share = Math.floor(amount / targets.length);
+            if (share > 0) {
+                await Promise.all(targets.map(tid => {
+                    const playerResourcesRef = ref(db, `simulation_rooms/${pin}/players/${tid}/resources`);
+                    return update(playerResourcesRef, { gold: increment(share) });
+                }));
+            }
+            logSimulationMessage(pin, `[FOLKEGAVE] ${player.name} donerte ${amount}g i ${region.name}. ${targets.length} innbyggere fikk ${share}g hver! (Kaos: ${newProgress.toFixed(0)}%)`);
+        } else {
+            logSimulationMessage(pin, `[FOLKEGAVE] ${player.name} donerte ${amount}g til saken i ${region.name}. Ingen trengende funnet. (Kaos: ${newProgress.toFixed(0)}%)`);
+        }
+    } else {
+        logSimulationMessage(pin, `[FOLKEGAVE] ${player.name} donerte ${amount}g. (Kaos: ${newProgress.toFixed(0)}%)`);
+    }
+
+    // 7. Check Revolution Trigger - ALWAYS RUNS
+    if (newProgress >= 100) {
+        await triggerRevolution(pin, regionId);
+        return { success: true, message: `Revolusjon utløst! Kaos: ${newProgress.toFixed(1)}%` };
+    }
+
+    return { success: true, message: `Besteikkelse gjennomført. Kaos: ${newProgress.toFixed(1)}%` };
 };
 
 export const handleShadowPledge = async (pin: string, playerId: string, regionId: string, candidateId: string) => {
