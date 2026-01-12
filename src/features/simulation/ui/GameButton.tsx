@@ -1,4 +1,5 @@
 import React from 'react';
+import { audioManager } from '../logic/AudioManager';
 
 interface GameButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'primary' | 'secondary' | 'danger' | 'wood' | 'ghost';
@@ -32,18 +33,21 @@ export const GameButton: React.FC<GameButtonProps> = ({
     };
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        // Ensure Audio Engine is awake on any interaction
+        audioManager.resume().catch(() => { });
+
         // Audio Trigger
         if (variant === 'primary' || variant === 'danger') {
-            import('../logic/AudioManager').then(({ audioManager }) => audioManager.playSfx('confirm'));
+            audioManager.playSfx('confirm');
         } else {
-            import('../logic/AudioManager').then(({ audioManager }) => audioManager.playSfx('ui_click'));
+            audioManager.playSfx('ui_click');
         }
 
         if (props.onClick) props.onClick(e);
     };
 
     const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-        import('../logic/AudioManager').then(({ audioManager }) => audioManager.playSfx('ui_hover'));
+        audioManager.playSfx('ui_hover');
         if (props.onMouseEnter) props.onMouseEnter(e);
     }
 

@@ -10,7 +10,7 @@ export class ProceduralSoundGenerator {
     private static instance: ProceduralSoundGenerator;
 
     // --- SYNTHS ---
-    private clickSynth: Tone.MembraneSynth | null = null;
+    private clickSynth: Tone.Synth | null = null;
     private hoverSynth: Tone.NoiseSynth | null = null;
     private successSynth: Tone.PolySynth | null = null;
     private errorSynth: Tone.MonoSynth | null = null;
@@ -55,18 +55,21 @@ export class ProceduralSoundGenerator {
         // Reverb needs to generate its impulse response
         await this.reverb.generate();
 
-        // 3. Click Synth (The "Thock")
-        this.clickSynth = new Tone.MembraneSynth({
-            pitchDecay: 0.008,
-            octaves: 2,
+        // 3. Click Synth (The "Smooth Click")
+        // Goal: Glass-like, high-fidelity tactile switch.
+        // 3. Click Synth (The "Smooth Click")
+        // Goal: Glass-like, high-fidelity tactile switch.
+        // FILTERED: LowPass to remove piercing high-end.
+        const clickFilter = new Tone.Filter(2000, "lowpass").connect(this.masterGain);
+        this.clickSynth = new Tone.Synth({
             oscillator: { type: 'sine' },
             envelope: {
-                attack: 0.001,
-                decay: 0.2,
+                attack: 0.005, // 5ms (No pop)
+                decay: 0.05,   // 50ms (Tight)
                 sustain: 0,
                 release: 0.1,
             },
-        }).connect(this.masterGain);
+        }).connect(clickFilter);
 
         // 4. Hover Synth (The "Pico-Breath")
         // Goal: Extremely subtle air texture, imperceptible if not listening for it.
@@ -100,7 +103,7 @@ export class ProceduralSoundGenerator {
                 sustain: 1,
                 release: 0.5
             }
-        }).connect(this.reverb); // Connect to Reverb Bus
+        }).connect(this.masterGain); // Connect directly to Master (Reverb might be failing)
         this.successSynth.volume.value = -6;
 
         // 6. Error Synth (The "Buzz")
@@ -254,7 +257,7 @@ export class ProceduralSoundGenerator {
 
     public playClick() {
         if (!this.isInitialized) return;
-        this.playHumanized(this.clickSynth!, "C1", "16n");
+        this.playHumanized(this.clickSynth!, "G5", "32n");
     }
 
     public playHover() {

@@ -83,7 +83,7 @@ export const SimulationOnboarding: React.FC<SimulationOnboardingProps> = ({ pin,
                         </div>
                     )}
                     <div className="pt-4 flex gap-4">
-                        <button onClick={() => setStep('WELCOME')} className="flex-1 py-5 bg-white/5 text-slate-400 rounded-3xl font-black uppercase tracking-widest text-xs">Tilbake</button>
+                        <button onClick={() => { import('../logic/AudioManager').then(m => m.audioManager.playSfx('click')); setStep('WELCOME'); }} className="flex-1 py-5 bg-white/5 text-slate-400 rounded-3xl font-black uppercase tracking-widest text-xs">Tilbake</button>
                         <button
                             onClick={() => { onCreatePlayer(name, role); setStep('SUCCESS'); }}
                             disabled={!name.trim() || isCreating}

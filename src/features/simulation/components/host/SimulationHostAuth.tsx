@@ -99,7 +99,7 @@ export const SimulationHostAuth: React.FC<SimulationHostAuthProps> = ({ onAuth, 
 
                 <div className="mt-12 text-center">
                     <button
-                        onClick={() => window.location.href = '/'}
+                        onClick={() => { import('../../logic/AudioManager').then(m => m.audioManager.playSfx('click')); window.location.href = '/'; }}
                         className="text-slate-500 hover:text-slate-300 text-sm font-bold transition-colors"
                     >
                         Tilbake til forsiden

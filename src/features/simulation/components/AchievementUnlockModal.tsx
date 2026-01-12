@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, X, ChevronRight, Zap } from 'lucide-react';
+import { ChevronRight, Zap } from 'lucide-react';
 import { getAchievement } from '../data/achievements';
 import { useSimulation } from '../SimulationContext';
 import { proceduralSound } from '../logic/ProceduralSoundGenerator';
@@ -13,7 +13,8 @@ const ParticleBurst = ({ color }: { color: string }) => {
         angle: (i / 24) * 360,
         distance: 120 + Math.random() * 120,
         delay: Math.random() * 0.2,
-        size: 4 + Math.random() * 6
+        size: 4 + Math.random() * 6,
+        scale: Math.random() // Fix: Property 'scale' missing
     }));
 
     return (
@@ -172,7 +173,7 @@ export const AchievementUnlockModal: React.FC = () => {
                                     transition={{ type: "spring", delay: 0.1 }}
                                     className={`w-28 h-28 mx-auto mb-8 rounded-[2rem] flex items-center justify-center shadow-xl ${config.iconBg} ${config.iconColor} ring-4 ring-white/10`}
                                 >
-                                    {IconComponent ? React.cloneElement(IconComponent as React.ReactElement, { size: 56, strokeWidth: 1.5 }) : <Zap size={56} />}
+                                    {IconComponent ? React.cloneElement(IconComponent as React.ReactElement, { size: 56, strokeWidth: 1.5 } as any) : <Zap size={56} />}
                                 </motion.div>
 
                                 {/* Text */}

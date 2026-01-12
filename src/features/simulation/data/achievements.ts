@@ -311,6 +311,76 @@ export const ACHIEVEMENTS: AchievementDef[] = [
         triggerType: 'EVENT',
         condition: { type: 'MANUAL', target: 'PEACE_TREATY', value: 1 }
     },
+    // --- RESOURCE HOARDER (Passive) ---
+    {
+        id: 'hoard_wood_1', name: 'Vedhogger', description: 'Du har samlet en respektabel stabel med ved.',
+        requirementText: 'Samle 100 Ved.', icon: 'Axe', rarity: 'COMMON', xp: 100, category: 'LIFE',
+        triggerType: 'PASSIVE', condition: { type: 'RESOURCE', target: 'wood', value: 100, comparison: 'GTE' }
+    },
+    {
+        id: 'hoard_wood_2', name: 'Tømmerbaron', description: 'Skogen frykter deg.',
+        requirementText: 'Samle 1,000 Ved.', icon: 'Trees', rarity: 'RARE', xp: 500, category: 'LIFE',
+        triggerType: 'PASSIVE', condition: { type: 'RESOURCE', target: 'wood', value: 1000, comparison: 'GTE' }
+    },
+    {
+        id: 'hoard_stone_1', name: 'Steinbruddsarbeider', description: 'Grunnlaget for ethvert slott.',
+        requirementText: 'Samle 100 Stein.', icon: 'Mountain', rarity: 'COMMON', xp: 100, category: 'LIFE',
+        triggerType: 'PASSIVE', condition: { type: 'RESOURCE', target: 'stone', value: 100, comparison: 'GTE' }
+    },
+    {
+        id: 'hoard_iron_1', name: 'Malmleter', description: 'Det glimter i mørket.',
+        requirementText: 'Samle 50 Jernmalm.', icon: 'Pickaxe', rarity: 'COMMON', xp: 150, category: 'LIFE',
+        triggerType: 'PASSIVE', condition: { type: 'RESOURCE', target: 'iron_ore', value: 50, comparison: 'GTE' }
+    },
+    {
+        id: 'hoard_fish_1', name: 'Fisker', description: 'Havets skatter.',
+        requirementText: 'Fang 50 Fisk.', icon: 'Fish', rarity: 'COMMON', xp: 100, category: 'LIFE',
+        triggerType: 'PASSIVE', condition: { type: 'RESOURCE', target: 'fish_raw', value: 50, comparison: 'GTE' }
+    },
+    {
+        id: 'bread_winner', name: 'Brødvinner', description: 'Mel og vann, livets gave.',
+        requirementText: 'Ha 50 Brød i lageret.', icon: 'Croissant', rarity: 'COMMON', xp: 100, category: 'LIFE',
+        triggerType: 'PASSIVE', condition: { type: 'RESOURCE', target: 'bread', value: 50, comparison: 'GTE' }
+    },
+
+    // --- PRODUCTION (Action Counts) ---
+    {
+        id: 'master_baker', name: 'Mesterbaker', description: 'Duften av nystekt brød følger deg.',
+        requirementText: 'Bak 50 ganger.', icon: 'ChefHat', rarity: 'RARE', xp: 400, category: 'ROLE',
+        triggerType: 'EVENT', condition: { type: 'ACTION_COUNT', target: 'BAKE', value: 50 }
+    },
+    {
+        id: 'forge_master', name: 'Smed', description: 'Hammeren treffer ambolten med rytmisk presisjon.',
+        requirementText: 'Smelt jern 50 ganger.', icon: 'Hammer', rarity: 'RARE', xp: 400, category: 'ROLE',
+        triggerType: 'EVENT', condition: { type: 'ACTION_COUNT', target: 'SMELT', value: 50 }
+    },
+    {
+        id: 'weaver_specialist', name: 'Vever', description: 'Tråder flettes til kunst.',
+        requirementText: 'Vev tøy 20 ganger.', icon: 'Scissors', rarity: 'COMMON', xp: 200, category: 'ROLE',
+        triggerType: 'EVENT', condition: { type: 'ACTION_COUNT', target: 'WEAVE', value: 20 }
+    },
+    {
+        id: 'alchemist_novice', name: 'Lærling Alkemist', description: 'Ikke drikk det der...',
+        requirementText: 'Brygg 10 eliksirer.', icon: 'FlaskConical', rarity: 'RARE', xp: 300, category: 'ROLE',
+        triggerType: 'EVENT', condition: { type: 'ACTION_COUNT', target: 'MIX', value: 10 }
+    },
+
+    // --- GAMBLING (Events) ---
+    {
+        id: 'gamble_first_win', name: 'Nybegynnerflaks', description: 'Den første gevinsten smaker best.',
+        requirementText: 'Vinn i terningspill eller på hjulet.', icon: 'Clover', rarity: 'COMMON', xp: 100, category: 'SOUL',
+        triggerType: 'EVENT', condition: { type: 'ACTION_COUNT', target: 'GAMBLE_WIN', value: 1 }
+    },
+    {
+        id: 'gamble_high_roller', name: 'High Roller', description: 'Huset taper alltid... til slutt?',
+        requirementText: 'Vinn 25 ganger på gambling.', icon: 'Dice5', rarity: 'EPIC', xp: 1000, category: 'SOUL',
+        triggerType: 'EVENT', condition: { type: 'ACTION_COUNT', target: 'GAMBLE_WIN', value: 25 }
+    },
+    {
+        id: 'gamble_jackpot', name: 'JACKPOT!', description: 'Gudene smiler til deg. En legendarisk gevinst!',
+        requirementText: 'Vinn 5x eller mer på Soga-hjulet.', icon: 'Sparkles', rarity: 'LEGENDARY', xp: 5000, category: 'SOUL',
+        triggerType: 'EVENT', condition: { type: 'MANUAL', target: 'GAMBLE_JACKPOT', value: 1 } // Manual trigger on multiplier >= 5
+    },
 ];
 
 export const getAchievement = (id: string) => ACHIEVEMENTS.find(a => a.id === id);

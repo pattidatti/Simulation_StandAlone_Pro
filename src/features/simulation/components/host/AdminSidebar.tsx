@@ -60,7 +60,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = React.memo(({
     return (
         <aside className="w-80 border-r border-white/10 bg-slate-900/50 backdrop-blur-xl flex flex-col z-20 shadow-2xl overflow-y-auto no-scrollbar">
             <div className="p-8 border-b border-white/5 bg-black/20">
-                <button onClick={onBack} className="text-indigo-400 font-black text-[10px] uppercase tracking-widest mb-4 hover:text-white transition-colors flex items-center gap-2">
+                <button onClick={() => { import('../../logic/AudioManager').then(m => m.audioManager.playSfx('click')); onBack(); }} className="text-indigo-400 font-black text-[10px] uppercase tracking-widest mb-4 hover:text-white transition-colors flex items-center gap-2">
                     &larr; Tilbake til oversikt
                 </button>
                 <div className="flex items-center justify-between mb-2">

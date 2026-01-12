@@ -146,9 +146,24 @@ export function useSimulationActions(
                     if (account && player) {
                         import('../logic/achievementLogic').then(({ checkEventAchievements }) => {
                             // 1. Generic Action Trigger (e.g. TRADE)
-                            checkEventAchievements(player.uid, player, account, 'ACTION_COUNT', String(actionType), 1, showAchievement);
+                            checkEventAchievements(player.uid || player.id || '', player, account, 'ACTION_COUNT', String(actionType), 1, showAchievement);
 
-                            // 2. Specific Sub-Type Trigger (e.g. CRAFT_LEGENDARY)
+                            // 2. Gambling Achievements (DICE & RESOURCE_GAME)
+                            if (actionType === 'PLAY_DICE' || actionType === 'PLAY_RESOURCE_GAME') {
+                                const isWin = result.data?.isWin;
+                                if (isWin) {
+                                    // Trigger "Win Count"
+                                    checkEventAchievements(player.uid || player.id || '', player, account, 'ACTION_COUNT', 'GAMBLE_WIN', 1, showAchievement);
+
+                                    // Check for Jackpot
+                                    const multiplier = result.data?.multiplier || 0;
+                                    if (multiplier >= 5) {
+                                        checkEventAchievements(player.uid || player.id || '', player, account, 'MANUAL', 'GAMBLE_JACKPOT', 1, showAchievement);
+                                    }
+                                }
+                            }
+
+                            // 3. Specific Sub-Type Trigger (e.g. CRAFT_LEGENDARY)
                             // TODO: Add logic for inspecting result.data for rarity
                         });
                     }

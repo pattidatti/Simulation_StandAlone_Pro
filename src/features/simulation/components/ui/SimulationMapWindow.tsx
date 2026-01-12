@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { audioManager } from '../../logic/AudioManager';
 
 interface SimulationMapWindowProps {
     title?: string;
@@ -83,7 +84,12 @@ export const SimulationMapWindow: React.FC<SimulationMapWindowProps> = ({
                         </div>
 
                         <button
-                            onClick={onClose}
+                            onClick={() => {
+                                console.log("Close button clicked");
+                                audioManager.resume().catch(() => { });
+                                audioManager.playSfx('click');
+                                onClose();
+                            }}
                             className="w-8 h-8 bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-500 rounded-full flex items-center justify-center transition-all group"
                             title="Lukk vindu"
                         >

@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    Lock, Footprints, Utensils, Axe, Pickaxe, Calendar, Hammer,
+    Footprints, Utensils, Axe, Pickaxe, Calendar, Hammer,
     Coins, Scale, Wallet, Shield, Scroll, Gem, Sparkles, Crown,
     Gavel, Zap, Sun, Ghost, Users, Map, Skull, Flame, Feather
 } from 'lucide-react';

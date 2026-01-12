@@ -4,7 +4,7 @@
 - [ ] 
 
 ## Medium Priority
-- [ ] 
+- [ ] En konge som blir kastet fra posisjonen sin, blir ikke tildelt regionen han kom fra. 
 ## Low Priority
 
 

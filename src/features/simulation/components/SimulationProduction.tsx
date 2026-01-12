@@ -7,6 +7,7 @@ import { Info, Zap, TrendingUp, Package, Wrench } from 'lucide-react';
 import { checkActionRequirements } from '../utils/actionUtils';
 
 import { ResourceIcon } from '../ui/ResourceIcon';
+import { audioManager } from '../logic/AudioManager';
 
 // Sub-components
 import { RecipeCard } from './RecipeCard';
@@ -60,7 +61,7 @@ export const SimulationProduction: React.FC<SimulationProductionProps> = React.m
                         <h3 className="text-xl font-black text-white uppercase tracking-tighter">Utilgjengelig</h3>
                         <p className="text-slate-500 italic max-w-xs">Vennligst velg en produksjonsstasjon på kartet for å starte.</p>
                     </div>
-                    <GameButton variant="ghost" onClick={() => setActiveTab('MAP')} className="border border-white/10">Tilbake til Kartet</GameButton>
+                    <GameButton variant="ghost" onClick={() => { audioManager.playSfx('click'); setActiveTab('MAP'); }} className="border border-white/10">Tilbake til Kartet</GameButton>
                 </div>
             </SimulationMapWindow>
         );
@@ -282,7 +283,7 @@ export const SimulationProduction: React.FC<SimulationProductionProps> = React.m
                             <p className="text-slate-400 max-w-md mx-auto">
                                 Takk for din tjeneste, soldat. Bruk produksjonsfanen til å lage utstyr, eller patruljer landsbyen via Handlinger.
                             </p>
-                            <GameButton variant="ghost" className="border-white/10" onClick={() => setActiveTab('MAP')}>Tilbake til tjeneste</GameButton>
+                            <GameButton variant="ghost" className="border-white/10" onClick={() => { audioManager.playSfx('click'); setActiveTab('MAP'); }}>Tilbake til tjeneste</GameButton>
                         </div>
                     )}
                 </div>

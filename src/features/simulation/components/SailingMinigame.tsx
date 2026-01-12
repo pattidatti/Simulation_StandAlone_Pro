@@ -861,7 +861,13 @@ export const SailingMinigame: React.FC<SailingMinigameProps> = ({ player, roomPi
             <motion.button
                 whileHover={{ scale: 1.05, backgroundColor: 'rgba(127, 29, 29, 0.6)' }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleSafeExit}
+                onClick={() => {
+                    // Lazy import to avoid circular dep risks or just standard usage if possible.
+                    // Since this is a file with many deps, let's try direct import if not present.
+                    // But wait, checking file content... it doesn't import audioManager.
+                    import('../logic/AudioManager').then(m => m.audioManager.playSfx('click'));
+                    handleSafeExit();
+                }}
                 aria-label="Tilbake til kai"
                 className="absolute top-8 left-8 z-[110] px-6 py-2 bg-red-950/40 backdrop-blur-md border border-[#c29d0b]/40 rounded-sm text-[10px] text-[#e5e7eb] font-black uppercase tracking-[0.25em] transition-all hover:border-[#c29d0b] shadow-2xl"
             >

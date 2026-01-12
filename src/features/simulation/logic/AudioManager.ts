@@ -112,9 +112,17 @@ class AudioManager {
     }
 
     public playSfx(key: string) {
-        // Init Guard: Silently fail if engine not ready (better than error)
-        if (!this.audioContextResumed || Tone.context.state !== 'running') {
-            return;
+        // Auto-Resume / Self-Healing
+        if (Tone.context.state !== 'running') {
+            Tone.context.resume().catch(() => { });
+            // If strictly suspended, we might rely on the GameButton explicit resume,
+            // but let's try.
+        }
+
+        if (!this.audioContextResumed) {
+            // Try to boot if not booted
+            this.resume().catch(e => console.warn("Auto-resume failed", e));
+            // Don't return yet, let it try to play if Tone is somehow ready
         }
 
         // Legacy Map & Delegation

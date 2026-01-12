@@ -4,6 +4,7 @@ import { ProgressiveImage } from './components/ui/ProgressiveImage'; // Import t
 // Modular World Map Components
 import type { SimulationPlayer } from './simulationTypes';
 import { getDayPart } from './utils/timeUtils';
+import { audioManager } from './logic/AudioManager';
 
 import { useWorldMapLogic } from './hooks/useWorldMapLogic';
 import { POINTS_OF_INTEREST } from './data/WorldMapData';
@@ -273,6 +274,7 @@ export const GameMap: React.FC<WorldMapProps> = ({ player, room, world, worldEve
                 {viewMode !== 'kingdom' && (
                     <button
                         onClick={() => {
+                            audioManager.playSfx('click');
                             if (viewMode === 'global') setViewMode('kingdom');
                             else {
                                 const hub = POINTS_OF_INTEREST.find(p => p.id === viewMode);
