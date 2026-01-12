@@ -147,34 +147,23 @@ export const SimulationLobby: React.FC = () => {
                 updates[`public_profiles/${playerId}`] = publicProfile;
 
                 // SYNC TO GLOBAL ACCOUNT (Active Sessions)
-                // We do this inside the room update to ensure atomicity-ish, but ideally it's separate
-                // Since we need to read the account first to update the array safely, we might do it separately or change schema to Map.
-                // For now, let's just write to a new path that we will migrate to use Keyed Objects later if needed, 
-                // OR just read-modify-write here.
-
+                // ULTRATHINK REFINE: Use atomic updates to root path, and use Map structure to avoid race conditions.
                 if (user?.uid) {
                     try {
-                        const accountRef = ref(db, `simulation_accounts/${user.uid}`);
-                        const accountSnapshot = await get(accountRef);
-                        if (accountSnapshot.exists()) {
-                            const acc = accountSnapshot.val();
-                            const currentSessions = acc.activeSessions || [];
+                        const sessionData = {
+                            roomPin: cleanPin,
+                            name: name,
+                            role: role,
+                            regionId: regionId,
+                            xp: 0,
+                            lastPlayed: Date.now()
+                        };
 
-                            // Remove existing entry for this room if any (to update it)
-                            const otherSessions = currentSessions.filter((s: any) => s.roomPin !== cleanPin);
+                        // Use root-level atomic update to ensure we hit the correct location
+                        updates[`simulation_accounts/${user.uid}/activeSessions/${cleanPin}`] = sessionData;
 
-                            const sessionData = {
-                                roomPin: cleanPin,
-                                name: name,
-                                role: role,
-                                regionId: regionId,
-                                lastPlayed: Date.now()
-                            };
-
-                            updates[`../simulation_accounts/${user.uid}/activeSessions`] = [...otherSessions, sessionData];
-                        }
                     } catch (err) {
-                        console.error("Failed to sync session to account", err);
+                        console.error("Failed to prepare session sync:", err);
                     }
                 }
 
@@ -244,6 +233,20 @@ export const SimulationLobby: React.FC = () => {
                                         Logg Inn
                                     </button>
                                 </div>
+
+                                {/* Guest Profile Access */}
+                                {account && (
+                                    <div className="mt-6 flex justify-center md:justify-start">
+                                        <button
+                                            onClick={() => navigate('/profile')}
+                                            className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/60 hover:text-indigo-300 transition-colors"
+                                        >
+                                            <UserIcon size={12} />
+                                            Vis Gjesteprofil
+                                            <ChevronRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ) : (

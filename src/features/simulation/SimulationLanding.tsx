@@ -3,7 +3,7 @@ import { useSimulationAuth } from './SimulationAuthContext';
 import { useAudio } from './SimulationAudioContext';
 import { SimulationServerBrowser } from './SimulationServerBrowser';
 import { SimulationAuthModal } from './SimulationAuthModal';
-import { Crown } from 'lucide-react';
+import { Crown, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ref, onValue } from 'firebase/database';
 import { simulationDb as db } from './simulationFirebase';
@@ -78,10 +78,17 @@ export const SimulationLanding: React.FC = () => {
                     <div className="flex items-center gap-6 text-xs font-bold tracking-widest uppercase">
                         {user && !isAnonymous ? (
                             <div className="flex items-center gap-6">
-                                <span className="text-white/70">Velkommen, <span className="text-white">{user.displayName}</span></span>
+                                <button
+                                    onClick={() => navigate('/profile')}
+                                    className="group flex items-center gap-2 text-white/70 hover:text-white transition-colors"
+                                >
+                                    <User size={14} className="group-hover:text-indigo-400 transition-colors" />
+                                    <span>Velkommen, <span className="text-white group-hover:underline decoration-indigo-500/50 underline-offset-4 transition-all">{user.displayName || 'Eventyrer'}</span></span>
+                                </button>
+                                <div className="h-4 w-px bg-white/10" />
                                 <button
                                     onClick={() => logout()}
-                                    className="hover:text-amber-400 transition-colors"
+                                    className="hover:text-rose-400 text-white/40 transition-colors"
                                 >
                                     Logg ut
                                 </button>

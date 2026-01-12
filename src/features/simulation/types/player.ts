@@ -174,13 +174,13 @@ export interface SimulationAccount {
         level: number;
         timestamp: number;
     }[];
-    activeSessions?: {
+    activeSessions?: Record<string, {
         roomPin: string;
         name: string;
         role: Role;
         regionId?: string;
         lastPlayed: number;
-    }[];
+    }>;
     lastActive: number;
 }
 

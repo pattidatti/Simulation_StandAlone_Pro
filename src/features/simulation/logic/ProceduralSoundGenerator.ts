@@ -291,6 +291,18 @@ export class ProceduralSoundGenerator {
         this.playHumanized(this.clickSynth!, "A0", "8n");
     }
 
+    public playCoin() {
+        if (!this.isInitialized) return;
+        // High pitched metallic ping using FM Synth for bell-like tone
+        this.playHumanized(this.successSynth!, ["B5", "E6"], "32n");
+    }
+
+    public playConfirm() {
+        if (!this.isInitialized) return;
+        // Simple affirmative blip
+        this.playHumanized(this.successSynth!, ["C4", "G4"], "16n");
+    }
+
     public setAmbience(type: 'wind' | 'sea' | 'none') {
         if (!this.isInitialized || !this.windNodes || !this.seaNodes) return;
 

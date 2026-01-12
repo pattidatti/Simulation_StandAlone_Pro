@@ -152,17 +152,47 @@ export const SimulationHost: React.FC = () => {
         }
     };
 
+    const [archivingStatus, setArchivingStatus] = useState<string | null>(null);
+
     const deleteRoom = async (roomPin: string) => {
-        if (!window.confirm(`ER DU SIKKER? Dette vil slette rommet ${roomPin} permanent!`)) return;
+        if (!window.confirm(`ER DU SIKKER? Dette vil slette rommet ${roomPin} permanent!\nAlle karakterer vil bli arkivert til spillernes Hall of Fame.`)) return;
         setIsLoading(true);
+        setArchivingStatus("Starter arkivering...");
+
         try {
+            // 1. Fetch Room Data to find players
+            const roomSnap = await get(ref(db, `simulation_rooms/${roomPin}`));
+            if (roomSnap.exists()) {
+                const roomData = roomSnap.val() as SimulationRoom;
+                const players = roomData.players || {};
+                const playerList = Object.values(players).filter(p => p.uid);
+
+                if (playerList.length > 0) {
+                    const { recordCharacterLife } = await import('./logic/playerLogic');
+                    setArchivingStatus(`Arkiverer ${playerList.length} karakterer...`);
+
+                    // 2. Archive characters in parallel (with jitter from recordCharacterLife)
+                    const results = await Promise.allSettled(
+                        playerList.map(p => recordCharacterLife(p.uid!, roomPin, p))
+                    );
+
+                    const successes = results.filter(r => r.status === 'fulfilled').length;
+                    console.log(`Mass Archival Complete for ${roomPin}: ${successes}/${playerList.length} archived.`);
+                }
+            }
+
+            setArchivingStatus("Fjerner rom-data...");
+            // 3. Final Deletion
             await remove(ref(db, `simulation_rooms/${roomPin}`));
             await remove(ref(db, `simulation_server_metadata/${roomPin}`));
+
+            alert(`Slettet rom ${roomPin}. Karakterer er arkivert.`);
         } catch (e) {
             console.error(e);
             alert("Kunne ikke slette rommet.");
         } finally {
             setIsLoading(false);
+            setArchivingStatus(null);
         }
     };
 
@@ -417,6 +447,7 @@ export const SimulationHost: React.FC = () => {
             onDeleteRoom={deleteRoom}
             onManageRoom={(p) => { setPin(p); setView('MANAGE'); }}
             onCleanupMetadata={cleanupMetadata}
+            archivingStatus={archivingStatus}
         />
     );
 

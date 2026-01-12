@@ -9,6 +9,7 @@ interface HostRoomListProps {
     onDeleteRoom: (pin: string) => void;
     onManageRoom: (pin: string) => void;
     onCleanupMetadata: () => void;
+    archivingStatus?: string | null;
 }
 
 export const HostRoomList: React.FC<HostRoomListProps> = ({
@@ -17,10 +18,24 @@ export const HostRoomList: React.FC<HostRoomListProps> = ({
     onCreateRoom,
     onDeleteRoom,
     onManageRoom,
-    onCleanupMetadata
+    onCleanupMetadata,
+    archivingStatus
 }) => {
     return (
         <div className="fixed inset-0 top-0 bg-slate-950 text-slate-200 p-12 overflow-y-auto custom-scrollbar font-sans z-20">
+            {/* Archiving Progress Overlay */}
+            {archivingStatus && (
+                <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-6 text-center animate-in fade-in duration-300">
+                    <div className="max-w-md bg-slate-900 border-2 border-indigo-500/30 rounded-[3rem] p-12 space-y-8 shadow-2xl scale-in-center">
+                        <div className="w-20 h-20 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                        <div className="space-y-2">
+                            <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter">Sikker Arkivering</h2>
+                            <p className="text-indigo-400 font-bold uppercase tracking-widest text-xs animate-pulse">{archivingStatus}</p>
+                        </div>
+                        <p className="text-slate-500 text-sm">Ikke lukk vinduet mens vi sikrer karakterens ettermæle...</p>
+                    </div>
+                </div>
+            )}
             <div className="fixed inset-0 pointer-events-none opacity-20">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-600/10 blur-[120px] rounded-full" />

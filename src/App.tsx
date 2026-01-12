@@ -8,6 +8,7 @@ import { SimulationProvider } from './features/simulation/SimulationContext';
 import { SimulationHost } from './features/simulation/SimulationHost';
 import { SimulationPlayer } from './features/simulation/SimulationPlayer';
 import { SimulationLanding } from './features/simulation/SimulationLanding';
+import { SimulationProfile } from './features/simulation/SimulationProfile';
 import './index.css';
 
 const App: React.FC = () => {
@@ -28,6 +29,8 @@ const App: React.FC = () => {
                                         <SimulationPlayer />
                                     </SimulationProvider>
                                 } />
+
+                                <Route path="/profile" element={<SimulationProfile />} />
 
                                 {/* Redirect legacy or unknown routes */}
                                 <Route path="*" element={<Navigate to="/" replace />} />

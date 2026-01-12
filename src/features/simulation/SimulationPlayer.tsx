@@ -92,6 +92,70 @@ export const SimulationPlayer: React.FC = () => {
         }
     }, [player?.id, player?.resources, pin]);
 
+    // ULTRATHINK: Self-Repair & Active Session Sync
+    // This ensures that if a user joins a room via direct link (and skips 'Create Player'),
+    // their global profile is still updated with this session.
+    React.useEffect(() => {
+        if (!player || !pin || !user || !account) return;
+
+        const checkAndRepairSession = async () => {
+            // 1. DATA HYGIENE: Check for Legacy Array Format
+            const rawSessions = account.activeSessions;
+            let currentSessionsMap: Record<string, any> = {};
+            let needsMigration = false;
+
+            if (Array.isArray(rawSessions)) {
+                console.log("ULTRATHINK: Detected Legacy Session Array. Migrating to Map...");
+                needsMigration = true;
+                rawSessions.forEach((s: any) => {
+                    if (s && s.roomPin) currentSessionsMap[s.roomPin] = s;
+                });
+            } else if (rawSessions) {
+                currentSessionsMap = rawSessions;
+            }
+
+            // 2. CHECK STATUS
+            const existingSession = currentSessionsMap[pin];
+            const isStale = existingSession ? (Date.now() - existingSession.lastPlayed > 5 * 60 * 1000) : true;
+            const isMissing = !existingSession;
+
+            // 3. REPAIR / SYNC
+            if (needsMigration || isMissing || isStale) {
+                console.log("ULTRATHINK: Syncing Session to Global Profile...", { isMissing, isStale, needsMigration });
+
+                const sessionData = {
+                    roomPin: pin,
+                    name: player.name,
+                    role: player.role,
+                    regionId: player.regionId,
+                    xp: player.stats?.xp || 0,
+                    lastPlayed: Date.now()
+                };
+
+                const updates: any = {};
+
+                // If migrating, we overwrite the ENTIRE activeSessions node with the new Map
+                if (needsMigration) {
+                    const newMap = { ...currentSessionsMap, [pin]: sessionData };
+                    updates[`simulation_accounts/${user.uid}/activeSessions`] = newMap;
+                } else {
+                    // Atomic update for just this room
+                    updates[`simulation_accounts/${user.uid}/activeSessions/${pin}`] = sessionData;
+                }
+
+                try {
+                    await update(ref(db), updates);
+                    console.log("ULTRATHINK: Session Sync Complete.");
+                } catch (err) {
+                    console.error("ULTRATHINK: Session Sync Failed", err);
+                }
+            }
+        };
+
+        checkAndRepairSession();
+
+    }, [player, pin, user, account]);
+
     const {
         handleAction, actionResult, setActionResult, handleClearActionResult
     } = useSimulationActions(pin, player, world, setActiveMinigame as any, setActiveMinigameMethod, setActiveMinigameAction, activeMinigame as any);

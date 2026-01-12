@@ -48,6 +48,9 @@ export const addXp = (actor: SimulationPlayer, skillType: SkillType, amount: num
 export async function recordCharacterLife(uid: string, roomPin: string, player: SimulationPlayer) {
     if (!uid || !player) return;
 
+    // Defensiv delay: Unngå parallelle skrive-kollisjoner hvis kalt i batch
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 200));
+
     const accountRef = ref(db, `simulation_accounts/${uid}`);
     try {
         const snapshot = await get(accountRef);
@@ -70,12 +73,22 @@ export async function recordCharacterLife(uid: string, roomPin: string, player: 
         const newGlobalXp = (accountData.globalXp || 0) + addedXp;
         const newGlobalLevel = Math.floor(Math.sqrt(newGlobalXp / 100)) + 1;
 
-        await update(accountRef, {
-            characterHistory: updatedHistory,
-            globalXp: newGlobalXp,
-            globalLevel: newGlobalLevel,
-            lastActive: Date.now()
-        });
+        // Atomic Update: Push to history, Update Globals, Remove from Active Sessions
+        // We use a multi-path update to ensure atomicity
+        const updates: Record<string, any> = {};
+
+        // 1. Update History
+        updates['characterHistory'] = updatedHistory;
+
+        // 2. Update Globals
+        updates['globalXp'] = newGlobalXp;
+        updates['globalLevel'] = newGlobalLevel;
+        updates['lastActive'] = Date.now();
+
+        // 3. Remove from Active Sessions (Set to null)
+        updates[`activeSessions/${roomPin}`] = null;
+
+        await update(accountRef, updates);
 
         console.log(`Character life recorded for ${player.name} (${uid})`);
     } catch (e) {
