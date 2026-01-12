@@ -40,7 +40,7 @@ export const SimulationPlayer: React.FC = () => {
     const { user, account, loading: authLoading } = useSimulationAuth();
     const {
         activeMinigame, setActiveMinigame, activeMinigameAction, setActiveMinigameAction, activeMinigameMethod, setActiveMinigameMethod,
-        activeTab, setActiveTab
+        activeTab, setActiveTab, showAchievement
     } = useSimulation();
     const { setHideHeader, setFullWidth } = useLayout();
 
@@ -183,9 +183,35 @@ export const SimulationPlayer: React.FC = () => {
 
     }, [player, pin, user, account, regions]);
 
+    // --- ACHIEVEMENT SYSTEM (PASSIVE LOOP) ---
+    // Polls purely passive stats (Resources, Role, Global Level)
+    React.useEffect(() => {
+        if (!player || !user || !account) return;
+
+        import('./logic/achievementLogic').then(({ checkPassiveAchievements }) => {
+            checkPassiveAchievements(user.uid, player, account, showAchievement);
+        });
+    }, [
+        player?.stats?.level,
+        player?.role,
+        account?.globalXp,
+        // Monitor Resources for Passive Resource Achievements (Gold, Wood, Iron)
+        JSON.stringify(player?.resources)
+    ]);
+
     const {
         handleAction, actionResult, setActionResult, handleClearActionResult
-    } = useSimulationActions(pin, player, world, setActiveMinigame as any, setActiveMinigameMethod, setActiveMinigameAction, activeMinigame as any);
+    } = useSimulationActions(
+        pin,
+        player,
+        world,
+        setActiveMinigame as any,
+        setActiveMinigameMethod,
+        setActiveMinigameAction,
+        activeMinigame as any,
+        account,
+        showAchievement
+    );
 
     const [isCreating, setIsCreating] = useState(false);
     const [levelUpData, setLevelUpData] = useState<{ level: number, title: string } | null>(null);
@@ -292,15 +318,7 @@ export const SimulationPlayer: React.FC = () => {
     }), [roomStatus, world, players, messages, markets, diplomacy, activeVote, worldEvents, trades, regions, pin]);
 
     // --- ACHIEVEMENT SYSTEM ---
-    const { showAchievement } = useSimulation();
-    React.useEffect(() => {
-        if (!player || !user || !account) return;
-
-        // ULTRATHINK: We check achievements every time player stats or role changes
-        import('./logic/achievementLogic').then(({ checkAndUnlockAchievements }) => {
-            checkAndUnlockAchievements(user.uid, player, account, showAchievement);
-        });
-    }, [player?.stats?.level, player?.role, account?.globalXp, user?.uid]);
+    // Legacy loop removed. See ULTRATHINK PASSIVE LOOP above.
 
     if (authLoading && !player) {
         return (

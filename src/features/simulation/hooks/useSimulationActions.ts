@@ -10,7 +10,10 @@ export function useSimulationActions(
     setActiveMinigame: (m: ActionType | null) => void,
     setActiveMinigameMethod: (m: string | null) => void,
     setActiveMinigameAction: (a: any | null) => void,
-    activeMinigame: ActionType | null
+    activeMinigame: ActionType | null,
+    // Achievement Extensions
+    account: any | null,
+    showAchievement: (id: string) => void
 ) {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [actionResult, setActionResult] = useState<any | null>(null);
@@ -137,6 +140,19 @@ export function useSimulationActions(
             if (SHOW_RESULT) {
                 if (result.data) {
                     setActionResult(result.data);
+
+                    // ULTRATHINK: Trigger Event Achievements
+                    // We assume success if data is returned
+                    if (account && player) {
+                        import('../logic/achievementLogic').then(({ checkEventAchievements }) => {
+                            // 1. Generic Action Trigger (e.g. TRADE)
+                            checkEventAchievements(player.uid, player, account, 'ACTION_COUNT', String(actionType), 1, showAchievement);
+
+                            // 2. Specific Sub-Type Trigger (e.g. CRAFT_LEGENDARY)
+                            // TODO: Add logic for inspecting result.data for rarity
+                        });
+                    }
+
                 } else if (!result.success) {
                     setActionResult({
                         success: false,
