@@ -1,4 +1,6 @@
+import * as Tone from 'tone';
 import { MUSIC_PLAYLIST } from '../data/musicData';
+import { proceduralSound } from './ProceduralSoundGenerator';
 
 class AudioManager {
     private static instance: AudioManager;
@@ -12,10 +14,9 @@ class AudioManager {
     private isPlaylistActive: boolean = false;
     private ignoredTracks: Set<string> = new Set();
 
-    private audioContext: AudioContext | null = null;
-    private filterNode: BiquadFilterNode | null = null;
     private isMuffledState: boolean = false;
     private activeFades: Map<HTMLAudioElement, number> = new Map();
+    private audioContextResumed: boolean = false;
 
     private constructor() {
         const savedSfx = localStorage.getItem('sim_sfx_volume');
@@ -36,30 +37,24 @@ class AudioManager {
 
         // Initialize playlist from data
         this.playlist = MUSIC_PLAYLIST.map(t => t.id);
-
-        // Shuffle initially
         this.shufflePlaylist();
+
+        // 3. Visibility API Integration (Anti-Pollution)
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    Tone.Destination.mute = true;
+                    if (this.currentMusic) this.currentMusic.muted = true;
+                } else {
+                    Tone.Destination.mute = false;
+                    if (this.currentMusic) this.currentMusic.muted = false;
+                }
+            });
+        }
     }
 
     private shufflePlaylist() {
         this.playlist = this.playlist.sort(() => Math.random() - 0.5);
-    }
-
-    private initAudioContext() {
-        if (!this.audioContext) {
-            try {
-                this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-                this.filterNode = this.audioContext.createBiquadFilter();
-                this.filterNode.type = 'lowpass';
-                this.filterNode.frequency.setValueAtTime(this.isMuffledState ? 12000 : 20000, this.audioContext.currentTime);
-                this.filterNode.connect(this.audioContext.destination);
-            } catch (e) {
-                console.error("Failed to initialize AudioContext", e);
-            }
-        }
-        if (this.audioContext && this.audioContext.state === 'suspended') {
-            this.audioContext.resume();
-        }
     }
 
     public static getInstance(): AudioManager {
@@ -69,9 +64,36 @@ class AudioManager {
         return AudioManager.instance;
     }
 
+    /**
+     * Centralized Resume Handler
+     * Ensures AudioContext is running and procedural engine is ready.
+     * Must be called on user interaction.
+     */
+    public async resume() {
+        if (this.audioContextResumed && Tone.context.state === 'running') return;
+
+        try {
+            await Tone.start();
+            await proceduralSound.init();
+
+            // Sync initial volume
+            proceduralSound.setVolume(this.sfxVolume);
+
+            this.audioContextResumed = true;
+            console.log("🔊 Audio Engine Resumed");
+        } catch (e) {
+            console.warn("Audio Resume Failed (Autoplay blocked?)", e);
+        }
+    }
+
     public setSfxVolume(volume: number) {
         this.sfxVolume = Math.max(0, Math.min(1, volume));
         localStorage.setItem('sim_sfx_volume', this.sfxVolume.toString());
+
+        // Reactive Gain Binding
+        if (this.audioContextResumed) {
+            proceduralSound.setVolume(this.sfxVolume);
+        }
     }
 
     public setMusicVolume(volume: number) {
@@ -85,59 +107,51 @@ class AudioManager {
     public setMuffled(muffled: boolean) {
         this.isMuffledState = muffled;
         localStorage.setItem('sim_music_muffled', muffled.toString());
-
-        if (this.filterNode && this.audioContext) {
-            this.filterNode.frequency.setTargetAtTime(
-                muffled ? 15000 : 20000,
-                this.audioContext.currentTime,
-                0.1
-            );
-        }
+        // Logic for muffling Tone.js master output could be added here if desired
+        // e.g. proceduralSound.setMuffled(muffled)
     }
-
-    public toggleIgnoreTrack(trackId: string) {
-        if (this.ignoredTracks.has(trackId)) {
-            this.ignoredTracks.delete(trackId);
-        } else {
-            this.ignoredTracks.add(trackId);
-        }
-        localStorage.setItem('sim_music_ignored', JSON.stringify(Array.from(this.ignoredTracks)));
-
-        // If we just ignored the current track, skip to next
-        if (this.ignoredTracks.has(trackId) && this.currentMusicKey === trackId && this.isPlaylistActive) {
-            this.playNextInPlaylist();
-        }
-    }
-
-    public isIgnored(trackId: string): boolean {
-        return this.ignoredTracks.has(trackId);
-    }
-
-    public getSfxVolume() { return this.sfxVolume; }
-    public getMusicVolume() { return this.musicVolume; }
-    public isMuffled() { return this.isMuffledState; }
-    public getCurrentTrackId() { return this.currentMusicKey; }
 
     public playSfx(key: string) {
-        if (this.sfxVolume === 0) return;
+        // Init Guard: Silently fail if engine not ready (better than error)
+        if (!this.audioContextResumed || Tone.context.state !== 'running') {
+            return;
+        }
 
-        const filename = key.includes('.') ? key : `${key}.mp3`;
-        const baseUrl = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL;
-        const path = `${baseUrl}/sounds/sfx/${filename}`.replace('//', '/');
+        // Legacy Map & Delegation
+        const normalizedKey = key.toLowerCase();
 
-        const audio = new Audio(path);
-        audio.volume = this.sfxVolume;
-
-        audio.play().catch(() => {
-            // Expected
-        });
+        if (normalizedKey.includes('click')) {
+            proceduralSound.playClick();
+        } else if (normalizedKey.includes('hover') || normalizedKey.includes('toggle')) {
+            proceduralSound.playHover();
+        } else if (normalizedKey.includes('success') || normalizedKey.includes('level')) {
+            proceduralSound.playSuccess();
+        } else if (normalizedKey.includes('error') || normalizedKey.includes('fail')) {
+            proceduralSound.playError();
+        } else if (normalizedKey.includes('coin') || normalizedKey.includes('cash') || normalizedKey.includes('money')) {
+            proceduralSound.playCoin();
+        } else if (normalizedKey.includes('confirm')) {
+            proceduralSound.playConfirm();
+        } else if (normalizedKey.includes('eat') || normalizedKey.includes('consume')) {
+            proceduralSound.playCrunch();
+        } else if (normalizedKey.includes('jump')) {
+            proceduralSound.playJump();
+        } else if (normalizedKey.includes('heartbeat')) {
+            proceduralSound.playHeartbeat();
+        } else {
+            // Fallback: If unknown key, default to click? 
+            // Or try to parse intent? 
+            // For now, let's just log and play click as fallback for safety.
+            // console.warn(`Unknown SFX key: ${key}, playing default click.`);
+            proceduralSound.playClick();
+        }
     }
 
-    public startPlaylist() {
-        if (this.isPlaylistActive && this.currentMusic) return; // Already playing
-        this.isPlaylistActive = true;
+    // --- MUSIC CONTROLS (Keep existing logic mostly, but simplified) ---
 
-        // Use logic to find valid start track if current is null or invalid
+    public startPlaylist() {
+        if (this.isPlaylistActive && this.currentMusic) return;
+        this.isPlaylistActive = true;
         if (!this.currentMusic) {
             this.playNextInPlaylist();
         }
@@ -145,104 +159,49 @@ class AudioManager {
 
     public playNextInPlaylist() {
         if (!this.isPlaylistActive) return;
-
         let attempts = 0;
-        let found = false;
-
-        // Prevent infinite loop if all tracks ignored
         while (attempts < this.playlist.length) {
             this.playlistIndex = (this.playlistIndex + 1) % this.playlist.length;
             const trackId = this.playlist[this.playlistIndex];
-
             if (!this.ignoredTracks.has(trackId)) {
                 this.playMusic(trackId, 2000, false);
-                found = true;
-                break;
+                return;
             }
             attempts++;
         }
-
-        if (!found) {
-            console.warn("All tracks are ignored! Playing fallback.");
-            this.playMusic(this.playlist[0], 2000, false);
-        }
+        // Fallback if all ignored
+        this.playMusic(this.playlist[0], 2000, false);
     }
 
     public playPreviousInPlaylist() {
         if (!this.isPlaylistActive) return;
-
         let attempts = 0;
-        let found = false;
-
-        // Prevent infinite loop if all tracks ignored
         while (attempts < this.playlist.length) {
-            // JS modulo handles negative numbers weirdly, so we fix it
             this.playlistIndex = (this.playlistIndex - 1 + this.playlist.length) % this.playlist.length;
             const trackId = this.playlist[this.playlistIndex];
-
             if (!this.ignoredTracks.has(trackId)) {
                 this.playMusic(trackId, 2000, false);
-                found = true;
-                break;
+                return;
             }
             attempts++;
         }
-
-        if (!found) {
-            this.playMusic(this.playlist[0], 2000, false);
-        }
-    }
-
-    public async resume() {
-        if (!this.audioContext) {
-            this.initAudioContext();
-        }
-        if (this.audioContext && this.audioContext.state === 'suspended') {
-            await this.audioContext.resume();
-        }
+        this.playMusic(this.playlist[0], 2000, false);
     }
 
     public playMusic(key: string, fadeDuration: number = 1000, interruptPlaylist: boolean = true) {
-        if (interruptPlaylist) {
-            this.isPlaylistActive = false;
-        }
-
-        // If trying to play the same track that is currently playing, just ensure volume is up
-        if (this.currentMusicKey === key && this.currentMusic && !this.currentMusic.paused) {
-            this.fadeIn(this.currentMusic, this.musicVolume, 500); // Ensure volume is correct
-            return;
-        }
+        if (interruptPlaylist) this.isPlaylistActive = false;
 
         const filename = key.includes('.') ? key : `${key}.mp3`;
-        // Use BASE_URL to support subpath deployments (like GitHub Pages)
         const baseUrl = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL;
-        // Clean up double slashes just in case
         const path = `${baseUrl}/sounds/music/${filename}`.replace('//', '/');
 
         const newMusic = new Audio(path);
-        // ULTRATHINK: Removing anonymous crossOrigin for local public files to avoid potential CORS issues on dev servers
-        // newMusic.crossOrigin = "anonymous";
-        newMusic.loop = !this.isPlaylistActive; // Loop if it's a specific track request (not playlist)
+        // Clean up connection logic to WebAudio for now, focusing on basic playback for music
+        // to avoid CrossOrigin issues with Tone.js unless setup perfectly.
+        newMusic.loop = !this.isPlaylistActive;
         newMusic.volume = 0;
 
-        this.initAudioContext();
-        if (this.audioContext && this.filterNode) {
-            try {
-                // Check if already connected (though it's a new Audio instance)
-                const source = this.audioContext.createMediaElementSource(newMusic);
-                source.connect(this.filterNode);
-            } catch (e) {
-                console.warn("Could not route through Web Audio API", e);
-            }
-        }
-
-        if (this.isPlaylistActive) {
-            newMusic.onended = () => {
-                this.playNextInPlaylist();
-            };
-        }
-
-        // Clean up current
+        // Fade handling
         if (this.currentMusic) {
             this.fadeOut(this.currentMusic, fadeDuration);
         }
@@ -252,21 +211,14 @@ class AudioManager {
 
         newMusic.play().then(() => {
             this.fadeIn(newMusic, this.musicVolume, fadeDuration);
-            // Ensure context is resumed if playback succeeded
-            if (this.audioContext && this.audioContext.state === 'suspended') {
-                this.audioContext.resume();
-            }
         }).catch(e => {
             console.warn(`Failed to play music: ${key}`, e);
-            if (this.currentMusic === newMusic) {
-                this.currentMusic = null;
-                this.currentMusicKey = null;
-            }
-            if (this.isPlaylistActive) {
-                // Try next one if this fails
-                setTimeout(() => this.playNextInPlaylist(), 2000);
-            }
+            if (this.isPlaylistActive) setTimeout(() => this.playNextInPlaylist(), 2000);
         });
+
+        if (this.isPlaylistActive) {
+            newMusic.onended = () => this.playNextInPlaylist();
+        }
     }
 
     public stopMusic(fadeDuration: number = 1000) {
@@ -278,56 +230,62 @@ class AudioManager {
         }
     }
 
+    // Helper Fades
     private fadeOut(audio: HTMLAudioElement, duration: number) {
-        // Stop any existing fade on this element
+        // Clear existing fade
         if (this.activeFades.has(audio)) {
             clearInterval(this.activeFades.get(audio));
+            this.activeFades.delete(audio);
         }
 
         const startVolume = audio.volume;
         const steps = 20;
-        const stepTime = duration / steps;
-        const volStep = startVolume / steps;
-
-        let currentStep = 0;
         const interval = setInterval(() => {
-            currentStep++;
-            const newVol = Math.max(0, startVolume - (volStep * currentStep));
-            audio.volume = newVol;
-
-            if (newVol <= 0) {
+            if (audio.volume > 0.01) {
+                audio.volume = Math.max(0, audio.volume - (startVolume / steps));
+            } else {
                 audio.pause();
-                audio.src = ""; // Force cleanup
                 clearInterval(interval);
                 this.activeFades.delete(audio);
             }
-        }, stepTime);
+        }, duration / steps);
 
         this.activeFades.set(audio, interval as any);
     }
 
-    private fadeIn(audio: HTMLAudioElement, targetVolume: number, duration: number) {
-        // Stop any existing fade on this element (e.g. if we were fading it out)
+    private fadeIn(audio: HTMLAudioElement, target: number, duration: number) {
+        // Clear existing fade
         if (this.activeFades.has(audio)) {
             clearInterval(this.activeFades.get(audio));
             this.activeFades.delete(audio);
         }
 
         const steps = 20;
-        const stepTime = duration / steps;
-        const volStep = targetVolume / steps;
-
-        let currentStep = 0;
         const interval = setInterval(() => {
-            currentStep++;
-            const newVol = Math.min(targetVolume, volStep * currentStep);
-            audio.volume = newVol;
-
-            if (newVol >= targetVolume || audio.paused) {
+            if (audio.volume < target) {
+                audio.volume = Math.min(target, audio.volume + (target / steps));
+            } else {
                 clearInterval(interval);
+                this.activeFades.delete(audio);
             }
-        }, stepTime);
+        }, duration / steps);
+
+        this.activeFades.set(audio, interval as any);
     }
 
+    // Getters
+    public getSfxVolume() { return this.sfxVolume; }
+    public getMusicVolume() { return this.musicVolume; }
+    public isMuffled() { return this.isMuffledState; }
+    public getCurrentTrackId() { return this.currentMusicKey; }
+
+    // Ignored Tracks Pass-through
+    public toggleIgnoreTrack(id: string) {
+        if (this.ignoredTracks.has(id)) this.ignoredTracks.delete(id);
+        else this.ignoredTracks.add(id);
+        localStorage.setItem('sim_music_ignored', JSON.stringify(Array.from(this.ignoredTracks)));
+    }
+    public isIgnored(id: string) { return this.ignoredTracks.has(id); }
 }
+
 export const audioManager = AudioManager.getInstance();

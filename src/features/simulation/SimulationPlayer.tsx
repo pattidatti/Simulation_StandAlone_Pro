@@ -286,7 +286,22 @@ export const SimulationPlayer: React.FC = () => {
                                         });
                                     }
                                 } else {
-                                    handleAction({ ...(activeMinigameAction || {}), performance: score, method: activeMinigameMethod });
+                                    // ULTRATHINK: Defensive Action Construction
+                                    const fallbackType = activeMinigame;
+                                    const explicitAction = activeMinigameAction || {};
+
+                                    if (!explicitAction.type && fallbackType) {
+                                        console.warn(`[SimulationPlayer] Warning: Minigame '${fallbackType}' completed without explicit action object. Using fallback.`);
+                                    }
+
+                                    const effectiveAction = {
+                                        type: fallbackType,     // 1. Base Layer (Safe Fallback)
+                                        ...explicitAction,      // 2. Overlay Layer (Specifics take priority)
+                                        performance: score,     // 3. Result Layer (Always overwrite)
+                                        method: activeMinigameMethod
+                                    };
+
+                                    handleAction(effectiveAction);
                                 }
                             }}
                             onCancel={() => { setActiveMinigame(null); setActiveMinigameAction(null); setActiveMinigameMethod(null); }}

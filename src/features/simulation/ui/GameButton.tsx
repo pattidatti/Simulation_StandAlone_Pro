@@ -31,9 +31,27 @@ export const GameButton: React.FC<GameButtonProps> = ({
         lg: "px-6 py-3 text-base"
     };
 
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        // Audio Trigger
+        if (variant === 'primary' || variant === 'danger') {
+            import('../logic/AudioManager').then(({ audioManager }) => audioManager.playSfx('confirm'));
+        } else {
+            import('../logic/AudioManager').then(({ audioManager }) => audioManager.playSfx('ui_click'));
+        }
+
+        if (props.onClick) props.onClick(e);
+    };
+
+    const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+        import('../logic/AudioManager').then(({ audioManager }) => audioManager.playSfx('ui_hover'));
+        if (props.onMouseEnter) props.onMouseEnter(e);
+    }
+
     return (
         <button
             className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+            onClick={handleClick}
+            onMouseEnter={handleMouseEnter}
             {...props}
         >
             {icon && <span className="mr-2">{icon}</span>}

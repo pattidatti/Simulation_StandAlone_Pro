@@ -79,7 +79,9 @@ export const WorldMapPOI: React.FC<WorldMapPOIProps> = ({ viewMode, viewingRegio
                         className="absolute -translate-x-1/2 -translate-y-1/2 group z-20 pointer-events-auto"
                     >
                         <button
+                            onMouseEnter={() => import('../../logic/AudioManager').then(({ audioManager }) => audioManager.playSfx('ui_hover'))}
                             onClick={() => {
+                                import('../../logic/AudioManager').then(({ audioManager }) => audioManager.playSfx('ui_click'));
                                 if (isCastle && !canEnterCastle) {
                                     onPOIAction(poi.id, 'OPEN_CONSTRUCTION');
                                     return;

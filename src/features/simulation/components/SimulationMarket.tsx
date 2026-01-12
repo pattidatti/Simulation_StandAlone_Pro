@@ -208,7 +208,10 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                                                 <div className="flex gap-2 flex-1 max-w-[200px]">
                                                     <GameButton
                                                         variant="primary"
-                                                        onClick={() => onAction({ type: 'BUY', resource: resId, amount: qty })}
+                                                        onClick={() => {
+                                                            import('../logic/AudioManager').then(({ audioManager }) => audioManager.playSfx('coin'));
+                                                            onAction({ type: 'BUY', resource: resId, amount: qty });
+                                                        }}
                                                         disabled={(player.resources?.gold || 0) < totalCost || stock < qty || !!actionLoading}
                                                         className={`flex-1 py-0 h-10 font-black text-[11px] whitespace-nowrap tracking-tight transition-all duration-300 ${isHighBuySlippage ? 'ring-2 ring-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : ''}`}
                                                     >
@@ -216,7 +219,10 @@ export const SimulationMarket: React.FC<SimulationMarketProps> = React.memo(({ p
                                                     </GameButton>
                                                     <GameButton
                                                         variant="wood"
-                                                        onClick={() => onAction({ type: 'SELL', resource: resId, amount: qty })}
+                                                        onClick={() => {
+                                                            import('../logic/AudioManager').then(({ audioManager }) => audioManager.playSfx('coin'));
+                                                            onAction({ type: 'SELL', resource: resId, amount: qty });
+                                                        }}
                                                         disabled={playerStock < qty || !!actionLoading}
                                                         className={`flex-1 py-0 h-10 font-black text-[11px] whitespace-nowrap tracking-tight transition-all duration-300 ${isHighSellSlippage ? 'ring-2 ring-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : ''}`}
                                                     >
