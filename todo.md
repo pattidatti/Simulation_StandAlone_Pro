@@ -6,12 +6,9 @@
 ## Medium Priority
 - [ ] 
 ## Low Priority
-- Ekte ammo på båten. Bruker kanonballer, lages med stein og jerbarre. Må legges til i Båt-UI på kai. 
-- Mang
-- [x] Sjekke at systemene for å bytte baroner og konge faktisk eksisterer og at de virker skikkelig. 
+
+
 - [ ] Dart i vertshuset (andre etasje)
-- [x] Husmannsplass viser ikke riktige bilder når man har oppgradert 1-5, hverken ute eller inne i stugo. Vi bruker map_peasant_farm og map_stugo_interior . Undersøk 
-- [x] Mulighet for å kjøpe større antall i markedet. Oppdatere UI på marked. 
 - [] Vi må ha jucy screenshake og timestop på minigames slik at de får skikkelig vekt. 
 -  x] går ikke an å legge inn beleiringssverd og rustning i krigsrommet som baron. Ser den ikke at jeg har i inventory?
 - [ ] Krigsrommet 

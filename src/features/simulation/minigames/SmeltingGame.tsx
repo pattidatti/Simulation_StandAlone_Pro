@@ -1,126 +1,138 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useEffect, useRef } from 'react';
 import { animationManager } from '../logic/AnimationManager';
+import { useSmeltingTick } from './hooks/useSmeltingTick';
+import { ThermometerGauge } from './components/ThermometerGauge';
+import { BellowsButton } from './components/BellowsButton';
 
 export const SmeltingGame: React.FC<{ onComplete: (score: number) => void, speedMultiplier?: number }> = ({ onComplete, speedMultiplier = 1.0 }) => {
-    const [heat, setHeat] = useState(20); // 0-100
-    const [targetRange] = useState({ min: 60, max: 85 });
-    const [progress, setProgress] = useState(0); // 0-100
-    const [isFinished, setIsFinished] = useState(false);
+    const {
+        heatRef,
+        progressRef,
+        targetRange,
+        shakeIntensity,
+        gameState,
+        pump
+    } = useSmeltingTick({ onComplete, speedMultiplier });
 
-    const requestRef = useRef<number>(null);
-    const lastTimeRef = useRef<number>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const progressOrbRef = useRef<HTMLDivElement>(null);
 
-    const animate = (time: number) => {
-        if (isFinished) return;
-
-        if (lastTimeRef.current === undefined || lastTimeRef.current === null) {
-            lastTimeRef.current = time;
-            requestRef.current = requestAnimationFrame(animate);
-            return;
-        }
-
-        if (lastTimeRef.current !== undefined) {
-            const deltaTime = time - lastTimeRef.current;
-
-            // Heat decay
-            setHeat(h => Math.max(0, h - (0.015 * deltaTime * speedMultiplier)));
-
-            // Target movement (optional: make it move slightly over time)
-            // For now keep it static for simplicity but could oscillate.
-
-            // Check if in range
-            setHeat(h => {
-                if (h >= targetRange.min && h <= targetRange.max) {
-                    setProgress(p => {
-                        const next = p + (0.01 * deltaTime);
-                        if (next >= 100 && !isFinished) {
-                            setIsFinished(true);
-                            animationManager.spawnFloatingText("PERFEKT TEMPERATUR! 🔥", window.innerWidth / 2, window.innerHeight / 2, 'text-orange-500 text-4xl font-black');
-                            setTimeout(() => onComplete(1.0), 1000);
-                        }
-                        return next;
-                    });
-                }
-                return h;
-            });
-        }
-        lastTimeRef.current = time;
-        requestRef.current = requestAnimationFrame(animate);
-    };
-
+    // Visual Loop for Container Shake and Progress Update
     useEffect(() => {
-        requestRef.current = requestAnimationFrame(animate);
-        return () => {
-            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        let rafId: number;
+        const update = () => {
+            // 1. Apply Shake to Container
+            if (containerRef.current) {
+                if (shakeIntensity > 0) {
+                    const x = (Math.random() - 0.5) * shakeIntensity * 4;
+                    const y = (Math.random() - 0.5) * shakeIntensity * 4;
+                    containerRef.current.style.transform = `translate(${x}px, ${y}px)`;
+                } else {
+                    containerRef.current.style.transform = 'none';
+                }
+            }
+
+            // 2. Update Progress Display
+            if (progressOrbRef.current) {
+                const p = progressRef.current;
+                progressOrbRef.current.style.background = `conic-gradient(#f97316 ${p}%, transparent 0)`;
+                // Text content update efficiently?
+                // Using innerText is fast enough for 60fps
+                const textEl = progressOrbRef.current.querySelector('[data-role="progress-text"]') as HTMLElement;
+                if (textEl) {
+                    textEl.innerText = `${Math.floor(p)}%`;
+                }
+            }
+
+            rafId = requestAnimationFrame(update);
         };
-    }, [isFinished]);
+        rafId = requestAnimationFrame(update);
+        return () => cancelAnimationFrame(rafId);
+    }, [shakeIntensity, progressRef]);
 
     const handlePump = () => {
-        if (isFinished) return;
-        setHeat(h => Math.min(100, h + 12));
-        animationManager.spawnParticles(window.innerWidth / 2, window.innerHeight / 2 + 100, 'bg-orange-500');
-        animationManager.spawnFloatingText("PUST!", window.innerWidth / 2, window.innerHeight / 2 + 50, 'text-slate-400 font-bold text-xs uppercase');
+        pump();
+        // Particle FX
+        if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            animationManager.spawnParticles(
+                rect.left + rect.width / 2,
+                rect.bottom - 100,
+                'bg-orange-200'
+            );
+        }
     };
 
     return (
         <div
-            onClick={handlePump}
-            className="p-12 min-h-[600px] relative flex flex-col items-center justify-center overflow-hidden cursor-pointer select-none"
-            style={{ backgroundImage: 'url("/images/minigames/smeltery_bg.png")', backgroundSize: 'cover', backgroundColor: '#2a1205' }}
+            ref={containerRef}
+            className="p-8 min-h-[600px] w-full relative flex flex-col items-center justify-center overflow-hidden select-none"
+            style={{
+                backgroundImage: 'url("/images/minigames/smeltery_bg.png")',
+                backgroundSize: 'cover',
+                backgroundColor: '#1a0f0a'
+            }}
         >
-            <div className="absolute inset-0 bg-black/80 z-0" />
+            {/* Dark Overlay */}
+            <div className="absolute inset-0 bg-black/70 z-0 backdrop-blur-[2px]" />
 
-            <div className="relative z-10 text-center mb-12">
-                <h2 className="text-4xl font-black text-white uppercase tracking-tighter drop-shadow-xl">Smelting</h2>
-                <div className="text-orange-500 font-black uppercase tracking-widest text-xs mt-2 bg-black/40 px-4 py-1 rounded-full border border-orange-500/20">
-                    Hold varmen i den oransje sonen
+            {/* Header */}
+            <div className="relative z-10 text-center mb-8">
+                <h2 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-orange-400 to-red-600 uppercase tracking-tighter drop-shadow-2xl filter contrast-125">
+                    Smelting
+                </h2>
+                <div className="text-orange-200/80 font-bold uppercase tracking-[0.2em] text-xs mt-2">
+                    Hold varmen i sonen
                 </div>
             </div>
 
-            <div className="relative z-10 flex gap-12 items-end h-80">
-                {/* Heat Meter */}
-                <div className="w-20 h-full bg-slate-900/80 rounded-full border-4 border-white/10 relative overflow-hidden shadow-2xl">
-                    {/* Target Zone */}
-                    <div
-                        className="absolute w-full bg-orange-500/30 border-y-2 border-orange-500/50 flex items-center justify-center"
-                        style={{
-                            bottom: `${targetRange.min}%`,
-                            height: `${targetRange.max - targetRange.min}%`
-                        }}
-                    >
-                        <div className="w-full h-full bg-orange-500/10 animate-pulse" />
-                    </div>
-
-                    {/* Heat Level */}
-                    <div
-                        className={`absolute bottom-0 w-full transition-all duration-75 shadow-[0_0_30px_rgba(249,115,22,0.5)] ${heat > targetRange.max ? 'bg-white' : 'bg-gradient-to-t from-red-600 via-orange-500 to-yellow-400'}`}
-                        style={{ height: `${heat}%` }}
-                    >
-                        {/* Heat Glow */}
-                        <div className="absolute top-0 inset-x-0 h-4 bg-white/50 blur-[2px]" />
-                    </div>
+            {/* Main Game Area */}
+            <div className="relative z-10 flex gap-12 items-end">
+                {/* Left: Thermometer */}
+                <div className="flex flex-col items-center gap-2">
+                    <ThermometerGauge heatRef={heatRef} targetRange={targetRange} />
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Heat</span>
                 </div>
 
-                {/* Progress Column */}
-                <div className="flex flex-col gap-4">
-                    <div className="text-xs font-black text-slate-500 uppercase tracking-widest text-center">Fremgang</div>
-                    <div className="w-12 h-64 bg-slate-900/80 rounded-2xl border-2 border-white/5 relative overflow-hidden">
+                {/* Right: Progress Orb */}
+                <div className="flex flex-col items-center gap-4 mb-4">
+                    <div
+                        role="progressbar"
+                        aria-valuenow={Math.round(progressRef.current)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        className="relative w-32 h-32 rounded-full bg-slate-900 border-4 border-slate-700 shadow-xl flex items-center justify-center"
+                    >
+                        {/* Conic Gradient for Progress */}
                         <div
-                            className="absolute bottom-0 w-full bg-indigo-500 transition-all duration-300"
-                            style={{ height: `${progress}%` }}
+                            ref={progressOrbRef}
+                            className="absolute inset-0 rounded-full opacity-80"
+                            style={{ background: `conic-gradient(#f97316 0%, transparent 0)` }}
                         />
+                        {/* Inner Mask for Ring Effect */}
+                        <div className="absolute inset-2 bg-slate-900 rounded-full flex items-center justify-center">
+                            <span data-role="progress-text" className="text-3xl font-black text-white">0%</span>
+                        </div>
                     </div>
-                    <div className="text-xl font-black text-white text-center">{Math.round(progress)}%</div>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Fremgang</span>
                 </div>
             </div>
 
-            <div className="mt-16 text-slate-400 text-sm font-bold uppercase tracking-widest animate-pulse relative z-10 text-center max-w-xs">
-                Klikk for å pumpe blåsebelgen og øke varmen
+            {/* Controls */}
+            <div className="relative z-10 mt-12">
+                <BellowsButton onPump={handlePump} />
             </div>
 
-            {isFinished && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in zoom-in duration-300">
-                    <div className="text-6xl font-black text-orange-500 animate-bounce drop-shadow-[0_0_30px_rgba(249,115,22,0.5)]">FERDIG! 🔥</div>
+            {/* Win Overlay */}
+            {gameState === 'won' && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="flex flex-col items-center gap-4 animate-in zoom-in-50 duration-500">
+                        <div className="text-7xl">🔥</div>
+                        <div className="text-6xl font-black text-white tracking-tighter drop-shadow-[0_0_30px_rgba(249,115,22,0.8)]">
+                            PERFEKT!
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
