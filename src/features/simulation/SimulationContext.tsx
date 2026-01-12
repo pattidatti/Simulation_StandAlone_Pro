@@ -33,6 +33,9 @@ interface SimulationContextType {
     // Music Window State
     isMusicWindowOpen: boolean;
     setMusicWindowOpen: (isOpen: boolean) => void;
+    // Achievements
+    showAchievement: (id: string) => void;
+    currentAchievement: string | null;
 }
 
 
@@ -67,6 +70,26 @@ export const SimulationProvider: React.FC<{ children: ReactNode }> = ({ children
     const [activeMinigameAction, setActiveMinigameAction] = useState<any | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [productionContext, setProductionContext] = useState<ProductionContext | null>(null);
+    const [achievementQueue, setAchievementQueue] = useState<string[]>([]);
+    const [currentAchievement, setCurrentAchievement] = useState<string | null>(null);
+
+    const showAchievement = (id: string) => {
+        setAchievementQueue(prev => [...prev, id]);
+    };
+
+    // Process Achievement Queue
+    React.useEffect(() => {
+        if (achievementQueue.length > 0 && !currentAchievement) {
+            const next = achievementQueue[0];
+            setCurrentAchievement(next);
+            setAchievementQueue(prev => prev.slice(1));
+
+            // Auto-clear after toast duration (6 seconds)
+            setTimeout(() => {
+                setCurrentAchievement(null);
+            }, 6000);
+        }
+    }, [achievementQueue, currentAchievement]);
 
     // Custom setter that updates state + silently updates URL
     const setActiveTab = (newTab: TabType) => {
@@ -106,7 +129,9 @@ export const SimulationProvider: React.FC<{ children: ReactNode }> = ({ children
             actionLoading,
             setActionLoading,
             productionContext,
-            setProductionContext
+            setProductionContext,
+            showAchievement,
+            currentAchievement
         }}>
             {children}
         </SimulationContext.Provider>

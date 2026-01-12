@@ -23,6 +23,7 @@ import { WeaponRackWindow } from './components/WeaponRackWindow';
 import { CaravanWindow } from './components/CaravanWindow';
 import { SailingMinigame } from './components/SailingMinigame';
 import { Trophy } from 'lucide-react';
+import { AchievementToast } from './components/AchievementToast';
 import { INITIAL_RESOURCES, INITIAL_SKILLS, INITIAL_EQUIPMENT } from './constants';
 import { ref, update } from 'firebase/database';
 import { simulationDb as db } from './simulationFirebase';
@@ -260,26 +261,46 @@ export const SimulationPlayer: React.FC = () => {
         pin: pin || ''
     }), [roomStatus, world, players, messages, markets, diplomacy, activeVote, worldEvents, trades, regions, pin]);
 
-    if (authLoading || !hasAttemptedPlayerLoad) {
+    // --- ACHIEVEMENT SYSTEM ---
+    const { showAchievement } = useSimulation();
+    React.useEffect(() => {
+        if (!player || !user || !account) return;
+
+        // ULTRATHINK: We check achievements every time player stats or role changes
+        import('./logic/achievementLogic').then(({ checkAndUnlockAchievements }) => {
+            checkAndUnlockAchievements(user.uid, player, account, showAchievement);
+        });
+    }, [player?.stats?.level, player?.role, account?.globalXp, user?.uid]);
+
+    if (authLoading && !player) {
         return (
-            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-8 p-12">
-                <div className="relative">
-                    <div className="w-24 h-24 border-4 border-indigo-500/20 rounded-full" />
-                    <div className="absolute inset-0 w-24 h-24 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                </div>
-                <h2 className="text-2xl font-black italic text-white animate-pulse">Kaller på åndene...</h2>
+            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-6" />
+                <h2 className="text-xl font-black text-white uppercase tracking-widest animate-pulse">
+                    Våkner til liv...
+                </h2>
             </div>
         );
     }
 
     if (isRetired) {
         return (
-            <div className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-6 text-center">
-                <div className="max-w-md bg-slate-900 border-2 border-indigo-500/30 rounded-[3rem] p-12 space-y-8 shadow-2xl">
-                    <Trophy size={48} className="text-white mx-auto animate-bounce" />
-                    <h2 className="text-4xl font-black italic text-white">ET LIV ER OVER</h2>
-                    <button onClick={() => navigate('/sim')} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase">Tilbake til Lobby</button>
+            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-20 h-20 bg-indigo-500/20 rounded-3xl flex items-center justify-center text-indigo-400 mb-8 border border-white/10 shadow-2xl">
+                    <Trophy size={40} />
                 </div>
+                <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-4">
+                    Karakteren er pensjonert
+                </h2>
+                <p className="text-slate-400 max-w-sm mb-12">
+                    Ditt ettermæle er sikret i Hall of Fame. Gå tilbake til lobbyen for å starte et nytt liv.
+                </p>
+                <button
+                    onClick={() => navigate('/sim')}
+                    className="px-12 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-indigo-600/20 active:scale-95"
+                >
+                    Til Lobbyen
+                </button>
             </div>
         );
     }

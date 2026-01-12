@@ -39,7 +39,16 @@ export const GlobalProfileContent: React.FC<GlobalProfileContentProps> = ({ onCl
 
     // Calculate global stats
     const totalAchievements = ACHIEVEMENTS.length;
-    const unlockedCount = account?.unlockedAchievements?.length || 0;
+    const unlockedAchievements = account?.unlockedAchievements || {};
+    const unlockedCount = Array.isArray(unlockedAchievements)
+        ? unlockedAchievements.length
+        : Object.keys(unlockedAchievements).length;
+
+    const isUnlocked = (id: string) => {
+        if (Array.isArray(unlockedAchievements)) return unlockedAchievements.includes(id);
+        return !!unlockedAchievements[id];
+    };
+
     const completionPercentage = Math.round((unlockedCount / totalAchievements) * 100);
 
     // Calculate Potential XP (Harvestable) from all active sessions
@@ -218,32 +227,71 @@ export const GlobalProfileContent: React.FC<GlobalProfileContentProps> = ({ onCl
                 {/* Legacy & Achievements Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-                    {/* ACHIEVEMENTS */}
-                    <div className="bg-white/5 border border-white/5 rounded-3xl p-8 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <Trophy size={14} /> Achievements
-                            </h4>
-                            <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded">{completionPercentage}%</span>
+                    {/* ACHIEVEMENTS - The Constellation */}
+                    <div className="bg-slate-900 shadow-2xl border border-white/5 rounded-3xl p-8 space-y-8 relative overflow-hidden group/starry">
+                        {/* Background Star Effect */}
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.05)_0%,transparent_70%)] opacity-50 pointer-events-none" />
+
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                            <div className="space-y-1">
+                                <h4 className="text-xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
+                                    <Trophy size={20} className="text-amber-400" /> Sjels-meritter
+                                </h4>
+                                <p className="text-xs text-slate-500 font-medium">Fullførte bragder i {account?.displayName || 'sjelen'}s historie.</p>
+                            </div>
+                            <div className="flex items-center gap-3 bg-white/5 p-1 rounded-xl border border-white/5">
+                                <span className="text-[10px] font-black text-indigo-400 px-3 py-1.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20 shadow-lg shadow-indigo-600/10">
+                                    {unlockedCount} / {totalAchievements}
+                                </span>
+                                <div className="h-4 w-px bg-white/10" />
+                                <span className="text-[10px] font-bold text-slate-400 pr-3">{completionPercentage}% Fullført</span>
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-5 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                        {/* CATEGORY TABS (Future expansion: filter achievements by category) */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 relative z-10">
                             {ACHIEVEMENTS.map((ach) => {
-                                const isUnlocked = account?.unlockedAchievements?.includes(ach.id);
+                                const unlocked = isUnlocked(ach.id);
+
+                                const rarityStyles = {
+                                    COMMON: 'border-slate-500/20 text-slate-400 bg-slate-500/5 hover:border-slate-400/50',
+                                    RARE: 'border-indigo-500/20 text-indigo-400 bg-indigo-500/5 hover:border-indigo-400/50',
+                                    EPIC: 'border-amber-500/20 text-amber-400 bg-amber-500/5 hover:border-amber-400/50',
+                                    LEGENDARY: 'border-rose-500/20 text-rose-400 bg-rose-500/5 hover:border-rose-400/50'
+                                };
+
+                                const glowStyles = {
+                                    COMMON: 'shadow-slate-500/10',
+                                    RARE: 'shadow-indigo-500/10',
+                                    EPIC: 'shadow-amber-500/20',
+                                    LEGENDARY: 'shadow-rose-500/30'
+                                };
+
                                 return (
                                     <div
                                         key={ach.id}
                                         title={`${ach.name}: ${ach.description}`}
-                                        className={`aspect-square rounded-xl border flex items-center justify-center transition-all relative group cursor-help
-                                            ${isUnlocked
-                                                ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
-                                                : 'bg-black/20 text-slate-800 border-white/5 grayscale opacity-50'
+                                        className={`group relative flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-500 cursor-help
+                                            ${unlocked
+                                                ? `${rarityStyles[ach.rarity]} shadow-xl ${glowStyles[ach.rarity]}`
+                                                : 'border-white/5 grayscale opacity-30 hover:opacity-50 hover:grayscale-0'
                                             }`}
                                     >
-                                        <span className="text-xl">{ach.icon}</span>
-                                        {isUnlocked && (
-                                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900" />
-                                        )}
+                                        <div className={`text-2xl mb-2 transition-transform duration-500 group-hover:scale-125 ${unlocked ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]' : ''}`}>
+                                            {ach.icon}
+                                        </div>
+                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-px bg-current opacity-20" />
+
+                                        {/* Hover Details Popover */}
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-48 p-4 bg-slate-900 border border-white/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-1">{ach.rarity}</p>
+                                            <h5 className="text-white font-black italic mb-2 tracking-tight">{ach.name}</h5>
+                                            <p className="text-[11px] text-slate-400 leading-tight">{ach.description}</p>
+                                            <div className="mt-3 flex items-center justify-between pt-3 border-t border-white/5">
+                                                <span className="text-[9px] font-black text-slate-500 uppercase">{ach.category}</span>
+                                                <span className="text-[10px] font-black text-amber-400 italic">+{ach.xp} XP</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 );
                             })}

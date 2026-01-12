@@ -166,7 +166,7 @@ export interface SimulationAccount {
     globalXp: number;
     globalLevel: number;
     totalGoldEarned: number;
-    unlockedAchievements: string[];
+    unlockedAchievements: Record<string, number>;
     characterHistory: {
         roomPin: string;
         name: string;

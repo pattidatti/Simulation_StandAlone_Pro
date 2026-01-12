@@ -6,103 +6,122 @@ export interface AchievementDef {
     icon: string;
     rarity: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
     xp: number;
+    category: 'LIFE' | 'SOUL' | 'ROLE';
 }
 
 export const ACHIEVEMENTS: AchievementDef[] = [
-    // COMMON
+    // --- LIFE ACHIEVEMENTS (Nuet) ---
     {
         id: 'first_steps',
         name: 'Første Skritt',
-        description: 'Fullfør din første dag i simuleringen (Nå nivå 2).',
+        description: 'Overlev din første dag i vildmarken.',
         icon: '👣',
         rarity: 'COMMON',
-        xp: 50
+        xp: 100,
+        category: 'LIFE'
+    },
+    {
+        id: 'full_belly',
+        name: 'Mett Mage',
+        description: 'Spis 5 måltider på rad uten å bli sulten.',
+        icon: '🍞',
+        rarity: 'COMMON',
+        xp: 50,
+        category: 'LIFE'
     },
     {
         id: 'resource_gatherer',
-        name: 'Samleren',
-        description: 'Samle 100 ressurser totalt.',
+        name: 'Flittig Arbeider',
+        description: 'Samle 250 ressurser med egne hender.',
         icon: '🪵',
         rarity: 'COMMON',
-        xp: 75
-    },
-    {
-        id: 'social_butterfly',
-        name: 'Folkekjær',
-        description: 'Motta 5 gaver fra andre spillere.',
-        icon: '🎁',
-        rarity: 'COMMON',
-        xp: 100
-    },
-
-    // RARE
-    {
-        id: 'baron_rising',
-        name: 'Lensherre',
-        description: 'Bli utnevnt til Baron for første gang.',
-        icon: '🏰',
-        rarity: 'RARE',
-        xp: 500
+        xp: 150,
+        category: 'LIFE'
     },
     {
         id: 'master_craftsman',
-        name: 'Mesterhåndverker',
+        name: 'Faglært',
         description: 'Nå nivå 10 i en ferdighet.',
         icon: '🔨',
         rarity: 'RARE',
-        xp: 300
+        xp: 400,
+        category: 'LIFE'
     },
+
+    // --- SOUL ACHIEVEMENTS (Sjelen) ---
     {
-        id: 'wealth_accumulator',
-        name: 'Gullbaron',
-        description: 'Ha 5000 gull på bok.',
-        icon: '💰',
+        id: 'soul_awakening',
+        name: 'Sjelens Oppvåkning',
+        description: 'Nå Sjelsnivå 5.',
+        icon: '✨',
         rarity: 'RARE',
-        xp: 400
+        xp: 1000,
+        category: 'SOUL'
     },
-
-    // EPIC
-    {
-        id: 'king_slayer',
-        name: 'Kongemakt',
-        description: 'Bli kronet til Konge over riket.',
-        icon: '👑',
-        rarity: 'EPIC',
-        xp: 2000
-    },
-    {
-        id: 'survivor',
-        name: 'Overleveren',
-        description: 'Nå nivå 20 med én karakter.',
-        icon: '💪',
-        rarity: 'EPIC',
-        xp: 1500
-    },
-    {
-        id: 'legendary_blacksmith',
-        name: 'Legendarisk Smed',
-        description: 'Smi et Legendarisk våpen.',
-        icon: '⚔️',
-        rarity: 'EPIC',
-        xp: 1000
-    },
-
-    // LEGENDARY
     {
         id: 'eternal_dynasty',
         name: 'Evig Dynasti',
-        description: 'Ha 10 døde karakterer i Hall of Fame.',
+        description: 'Ha 10 forfedre i Hall of Fame.',
         icon: '🏛️',
         rarity: 'LEGENDARY',
-        xp: 5000
+        xp: 5000,
+        category: 'SOUL'
     },
     {
         id: 'world_traveler',
         name: 'Verdensvandrer',
-        description: 'Besøk 5 forskjellige servere (Rooms).',
+        description: 'Besøk 5 forskjellige riger.',
         icon: '🌍',
+        rarity: 'EPIC',
+        xp: 2500,
+        category: 'SOUL'
+    },
+
+    // --- ROLE ACHIEVEMENTS (Rollene) ---
+    {
+        id: 'baron_rising',
+        name: 'Lokal Stolthet',
+        description: 'Bli utnevnt til Baron.',
+        icon: '🏰',
+        rarity: 'RARE',
+        xp: 800,
+        category: 'ROLE'
+    },
+    {
+        id: 'tax_collector',
+        name: 'Skatteinnkreveren',
+        description: 'Krev inn skatt fra 10 forskjellige bønder.',
+        icon: '🪙',
+        rarity: 'RARE',
+        xp: 600,
+        category: 'ROLE'
+    },
+    {
+        id: 'king_slayer',
+        name: 'Høyest i Riket',
+        description: 'Bli kronet til Konge over landet.',
+        icon: '👑',
+        rarity: 'EPIC',
+        xp: 3000,
+        category: 'ROLE'
+    },
+    {
+        id: 'benevolent_ruler',
+        name: 'Den Gode Hersker',
+        description: 'Ha 100% lojalitet i din region som Baron eller Konge.',
+        icon: '🕊️',
+        rarity: 'EPIC',
+        xp: 2000,
+        category: 'ROLE'
+    },
+    {
+        id: 'legendary_blacksmith',
+        name: 'Gudesmed',
+        description: 'Smi en gjenstand av ypperste kvalitet.',
+        icon: '⚔️',
         rarity: 'LEGENDARY',
-        xp: 2500
+        xp: 4000,
+        category: 'ROLE'
     }
 ];
 
