@@ -336,9 +336,21 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
                     const players = playersSnap.val();
                     Object.entries(players).forEach(([pid, pData]: [string, any]) => {
                         if (pData.role === 'KING' && pid !== winnerId) {
+                            // ULTRATHINK: Exile Logic - Prevent "Free Men" status in Capital
+                            const exileRegion = Math.random() > 0.5 ? 'region_ost' : 'region_vest';
+
                             globalUpdates[`players/${pid}/role`] = 'PEASANT';
                             globalUpdates[`public_profiles/${pid}/role`] = 'PEASANT';
+
+                            // Force Exile
+                            globalUpdates[`players/${pid}/regionId`] = exileRegion;
+                            globalUpdates[`public_profiles/${pid}/regionId`] = exileRegion;
+
+                            // Nuke Legitimacy to prevent immediate counter-coup
                             if (pData.status) globalUpdates[`players/${pid}/status/legitimacy`] = 0;
+
+                            const regionName = exileRegion === 'region_ost' ? 'Øst' : 'Vest';
+                            logSimulationMessage(pin, `👑 ${pData.name} har blitt tvunget i EKSIL til ${regionName}!`);
                         }
                     });
                 }
