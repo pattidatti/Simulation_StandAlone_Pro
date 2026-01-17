@@ -195,7 +195,8 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
         } else if (actId === 'BUY_MEAL') {
             onAction({ type: 'BUY_MEAL' });
         } else {
-            onAction(actId);
+            // Fix: Pass the full action object if available to preserve params (like targetRole)
+            onAction(actionId);
         }
         setSelectedPOI(null);
     }, [viewingRegionId, player, onAction, onOpenMarket, setActiveTab, setProductionContext, setSelectedPOI]);
