@@ -94,6 +94,12 @@ export function useWorldMapLogic(player: any, onAction: (a: any) => void, onOpen
             return null;
         };
 
+        if (actId === 'OPEN_DICE_GAME') {
+            setIsDiceGameOpen(true);
+            setSelectedPOI(null);
+            return;
+        }
+
         if (actId === 'OPEN_CHICKEN_COOP') {
             setIsChickenCoopOpen(true);
             setSelectedPOI(null);
