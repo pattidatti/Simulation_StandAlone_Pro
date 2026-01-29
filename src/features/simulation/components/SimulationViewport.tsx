@@ -17,7 +17,7 @@ const SimulationHierarchy = safeLazy(() => import('./SimulationHierarchy').then(
 const SimulationSettings = safeLazy(() => import('./SimulationSettings').then(module => ({ default: module.SimulationSettings })));
 const PoliticalHub = safeLazy(() => import('./ui/PoliticalHub').then(module => ({ default: module.PoliticalHub })));
 const SimulationWarRoom = safeLazy(() => import('./SimulationWarRoom').then(module => ({ default: module.SimulationWarRoom })));
-const SiegeEngine = safeLazy(() => import('./SiegeEngine').then(module => ({ default: module.SiegeEngine })));
+const SiegeContainer = safeLazy(() => import('./siege/SiegeContainer').then(module => ({ default: module.SiegeContainer })));
 const ApothecaryWindow = safeLazy(() => import('./ApothecaryWindow').then(module => ({ default: module.ApothecaryWindow })));
 
 import { SimulationMusicWindow } from './ui/SimulationMusicWindow';
@@ -92,13 +92,12 @@ export const SimulationViewport: React.FC<SimulationViewportProps> = ({ player, 
 
                         return (
                             <div className={`absolute inset-0 z-10 ${activeTab !== 'SIEGE' ? 'opacity-20 pointer-events-none blur-sm grayscale' : ''}`}>
-                                <SiegeEngine
+                                <SiegeContainer
                                     player={player}
                                     siege={siege}
                                     regionId={targetRegionId}
                                     onAction={onAction}
                                     messages={Array.isArray(room.messages) ? room.messages : Object.values(room.messages || {})}
-                                    regions={room.regions}
                                 />
                             </div>
                         );

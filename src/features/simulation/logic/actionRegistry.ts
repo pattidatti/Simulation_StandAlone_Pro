@@ -3,7 +3,7 @@ import { handleWork, handleChop, handleMiningAction, handleForage, handleHunt, h
 import { handleCraft, handleRefine, handleRepair } from './handlers/CraftingHandlers';
 import { handleEquipItem, handleUnequipItem, handleDiscardItem } from './handlers/InventoryHandlers';
 import { handleTax, handleDraft, handleDecree, handleContribute, handleUpgradeBuilding, handleUpgrade, handleJoinRole, handleContributeToBoat, handleUpgradeBoatComponent, handleBuyBoatModel, handleBuyBoatCosmetic } from './handlers/ManagementHandlers';
-import { handleStartSiege, handleJoinSiege, handleSiegeAction, handleReinforceGarrison, handleRepairWalls, handleUpgradeFortification } from './handlers/SiegeHandlers';
+import { handleSiegeRouter } from './handlers/siege/SiegeActionResolver';
 import { handleRaid, handlePatrol, handleRefillAmmo } from './handlers/CombatHandlers';
 import { handleBuy, handleSell, handleTradeRoute } from './handlers/MarketHandlers';
 import { handleLoadCaravan, handleUnloadCaravan, handleUpgradeCaravan, handleRepairCaravan, handleCaravanTravelResult, handleBuyCaravanCosmetic, handleEquipCaravanCosmetic } from './handlers/CaravanHandlers';
@@ -53,13 +53,13 @@ export const ACTION_REGISTRY: ActionRegistry = {
     BUY_BOAT_MODEL: handleBuyBoatModel,
     BUY_BOAT_COSMETIC: handleBuyBoatCosmetic,
 
-    // Siege
-    START_SIEGE: handleStartSiege,
-    JOIN_SIEGE: handleJoinSiege,
-    SIEGE_ACTION: handleSiegeAction,
-    REINFORCE_GARRISON: handleReinforceGarrison,
-    REPAIR_WALLS: handleRepairWalls,
-    UPGRADE_FORTIFICATION: handleUpgradeFortification,
+    // Siege (Routed)
+    START_SIEGE: handleSiegeRouter,
+    JOIN_SIEGE: handleSiegeRouter,
+    SIEGE_ACTION: handleSiegeRouter,
+    REINFORCE_GARRISON: handleSiegeRouter,
+    REPAIR_WALLS: handleSiegeRouter,
+    UPGRADE_FORTIFICATION: handleSiegeRouter,
 
     // Combat
     RAID: handleRaid,
@@ -82,9 +82,9 @@ export const ACTION_REGISTRY: ActionRegistry = {
     BUY_MEAL: handleBuyMeal,
     RETIRE: handleRetire,
     CONSUME: handleConsume,
-    FEED_CHICKENS: handleFeedChickens, // Custom
-    COLLECT_EGGS: handleCollectEggs,   // Custom
-    GATHER_WATER: handleRest,          // Added for Well
+    FEED_CHICKENS: handleFeedChickens,
+    COLLECT_EGGS: handleCollectEggs,
+    GATHER_WATER: handleRest,
     TRADE_ROUTE: handleTradeRoute,
     MOUNT_HORSE: handleMountHorse,
     BUY_HORSE_COSMETIC: handleBuyHorseCosmetic,
