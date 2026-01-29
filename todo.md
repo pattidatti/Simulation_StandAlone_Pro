@@ -1,10 +1,16 @@
 # Project To-Do List
 
 ## High Priority
-- [ ] 
-
+- [ ] Fikse soga-hjulet. Det har ALTFOR høy vinnersjanse, skaper hyperinflasjon. Må justere ned sjansen og oppdatere grafikk på hjulet for å gjenspeile det. 
+- [ ] Fjerne frie menn som "region". Vi har bare øst, vest og hovedstad. Sørge for at en konge som blir avsatt eller bytter rolle, blir tildelt vest eller øst random. 
+- [] Finne nye goldsinks, itemsinks og ressourcesinks. 
+- [] Finpusse mekanismene for å bli baron og konge. Minigamet med siege er dårlig optimalisert, har dårlig feedback og ikke en god grafikk. 
+- [ ] Fikse UI på ragdoll er en del overlapp. 
 ## Medium Priority
 - [ ] En konge som blir kastet fra posisjonen sin, blir ikke tildelt regionen han kom fra. 
+- [ ] Merchant marked må ha scrollbar for dem som har liten skjerm, deler av vinduet forsvinner. 
+- [ ] Vindu for å bli kjøpmann må være bedre tilpasset skjermstørrelsen. 
+- [ ] Øke ressurskrav for å lage items og oppgradere bygninger. 
 ## Low Priority
 
 

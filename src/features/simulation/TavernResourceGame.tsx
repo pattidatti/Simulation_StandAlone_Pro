@@ -18,10 +18,10 @@ const RESOURCES = [
 ];
 
 const MULTIPLIERS = [
-    { value: 0, weight: 50, label: 'Tap', color: '#0f172a', multiplierText: '0x', angle: 180 },
-    { value: 1.5, weight: 30, label: 'Gevinst', color: '#10b981', multiplierText: '1.5x', angle: 90 },
-    { value: 2.5, weight: 15, label: 'Stor Gevinst', color: '#3b82f6', multiplierText: '2.5x', angle: 60 },
-    { value: 5, weight: 5, label: 'JACKPOT!', color: '#f59e0b', multiplierText: '5x', angle: 30 },
+    { value: 0, weight: 74, label: 'Tap', color: '#020617', gradient: 'linear-gradient(to right, #020617, #0f172a)', multiplierText: '0x', angle: 266.4 },
+    { value: 1.5, weight: 20, label: 'Gevinst', color: '#059669', gradient: 'linear-gradient(to right, #059669, #10b981)', multiplierText: '1.5x', angle: 72.0 },
+    { value: 2.5, weight: 4, label: 'Stor Gevinst', color: '#2563eb', gradient: 'linear-gradient(to right, #2563eb, #3b82f6)', multiplierText: '2.5x', angle: 14.4 },
+    { value: 5, weight: 2, label: 'JACKPOT!', color: '#d97706', gradient: 'linear-gradient(to right, #d97706, #fbbf24)', multiplierText: '5x', angle: 7.2 },
 ];
 
 export const TavernResourceGame: React.FC<TavernResourceGameProps> = ({ player, onClose, onPlay }) => {
@@ -31,6 +31,7 @@ export const TavernResourceGame: React.FC<TavernResourceGameProps> = ({ player, 
     const [rotation, setRotation] = useState(0);
     const [lastResult, setLastResult] = useState<{ multiplier: number; isWin: boolean; label: string } | null>(null);
     const [history, setHistory] = useState<any[]>([]);
+    const [shake, setShake] = useState(false);
 
     // Lock to prevent race conditions during double-clicks
     const spinInProgress = useRef(false);
@@ -51,6 +52,7 @@ export const TavernResourceGame: React.FC<TavernResourceGameProps> = ({ player, 
         spinInProgress.current = true;
         setIsSpinning(true);
         setLastResult(null);
+        setShake(false);
 
         // 1. Calculate weighted result
         const totalWeight = MULTIPLIERS.reduce((acc, m) => acc + m.weight, 0);
@@ -78,13 +80,40 @@ export const TavernResourceGame: React.FC<TavernResourceGameProps> = ({ player, 
 
         const targetSector = MULTIPLIERS[resultIdx];
         const sectorCenter = cumulativeAngle + (targetSector.angle / 2);
+        let targetAngleOnWheel = 0;
 
-        // Add a "safe jitter" - the pointer shouldn't always hit the dead center, 
-        // but it MUST stay within the bounds of the sector.
-        // We use 30% of the half-angle as safe jitter.
-        const safeMargin = (targetSector.angle / 2) * 0.6;
-        const jitter = (Math.random() - 0.5) * safeMargin;
-        const targetAngleOnWheel = (sectorCenter + jitter + 360) % 360;
+        // "Near Miss" Mechanic: If we lose, 30% chance to tease a win
+        const isLoss = result.value === 0;
+        const triggerNearMiss = isLoss && Math.random() < 0.30; // 30% of losses
+
+        if (triggerNearMiss) {
+            // Find a winning sector (preferably Jackpot or Big Win) to simulate landing "right next to"
+            // Since Loss (idx 0) usually wraps around, the "end" of Loss touches "Start" of next sector?
+            // Or "Start" of Loss touches "End" of last sector (Jackpot).
+            // Let's assume the array order is mapped radially.
+            // If Loss is idx 0 (0 to 266deg). Next is Win (266 to 338). Last is Jackpot (352 to 360).
+            // So Loss touches Win (at 266) and Jackpot (at 0/360).
+
+            // We want to land *just inside* the Loss sector, near the boundary.
+            const nearJackpot = Math.random() > 0.5; // 50/50 which side we tease
+
+            if (nearJackpot) {
+                // Tease Jackpot (Boundary is 0/360 degrees, which is start of Loss sector)
+                // We want to be at like 2-4 degrees (inside Loss)
+                targetAngleOnWheel = 2 + (Math.random() * 3);
+            } else {
+                // Tease Win (Boundary is 266.4 degrees).
+                // We want to be at like 262-264 degrees (inside Loss)
+                targetAngleOnWheel = 266.4 - (2 + (Math.random() * 3));
+            }
+        } else {
+            // Standard Random Position within Sector
+            // We use 30% of the half-angle as safe jitter normally, but here we can use full sector minus padding
+            const safePadding = 2; // degrees padding from edge to avoid accidental crossover visuals
+            const availableWidth = targetSector.angle - (safePadding * 2);
+            const randomOffset = (Math.random() - 0.5) * availableWidth;
+            targetAngleOnWheel = (sectorCenter + randomOffset + 360) % 360;
+        }
 
         // Pointer is at 12 o'clock (0 degrees).
         // To have point P at 0 degrees, we must rotate by (360 - P) degrees.
@@ -111,9 +140,9 @@ export const TavernResourceGame: React.FC<TavernResourceGameProps> = ({ player, 
             setIsSpinning(false);
             spinInProgress.current = false;
 
-            // Trigger Win haptics/fx if needed (Visual only here)
-            if (isWin) {
-                // We can add a brief flash or shake effect here if we had more state
+            if (!isWin) {
+                setShake(true);
+                setTimeout(() => setShake(false), 500);
             }
 
             const newHistoryEntry = {
@@ -142,6 +171,7 @@ export const TavernResourceGame: React.FC<TavernResourceGameProps> = ({ player, 
         return MULTIPLIERS.map(m => {
             const start = currentDeg;
             currentDeg += m.angle;
+            // Use specific gradient or color
             return `${m.color} ${start}deg ${currentDeg}deg`;
         }).join(', ');
     }, []);
@@ -152,9 +182,10 @@ export const TavernResourceGame: React.FC<TavernResourceGameProps> = ({ player, 
 
             <motion.div
                 initial={{ scale: 0.95, opacity: 0, y: 30 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
+                animate={{ scale: 1, opacity: 1, y: 0, x: shake ? [0, -10, 10, -10, 10, 0] : 0 }}
+                transition={{ duration: shake ? 0.4 : 0.3 }}
                 exit={{ scale: 0.95, opacity: 0, y: 30 }}
-                className="relative w-full max-w-5xl bg-slate-900 border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row h-[650px]"
+                className={`relative w-full max-w-5xl bg-slate-900 border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row h-[650px] ${shake ? 'border-rose-500/50 shadow-rose-900/50' : ''}`}
             >
                 <button onClick={onClose} disabled={isSpinning} className="absolute top-6 right-6 z-50 p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/30 hover:text-white transition-all"><X size={24} /></button>
 
@@ -252,7 +283,7 @@ export const TavernResourceGame: React.FC<TavernResourceGameProps> = ({ player, 
                 <div className="w-full lg:w-[480px] bg-black/50 border-l border-white/5 flex flex-col items-center justify-center p-12 relative">
                     <div className="relative w-80 h-80 mb-10">
                         <div className={`absolute -inset-12 rounded-full blur-[100px] opacity-20 transition-colors duration-1000 bg-${activeRes.accent}-500`} />
-                        <motion.div animate={{ rotate: rotation }} transition={{ duration: 3, ease: [0.32, 0.72, 0, 1] }} className="w-full h-full rounded-full border-[18px] border-slate-900 shadow-2xl relative overflow-hidden bg-slate-950">
+                        <motion.div animate={{ rotate: rotation }} transition={{ duration: 3, ease: [0.25, 0.1, 0.25, 1] }} className="w-full h-full rounded-full border-[18px] border-slate-900 shadow-2xl relative overflow-hidden bg-slate-950">
                             <div
                                 className="absolute inset-0 transition-opacity duration-300"
                                 style={{ background: `conic-gradient(${wheelBackground})`, opacity: isSpinning ? 0.4 : 0.8 }}
