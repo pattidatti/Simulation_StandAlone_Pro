@@ -275,36 +275,38 @@ export const SimulationHierarchy: React.FC<SimulationHierarchyProps> = React.mem
                             })}
 
                             {/* Free Men / Unassigned */}
-                            <div className="flex flex-col gap-4 relative">
-                                <div className="absolute top-[-32px] left-1/2 -translate-x-1/2 h-8 w-1 bg-slate-700 opacity-30"></div>
-                                <div className="bg-slate-800/40 p-6 rounded-3xl border-2 border-dashed border-white/5 relative z-10">
-                                    <div className="flex items-center gap-4 mb-4 border-b border-white/5 pb-4 opacity-70">
-                                        <div className="text-4xl">⚖️</div>
-                                        <div>
-                                            <h4 className="text-lg font-black text-white">Frie Menn</h4>
-                                            <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Markedet & Byen</div>
+                            {Object.values(players || {}).filter(p => !['KING', 'BARON'].includes(p.role) && (!p.regionId || p.regionId === 'capital' || p.regionId === 'unassigned')).length > 0 && (
+                                <div className="flex flex-col gap-4 relative">
+                                    <div className="absolute top-[-32px] left-1/2 -translate-x-1/2 h-8 w-1 bg-slate-700 opacity-30"></div>
+                                    <div className="bg-slate-800/40 p-6 rounded-3xl border-2 border-dashed border-white/5 relative z-10 transition-all hover:bg-slate-800/60">
+                                        <div className="flex items-center gap-4 mb-4 border-b border-white/5 pb-4 opacity-70">
+                                            <div className="text-4xl">⛺</div>
+                                            <div>
+                                                <h4 className="text-lg font-black text-white">Landløse</h4>
+                                                <div className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Søker lykken...</div>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {Object.values(players || {}).filter(p => !['KING', 'BARON'].includes(p.role) && (!p.regionId || p.regionId === 'capital' || p.regionId === 'unassigned')).map(free => (
+                                                <div
+                                                    key={free.id}
+                                                    onClick={() => handlePlayerClick(free)}
+                                                    className="flex items-center gap-3 bg-black/20 p-3 rounded-xl border border-white/5 opacity-80 cursor-pointer hover:opacity-100 hover:bg-indigo-500/20 transition-all"
+                                                >
+                                                    <div className="w-8 h-8 flex items-center justify-center bg-slate-800 rounded-lg text-lg">
+                                                        {free.role === 'MERCHANT' ? '💰' : free.role === 'SOLDIER' ? '⚔️' : '👤'}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="text-sm font-bold text-slate-300">{free.name}</div>
+                                                        <div className="text-[10px] uppercase text-slate-500 font-bold">{free.role}</div>
+                                                    </div>
+                                                    <div className={`w-2 h-2 rounded-full ${free.lastActive > Date.now() - 60000 ? 'bg-emerald-500' : 'bg-slate-600'}`}></div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-                                    <div className="space-y-3">
-                                        {Object.values(players || {}).filter(p => !['KING', 'BARON'].includes(p.role) && (!p.regionId || p.regionId === 'capital' || p.regionId === 'unassigned')).map(free => (
-                                            <div
-                                                key={free.id}
-                                                onClick={() => handlePlayerClick(free)}
-                                                className="flex items-center gap-3 bg-black/20 p-3 rounded-xl border border-white/5 opacity-80 cursor-pointer hover:opacity-100 hover:bg-indigo-500/20 transition-all"
-                                            >
-                                                <div className="w-8 h-8 flex items-center justify-center bg-slate-800 rounded-lg text-lg">
-                                                    {free.role === 'MERCHANT' ? '💰' : free.role === 'SOLDIER' ? '⚔️' : '👤'}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="text-sm font-bold text-slate-300">{free.name}</div>
-                                                    <div className="text-[10px] uppercase text-slate-500 font-bold">{free.role}</div>
-                                                </div>
-                                                <div className={`w-2 h-2 rounded-full ${free.lastActive > Date.now() - 60000 ? 'bg-emerald-500' : 'bg-slate-600'}`}></div>
-                                            </div>
-                                        ))}
-                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 )}

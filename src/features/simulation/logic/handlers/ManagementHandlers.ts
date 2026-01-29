@@ -531,6 +531,18 @@ export const handleJoinRole = (ctx: ActionContext) => {
     }
 
     actor.role = targetRole;
+
+    // ULTRATHINK: Forced Migration ("Exile") Logic
+    // If a player is in the Capital (e.g. "Frie Menn") and changes role to anything BUT King,
+    // they must be moved to a province to ensure they are taxed and part of the feudal system.
+    if ((actor.regionId === 'capital' || !actor.regionId || actor.regionId === 'unassigned') && targetRole !== 'KING') {
+        const newRegionId = (actor.homeRegionId && actor.homeRegionId !== 'capital' && actor.homeRegionId !== 'unassigned')
+            ? actor.homeRegionId
+            : (Math.random() > 0.5 ? 'region_ost' : 'region_vest');
+
+        actor.regionId = newRegionId;
+        localResult.message += ` Du har flyttet til ${newRegionId === 'region_ost' ? 'Øst' : 'Vest'}!`;
+    }
     localResult.message = `Gratulerer! Du er nå ${targetRole}.`;
     return true;
 };

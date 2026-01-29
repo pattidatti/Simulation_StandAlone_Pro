@@ -1,7 +1,7 @@
 # Project To-Do List
 
 ## High Priority
-- [ ] Fikse soga-hjulet. Det har ALTFOR høy vinnersjanse, skaper hyperinflasjon. Må justere ned sjansen og oppdatere grafikk på hjulet for å gjenspeile det. 
+- [x] Fikse soga-hjulet. Det har ALTFOR høy vinnersjanse, skaper hyperinflasjon. Må justere ned sjansen og oppdatere grafikk på hjulet for å gjenspeile det. 
 - [ ] Fjerne frie menn som "region". Vi har bare øst, vest og hovedstad. Sørge for at en konge som blir avsatt eller bytter rolle, blir tildelt vest eller øst random. 
 - [] Finne nye goldsinks, itemsinks og ressourcesinks. 
 - [] Finpusse mekanismene for å bli baron og konge. Minigamet med siege er dårlig optimalisert, har dårlig feedback og ikke en god grafikk. 

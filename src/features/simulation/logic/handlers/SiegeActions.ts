@@ -81,9 +81,20 @@ export async function performSiegeTransaction(pin: string, playerId: string, act
                     const oldRuler = oldRulerSnap.val();
                     oldRuler.role = 'PEASANT';
                     if (oldRuler.status) oldRuler.status.legitimacy = 0;
+
+                    // ULTRATHINK: Exile Logic - Prevent "Free Men" status in Capital
+                    // Prefer returning to home region if valid and not capital
+                    let exileRegion = (oldRuler.homeRegionId && oldRuler.homeRegionId !== 'capital' && oldRuler.homeRegionId !== 'unassigned')
+                        ? oldRuler.homeRegionId
+                        : (Math.random() > 0.5 ? 'region_ost' : 'region_vest');
+
+                    oldRuler.regionId = exileRegion;
+
                     updates[`players/${oldRulerId}`] = oldRuler;
                     updates[`public_profiles/${oldRulerId}/role`] = 'PEASANT';
-                    logSystemicStat(pin, 'roleChanges', 'PEASANT (Demoted)', 1);
+                    updates[`public_profiles/${oldRulerId}/regionId`] = exileRegion;
+
+                    logSystemicStat(pin, 'roleChanges', 'PEASANT (Demoted & Exiled)', 1);
                 }
             }
 

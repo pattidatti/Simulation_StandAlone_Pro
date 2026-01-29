@@ -337,7 +337,9 @@ export const handleGlobalContribution = async (pin: string, playerId: string, ac
                     Object.entries(players).forEach(([pid, pData]: [string, any]) => {
                         if (pData.role === 'KING' && pid !== winnerId) {
                             // ULTRATHINK: Exile Logic - Prevent "Free Men" status in Capital
-                            const exileRegion = Math.random() > 0.5 ? 'region_ost' : 'region_vest';
+                            const exileRegion = (pData.homeRegionId && pData.homeRegionId !== 'capital' && pData.homeRegionId !== 'unassigned')
+                                ? pData.homeRegionId
+                                : (Math.random() > 0.5 ? 'region_ost' : 'region_vest');
 
                             globalUpdates[`players/${pid}/role`] = 'PEASANT';
                             globalUpdates[`public_profiles/${pid}/role`] = 'PEASANT';
@@ -669,9 +671,32 @@ export const triggerRevolution = async (pin: string, regionId: string) => {
             if (!p) return;
             p.role = 'PEASANT';
             if (p.status) p.status.legitimacy = 0;
+
+            // ULTRATHINK: Exile Logic (Revolution/Coup)
+            // If they are in the Capital (e.g. King) or just lost their region, ensure they have a valid province.
+            let exileRegion = (p.homeRegionId && p.homeRegionId !== 'capital' && p.homeRegionId !== 'unassigned')
+                ? p.homeRegionId
+                : (Math.random() > 0.5 ? 'region_ost' : 'region_vest');
+
+            p.regionId = exileRegion;
             return p;
         });
-        await update(ref(db, `simulation_rooms/${pin}/public_profiles/${oldRulerId}`), { role: 'PEASANT' });
+
+        // We need to fetch the updated regionId or just re-calculate it to update public profile
+        // Since transaction doesn't return the modified object easily without capture, we'll just update blindly based on same logic?
+        // Risky. Let's just do a separate update after transaction since we don't need atomic perfection for profile sync vs player state.
+        // Actually, we can just do the update call. 
+
+        // Let's rely on the player needing to refresh or the profile update happening here.
+        // Re-fetch to be safe OR double-write.
+        const updatedSnap = await get(oldRulerRef);
+        if (updatedSnap.exists()) {
+            const updatedP = updatedSnap.val();
+            await update(ref(db, `simulation_rooms/${pin}/public_profiles/${oldRulerId}`), {
+                role: 'PEASANT',
+                regionId: updatedP.regionId
+            });
+        }
     }
 
     // 3. Start Election Details
