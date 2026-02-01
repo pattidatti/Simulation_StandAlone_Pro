@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Info, Zap, Megaphone, Bell } from 'lucide-react';
 
-export type AnnouncementType = 'update' | 'info' | 'feedback' | 'alert';
+export type AnnouncementType = 'update' | 'info' | 'feedback' | 'alert' | 'Kommer snart';
 
 interface Announcement {
     id: string;
@@ -43,6 +43,7 @@ const getIcon = (type: AnnouncementType) => {
         case 'info': return <Bell size={14} className="text-blue-400" />;
         case 'feedback': return <Megaphone size={14} className="text-amber-400" />;
         case 'alert': return <Info size={14} className="text-rose-400" />;
+        case 'Kommer snart': return <Bell size={14} className="text-blue-400 shadow-sm" />;
         default: return <Bell size={14} />;
     }
 };
