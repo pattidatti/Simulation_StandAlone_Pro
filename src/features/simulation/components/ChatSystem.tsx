@@ -52,18 +52,16 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({ pin, player, onOpenProfi
     const handleSend = async () => {
         if (!inputText.trim() || isSending) return;
         setIsSending(true);
-        console.log(`[ChatSystem] Sending to ${activeChannelId}: "${inputText}"`);
 
         try {
             const result = await handleSendMessage(pin, player, inputText, activeChannelId);
-            console.log(`[ChatSystem] Result:`, result);
             if (result.success) {
                 setInputText('');
             } else {
                 alert(result.error || "Feil ved sending.");
             }
         } catch (error) {
-            console.error(`[ChatSystem] Fatal error:`, error);
+            console.error(`[ChatSystem] Send error:`, error);
         } finally {
             setIsSending(false);
         }

@@ -82,45 +82,74 @@ export const useChat = (pin: string, player: SimulationPlayer | null) => {
 
     }, [player?.regionId, player?.role]);
 
-    // 2. Subscribe to ALL Accessible Channels for Unread Logic
+    // 2. Subscribe to ALL Accessible Channels
     useEffect(() => {
         if (!pin || !player || Object.keys(channels).length === 0) return;
 
+        console.log("[useChat] Initializing listeners for channels:", Object.keys(channels));
         const unsubs: (() => void)[] = [];
 
         Object.keys(channels).forEach(channelId => {
             const channelRef = ref(db, `simulation_rooms/${pin}/channels/${channelId}/messages`);
-            const q = query(channelRef, limitToLast(20)); // Only need latest for unread check
+            const q = query(channelRef, limitToLast(50));
 
             const unsub = onValue(q, (snapshot) => {
                 const data = snapshot.val();
                 const msgs = data ? Object.values(data) as SimulationMessage[] : [];
-                msgs.sort((a, b) => (a.timestamp as number) - (b.timestamp as number));
 
-                setMessages(prev => ({
-                    ...prev,
-                    [channelId]: msgs
-                }));
-
-                // Update unread count for this channel (Exclude feedback)
-                const lastRead = lastReadTimestamps[channelId] || 0;
-                const newUnread = channelId === 'feedback'
-                    ? 0
-                    : msgs.filter(m => (m.timestamp as number) > lastRead && m.senderId !== player.id).length;
-
-                setChannels(prev => {
-                    if (prev[channelId] && prev[channelId].unreadCount === newUnread) return prev;
-                    return {
-                        ...prev,
-                        [channelId]: { ...prev[channelId], unreadCount: newUnread }
-                    };
+                // Stable sort that handles pending server timestamps
+                msgs.sort((a, b) => {
+                    const tA = (typeof a.timestamp === 'number') ? a.timestamp : Date.now();
+                    const tB = (typeof b.timestamp === 'number') ? b.timestamp : Date.now();
+                    return tA - tB;
                 });
+
+                setMessages(prev => {
+                    // Optimized update: only set if content actually changed or counts changed
+                    if (JSON.stringify(prev[channelId]) === JSON.stringify(msgs)) return prev;
+                    return { ...prev, [channelId]: msgs };
+                });
+            }, (error) => {
+                console.error(`[useChat] Listener error for ${channelId}:`, error);
             });
             unsubs.push(unsub);
         });
 
-        return () => unsubs.forEach(u => u());
-    }, [pin, player?.id, Object.keys(channels).join(','), lastReadTimestamps]);
+        return () => {
+            console.log("[useChat] Cleaning up listeners");
+            unsubs.forEach(u => u());
+        };
+    }, [pin, player?.id, Object.keys(channels).sort().join(',')]); // Stable dependency
+
+    // 3. Update Unread Counts when messages or lastRead changes
+    useEffect(() => {
+        if (Object.keys(channels).length === 0) return;
+
+        setChannels(prev => {
+            let changed = false;
+            const next = { ...prev };
+
+            Object.keys(next).forEach(channelId => {
+                const msgs = messages[channelId] || [];
+                const lastRead = lastReadTimestamps[channelId] || 0;
+
+                // Feedback is always 0
+                const newUnread = channelId === 'feedback'
+                    ? 0
+                    : msgs.filter(m => {
+                        const ts = (typeof m.timestamp === 'number') ? m.timestamp : Date.now();
+                        return ts > lastRead && m.senderId !== player?.id;
+                    }).length;
+
+                if (next[channelId].unreadCount !== newUnread) {
+                    next[channelId] = { ...next[channelId], unreadCount: newUnread };
+                    changed = true;
+                }
+            });
+
+            return changed ? next : prev;
+        });
+    }, [messages, lastReadTimestamps]);
 
     // 3. Calculate Total Unread
     useEffect(() => {
