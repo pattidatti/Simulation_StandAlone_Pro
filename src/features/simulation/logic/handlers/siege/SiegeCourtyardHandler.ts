@@ -1,61 +1,32 @@
 import type { ActionContext } from '../../actionTypes';
-import type { SiegeZone, TacticalCard, PlayerDeck } from '../../../types/war';
+import type { TacticalCard, PlayerDeck } from '../../../types/war';
 import type { Role } from '../../../types/base';
 
 // --- CARD DEFINITIONS (embedded for now, should move to data later) ---
 export const CARD_DATABASE: Record<string, Partial<TacticalCard> & { weaponCost?: { type: 'siege_sword' | 'siege_armor', amount: number } }> = {
     'basic_attack': {
-        name: 'Sverdslag',
-        description: 'Et raskt hogg som påfører moderat skade.',
+        name: 'Sverdlyn (Lett)',
+        description: 'Et raskt hogg. Lav energi-kost.',
         tags: ['MELEE'],
-        staminaCost: 2,
-        cooldown: 1000,
-        weaponCost: { type: 'siege_sword', amount: 1 },
-        effectPayload: { damage: 50 }
-    },
-    'defend': {
-        name: 'Skjoldheving',
-        description: 'Hev skjoldet for å blokkere innkommende angrep.',
-        tags: ['DEFENSE'],
         staminaCost: 1,
-        cooldown: 2000,
-        weaponCost: { type: 'siege_armor', amount: 1 },
-        effectPayload: { armor: 20 }
+        weaponCost: { type: 'siege_sword', amount: 1 },
+        effectPayload: { damage: 40 }
     },
     'strong_attack': {
-        name: 'Hardt Slag',
-        description: 'Et kraftig slag som krever mye energi.',
+        name: 'Tungt Slag (Kraftig)',
+        description: 'Knusende slag. Krever mye ressurser.',
         tags: ['MELEE', 'HEAVY'],
-        staminaCost: 4,
-        cooldown: 3000,
+        staminaCost: 3,
         weaponCost: { type: 'siege_sword', amount: 2 },
         effectPayload: { damage: 120 }
     },
-    'charge': {
-        name: 'Stormangrep',
-        description: 'Storm fremover. Gjør enorm skade på fienden.',
-        tags: ['MELEE', 'MOMENTUM'],
-        staminaCost: 4,
-        cooldown: 5000,
-        weaponCost: { type: 'siege_sword', amount: 2 },
-        effectPayload: { damage: 150, selfDamage: 10 }
-    },
-    'fire_pot': {
-        name: 'Oljekrukke',
-        description: 'Kast en krukke med olje som gjør sonen brennbar.',
-        tags: ['OIL'],
-        staminaCost: 3,
-        cooldown: 8000,
-        weaponCost: { type: 'siege_sword', amount: 1 }, // Costs a "blade" or similar resource as fuel?
-        effectPayload: { zoneMod: 'OILY' }
-    },
-    'torch_toss': {
-        name: 'Fakkelkast',
-        description: 'Kast en fakkel. Gjør skade og antenner olje!',
-        tags: ['IGNITER', 'RANGED'],
-        staminaCost: 2,
-        cooldown: 3000,
-        effectPayload: { damage: 20 }
+    'defend': {
+        name: 'Skjoldmur (Forsvar)',
+        description: 'Blokkerer neste angrep fra bossen.',
+        tags: ['DEFENSE'],
+        staminaCost: 1,
+        weaponCost: { type: 'siege_armor', amount: 1 },
+        effectPayload: { armor: 100 } // Logic: Full protection for next hit
     },
     'rally': {
         name: 'Rop om Samling',
@@ -83,81 +54,29 @@ export const CARD_DATABASE: Record<string, Partial<TacticalCard> & { weaponCost?
     }
 };
 
-export const generateDeck = (role: Role, _equipment: any): PlayerDeck => {
-    let drawPile: string[] = [];
-    let maxHand = 4;
-    let maxStamina = 10;
+export const generateDeck = (_role: Role, _equipment: any): PlayerDeck => {
+    const fixedTemplates = ['basic_attack', 'strong_attack', 'defend'];
 
-    switch (role) {
-        case 'SOLDIER':
-            drawPile = ['basic_attack', 'strong_attack', 'defend', 'charge', 'fire_pot'];
-            maxStamina = 15;
-            break;
-        case 'PEASANT':
-            drawPile = ['basic_attack', 'scavenge', 'torch_toss', 'harvest', 'defend'];
-            maxStamina = 8;
-            break;
-        case 'BARON':
-        case 'KING':
-            drawPile = ['basic_attack', 'rally', 'fire_pot', 'defend', 'strong_attack', 'charge'];
-            maxHand = 5;
-            maxStamina = 12;
-            break;
-        default:
-            drawPile = ['basic_attack', 'defend', 'torch_toss'];
-            break;
-    }
-
-    // Shuffle drawPile (Fisher-Yates) -> actually just random sort for now
-    drawPile.sort(() => Math.random() - 0.5);
-
-    // Initial Draw (3 cards)
-    // We actually want a full hand? No, let's start with 3.
-    // The hand needs to be typed as TacticalCard[] in the interface (ActiveSiege), 
-    // BUT the Mock in useSimulationData used strings.
-    // And SiegeCourtyard map renders strings OR objects.
-    // To satisfy the type checker for PlayerDeck which expects TacticalCard[], we'll cast it or refactor.
-    // Given we are in "Execution/Fix" mode: The Interface PlayerDeck says `hand: TacticalCard[]`.
-    // But we are pushing strings. This IS a type mismatch we should fix.
-    // For now, to stop the nagging and make it work with the current lenient React component:
-    // We will hydrate them to partial objects.
-
-    // const initialDraw = drawPile.splice(0, 3);
-    // const hand: TacticalCard[] = initialDraw.map(id => ({ 
-    //    ...CARD_DATABASE[id] as TacticalCard,
-    //    id: Math.random().toString(36).substr(2, 9), // Info: Instance ID
-    //    templateId: id
-    // }));
-
-    // ACTUALLY: The React component `SiegeCourtyard.tsx` handles both strings and objects due to legacy/mock.
-    // But `types/war.ts` strictly defines `hand: TacticalCard[]`.
-    // So if we return strings here, we violate the interface in Typescript land, even if JS works.
-    // Let's implement valid hydration.
-
-    const initialDraw = drawPile.splice(0, 3);
-    const hand: TacticalCard[] = initialDraw.map(id => {
+    const hand: TacticalCard[] = fixedTemplates.map(id => {
         const template = CARD_DATABASE[id];
         return {
-            id: Math.random().toString(36).substr(2, 9),
+            id: id, // Template ID as instance ID for stability
             templateId: id,
             name: template?.name || 'Unknown',
             description: template?.description || '',
-            type: template?.type || 'ATTACK', // Default
-            rarity: template?.rarity || 'COMMON',
             staminaCost: template?.staminaCost || 0,
-            cooldown: template?.cooldown || 0,
             tags: template?.tags || [],
             effectPayload: template?.effectPayload || {}
         } as TacticalCard;
     });
 
     return {
-        hand: hand, // Using the hydrated hand
-        drawPile: drawPile,
+        hand: hand,
+        drawPile: [],
         discardPile: [],
-        maxHandSize: maxHand,
-        stamina: maxStamina,
-        maxStamina: maxStamina,
+        maxHandSize: 3,
+        stamina: 10,
+        maxStamina: 10,
         lastStaminaRegen: Date.now()
     };
 };
@@ -179,6 +98,11 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
     if (action.subType === 'INIT_COURTYARD') {
         // Force refresh participant deck to apply new role-based logic
         participant.deck = generateDeck(actor.role, actor.equipment);
+
+        // Safety: Initial Stamina Refill on Sync
+        if (participant.deck) {
+            participant.deck.stamina = participant.deck.maxStamina;
+        }
 
         // Ensure zone assignment
         if (!participant.zone) {
@@ -215,23 +139,10 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
 
     if (!siege || !siege.courtyardState) return false;
 
-    // 1. MOVE ZONES
+    // 2. MOVE (DISABLED in V9)
     if (action.subType === 'MOVE_ZONE') {
-        const targetZone = action.payload?.zone as SiegeZone;
-        if (!['VANGUARD', 'FLANK_LEFT', 'FLANK_RIGHT', 'REARGUARD'].includes(targetZone)) {
-            return false;
-        }
-
-        // Remove from old zone list
-        const oldZone = siege.courtyardState.zones[participant.zone];
-        oldZone.occupierIds = oldZone.occupierIds.filter((id: string) => id !== actor.id);
-
-        // Add to new
-        participant.zone = targetZone;
-        siege.courtyardState.zones[targetZone].occupierIds.push(actor.id);
-
-        localResult.message = `Forflyttet til ${targetZone}`;
-        return true;
+        localResult.message = "Du er låst i kamp med bossen!";
+        return false;
     }
 
     // 2. PLAY CARD
@@ -259,37 +170,19 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
         }
 
         // Logic: EFFECTS & COMBOS
-        // Check active modifiers in current zone
-        const zoneId = participant.zone || 'VANGUARD';
-        const currentZoneState = siege.courtyardState.zones[zoneId];
+        // In Duel Mode (V9), there are no zones. Targeting is global.
         let damage = cardDef.effectPayload?.damage || 0;
         let msg = `Brukte ${cardDef.name}!`;
 
-        // Card Consumption
-        if (participant.deck) {
-            const cardIndex = participant.deck.hand.findIndex((c: any) =>
-                (typeof c === 'string' ? c === templateId : c.templateId === templateId)
-            );
-            if (cardIndex !== -1) {
-                participant.deck.hand.splice(cardIndex, 1);
-                participant.deck.discardPile.push(templateId);
-            }
+        // NO CARD CONSUMPTION (Streamlined V9)
+
+        // Handle Defense Buff specifically
+        if (cardDef.tags?.includes('DEFENSE')) {
+            participant.shieldActive = true;
+            msg = "SKJOLDMUR AKTIV! Du er beskyttet mot neste angrep.";
         }
 
-        // COMBO: IGNITER on OILY zone
-        if (cardDef.tags?.includes('IGNITER') && currentZoneState?.modifiers?.includes('OILY')) {
-            damage *= 3; // CRIT!
-            msg += " KOMBO! 🔥 Oljen tok fyr! (3x Skade)";
-            // Clear modifier
-            currentZoneState.modifiers = currentZoneState.modifiers.filter((m: string) => m !== 'OILY');
-        }
-
-        // Plain OIL effect
-        if (cardDef.tags?.includes('OIL') && currentZoneState) {
-            if (!currentZoneState.modifiers) currentZoneState.modifiers = [];
-            currentZoneState.modifiers.push('OILY');
-            msg += " Området er nå dekket av olje...";
-        }
+        // COMBO LOGIC: Removed in Duel Mode (V9) for simplicity.
 
         // Stamina Recovery
         if (cardDef.effectPayload?.recoverStamina && participant.deck) {
@@ -343,63 +236,10 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
         return true;
     }
 
-    // 3. DRAW CARDS (Resupply)
+    // 3. DRAW CARDS (DISABLED in V8)
     if (action.subType === 'DRAW_CARDS') {
-        // Legacy/Empty Check: If no deck, give them one.
-        if (!participant.deck || !participant.deck.hand) {
-            participant.deck = generateDeck(actor.role, actor.equipment);
-            localResult.message = "Forsyninger mottatt! (Nytt dekk)";
-            return true;
-        }
-
-        const deck = participant.deck;
-        const cardsNeeded = (deck.maxHandSize || 5) - deck.hand.length;
-
-        if (cardsNeeded <= 0) {
-            localResult.message = "Hånden din er allerede full.";
-            return false;
-        }
-
-        // Draw logic
-        let drawnCount = 0;
-        while (drawnCount < cardsNeeded) {
-            if (deck.drawPile.length === 0) {
-                if (deck.discardPile.length === 0) break; // No cards left at all
-                // Reshuffle
-                deck.drawPile = [...deck.discardPile].sort(() => Math.random() - 0.5);
-                deck.discardPile = [];
-                localResult.message = "Resirkulerer kortstokken...";
-            }
-
-            const cardId = deck.drawPile.pop();
-            if (cardId) {
-                // Hydrate card (copy-paste from generateDeck hydration logic)
-                const template = CARD_DATABASE[cardId];
-                const cardObj: TacticalCard = {
-                    id: Math.random().toString(36).substr(2, 9),
-                    templateId: cardId,
-                    name: template?.name || 'Unknown',
-                    description: template?.description || '',
-                    type: template?.type || 'ATTACK',
-                    rarity: template?.rarity || 'COMMON',
-                    staminaCost: template?.staminaCost || 0,
-                    cooldown: template?.cooldown || 0,
-                    tags: template?.tags || [],
-                    effectPayload: template?.effectPayload || {}
-                } as TacticalCard;
-
-                deck.hand.push(cardObj);
-                drawnCount++;
-            }
-        }
-
-        // Reset/Refill Stamina a bit on manual resupply? Maybe not, that's exploitable.
-        // But if they are stuck with 0 stamina and 0 cards, they are bricked.
-        // Let's assume Stamina regenerates over time (needs a tick handler) OR we give a small boost here.
-        // For now, just cards.
-
-        localResult.message = `Trakk ${drawnCount} nye kort.`;
-        return true;
+        localResult.message = "Forsyninger er alltid klare.";
+        return false;
     }
 
     // 4. REST (Recover Stamina)

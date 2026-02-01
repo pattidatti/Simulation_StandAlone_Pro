@@ -1,34 +1,21 @@
 import React from 'react';
-import type { SimulationPlayer, ActiveSiege, SiegeZone } from '../../../simulationTypes';
+import type { SimulationPlayer, ActiveSiege } from '../../../simulationTypes';
+import { Skull, Zap, Shield, Sword, Flame, Coins, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Skull, Zap, Shield, Sword, Flame, Coins, RefreshCw } from 'lucide-react';
-import { SiegeBattleFeed } from '../SiegeBattleFeed';
-import { CARD_DATABASE } from '../../../logic/handlers/siege/SiegeCourtyardHandler';
 
 interface Props {
     player: SimulationPlayer;
     siege: ActiveSiege;
-    messages?: any[];
     onAction: (action: any) => void;
 }
 
-const ZONES: SiegeZone[] = ['FLANK_LEFT', 'VANGUARD', 'FLANK_RIGHT', 'REARGUARD'];
-
-const ZONE_NAMES_NO: Record<string, string> = {
-    'VANGUARD': 'FRONTLINJEN',
-    'FLANK_LEFT': 'VENSTRE FLANKE',
-    'FLANK_RIGHT': 'HØYRE FLANKE',
-    'REARGUARD': 'BAKRE REKKER'
-};
-
-export const SiegeCourtyard: React.FC<Props> = ({ player, siege, messages = [], onAction }) => {
+export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => {
     const s = siege.courtyardState;
 
     // --- ERROR STATE ---
     if (!s) return (
         <div className="flex flex-col items-center justify-center h-full gap-6 bg-slate-950/50 backdrop-blur-md">
             <div className="text-xl font-black text-amber-500 uppercase tracking-tighter animate-pulse">Data Synkronisering Påkrevd</div>
-            <div className="text-slate-400 text-sm max-w-md text-center italic">Klikk under for å laste inn de nyeste stridsmanøvrene og fjerne duplikater fra din taktiske oversikt.</div>
             <button
                 onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'INIT_COURTYARD' })}
                 className="px-10 py-4 bg-amber-600 hover:bg-amber-500 text-black font-black text-lg rounded-full shadow-[0_0_30px_rgba(245,158,11,0.4)] transition-all hover:scale-105 active:scale-95"
@@ -40,17 +27,10 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, messages = [], 
 
     // --- DATA PREP ---
     const participant = (siege.attackers || {})[player.id] || (siege.defenders || {})[player.id];
-    const myHand = participant?.deck?.hand || [];
+    const isTargeted = !!s?.bossTargetZone; // Global targeted state
     const stamina = participant?.deck?.stamina || 0;
     const maxStamina = participant?.deck?.maxStamina || 10;
     const lootPotential = Math.floor((participant?.stats?.damageDealt || 0) * 0.15); // Mock Algorithm
-
-    // --- RENDER HELPERS ---
-    const getCardIcon = (id: string) => {
-        if (id.includes('defend')) return <Shield className="text-blue-400" size={32} />;
-        if (id.includes('fire')) return <Flame className="text-orange-500" size={32} />;
-        return <Sword className="text-slate-300" size={32} />;
-    };
 
     return (
         <motion.div
@@ -95,11 +75,7 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, messages = [], 
                             {s.bossHp.toLocaleString()} / {s.maxBossHp.toLocaleString()} HP
                         </div>
                     </div>
-                    {s.bossTargetZone && (
-                        <div className="mt-2 text-xs font-black text-red-500 animate-pulse tracking-widest bg-black/50 px-3 py-1 rounded backdrop-blur-sm border border-red-500/30">
-                            ⚠️ SIKTER PÅ: {s.bossTargetZone.replace('_', ' ')}
-                        </div>
-                    )}
+                    {/* Global Attack Indicator (Implicit via Boss SVG and Rage Bar, so we remove the text) */}
                 </div>
 
                 {/* Right Section: Loot & Resources */}
@@ -116,18 +92,18 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, messages = [], 
                     </div>
 
                     {/* Resources HUD + Sync */}
-                    <div className="flex items-center gap-6 border-l border-white/10 pl-6">
-                        <div className="flex flex-col items-end">
+                    <div className="flex items-center gap-6 border-l border-white/10 pl-6 h-10">
+                        <div className="flex flex-col items-end min-w-[100px]">
                             <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">
-                                Siegemateriell
+                                Beleiringsutstyr
                             </div>
                             <div className="flex gap-4">
-                                <div className="flex items-center gap-2">
-                                    <Sword size={14} className="text-slate-400" />
+                                <div className="flex items-center gap-2 group cursor-help" title="Sverd: Brukes til angrep">
+                                    <Sword size={14} className="text-amber-500" />
                                     <span className="text-sm font-black text-slate-200">{player.resources?.siege_sword || 0}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Shield size={14} className="text-slate-400" />
+                                <div className="flex items-center gap-2 group cursor-help" title="Rustning: Brukes til forsvar">
+                                    <Shield size={14} className="text-blue-500" />
                                     <span className="text-sm font-black text-slate-200">{player.resources?.siege_armor || 0}</span>
                                 </div>
                             </div>
@@ -144,64 +120,104 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, messages = [], 
                 </div>
             </div>
 
-            {/* --- LAYER 2: THE BATTLEFIELD (Middle) --- */}
-            <div className="flex-1 relative z-10 grid grid-cols-4 gap-2 px-12 py-16 perspective-1000">
-                {ZONES.map(zoneId => {
-                    const zone = s.zones[zoneId];
-                    const isMyZone = participant?.zone === zoneId;
-                    const isTargeted = s.bossTargetZone === zoneId;
-                    const hasOil = zone?.modifiers?.includes('OILY');
+            {/* --- LAYER 2: THE BOSS (Absolute Duel Layer) --- */}
+            <div className="absolute inset-x-0 bottom-64 top-20 z-10 flex items-center justify-center overflow-visible pointer-events-none">
+                <div className="relative w-[600px] h-[600px] flex items-center justify-center overflow-visible">
+                    {/* Boss Aura / Charge indicator */}
+                    <AnimatePresence>
+                        {isTargeted && (
+                            <motion.div
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1.6, opacity: 0.2 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 1, repeat: Infinity, repeatType: "reverse" }}
+                                className="absolute inset-0 bg-red-900 rounded-full blur-[150px] z-0"
+                            />
+                        )}
+                    </AnimatePresence>
 
-                    return (
-                        <motion.div
-                            key={zoneId}
-                            onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'MOVE_ZONE', payload: { zone: zoneId } })}
-                            className={`
-                                relative h-full rounded-xl transition-all duration-300 cursor-pointer group
-                                flex flex-col items-center justify-end pb-8
-                                ${isTargeted ? 'bg-red-900/20 shadow-[0_0_50px_rgba(220,38,38,0.3)] border-red-500/50' : 'hover:bg-white/5'}
-                                ${isMyZone ? 'bg-amber-900/10 border-b-4 border-amber-500' : 'border-b-4 border-transparent'}
-                            `}
-                        >
-                            {/* Floating Label (Projected) */}
-                            <div className={`
-                                absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
-                                text-2xl font-black uppercase tracking-[0.2em] transform -skew-x-12
-                                transition-all duration-500
-                                ${isTargeted ? 'text-red-500 scale-110' : 'text-slate-800 group-hover:text-slate-600'}
-                            `}>
-                                {ZONE_NAMES_NO[zoneId] || zoneId}
+                    {/* THE GARGOYLE KNIGHT SVG */}
+                    <motion.div
+                        animate={{
+                            y: isTargeted ? [0, -10, 0] : [0, 20, 0],
+                        }}
+                        transition={{
+                            duration: isTargeted ? 1.0 : 5,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                        className="relative z-10 w-full h-full drop-shadow-[0_100px_120px_rgba(0,0,0,1)]"
+                    >
+                        {/* We use a much wider viewBox and a negative Y start to never clip the sword */}
+                        <svg viewBox="-150 -200 700 900" className="w-[120%] h-[120%] overflow-visible">
+                            <defs>
+                                <linearGradient id="armorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style={{ stopColor: '#1e293b' }} />
+                                    <stop offset="100%" style={{ stopColor: '#020617' }} />
+                                </linearGradient>
+                                <filter id="glow">
+                                    <feGaussianBlur stdDeviation="15" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                </filter>
+                            </defs>
+
+                            {/* Cape (Back-most) */}
+                            <path d="M100,220 Q0,450 40,700 L360,700 Q400,450 300,220" fill="#450a0a" opacity="0.8" />
+
+                            {/* Greatsword - Now behind Pauldrons */}
+                            <motion.path
+                                d={isTargeted ? "M300,220 L480,-50 L520,0 L340,250 Z" : "M80,600 L-50,80 L0,40 L120,550 Z"}
+                                fill="#2d3748"
+                                stroke="#4a5568"
+                                strokeWidth="6"
+                                initial={false}
+                                animate={{
+                                    rotate: isTargeted ? [0, -1, 0] : 0,
+                                }}
+                                transition={{ duration: 1.5, repeat: Infinity }}
+                            />
+
+                            {/* Body / Torso */}
+                            <path d="M130,700 L160,210 L240,210 L270,700 Z" fill="url(#armorGrad)" stroke="#334155" strokeWidth="6" />
+
+                            {/* Shoulders / Pauldrons (Top Layer) */}
+                            <path d="M80,260 Q110,160 170,190 L190,210 L80,260" fill="#0f172a" stroke="#475569" strokeWidth="6" />
+                            <path d="M320,260 Q290,160 230,190 L210,210 L320,260" fill="#0f172a" stroke="#475569" strokeWidth="6" />
+
+                            {/* Helmet */}
+                            <path d="M175,195 Q200,75 225,195 Z" fill="#1e293b" stroke="#64748b" strokeWidth="6" />
+                            {/* Visor Area */}
+                            <rect x="188" y="155" width="24" height="6" rx="3" fill={isTargeted ? "#ff0000" : "#020617"} filter={isTargeted ? "url(#glow)" : ""} />
+                        </svg>
+                    </motion.div>
+
+                    {/* Progress Bar (Placed on the Boss's Body) */}
+                    <AnimatePresence>
+                        {isTargeted && (
+                            <div className="absolute top-[50%] left-1/2 -translate-x-1/2 w-80 h-4 bg-black/90 border-2 border-red-500/50 rounded-full overflow-hidden shadow-[0_0_40px_rgba(220,38,38,0.5)] z-20 pointer-events-none">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: '100%' }}
+                                    transition={{ duration: 4, ease: "linear" }}
+                                    className="h-full bg-gradient-to-r from-red-900 via-red-600 to-red-400"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center text-[8px] font-black text-white uppercase tracking-[0.4em] drop-shadow-lg">
+                                    Boss angriper nå!
+                                </div>
                             </div>
-
-                            {/* Modifiers */}
-                            {hasOil && (
-                                <div className="absolute top-10 animate-bounce text-4xl opacity-80" title="Oljebevokst (Tenn på for trippel skade!)">🛢️</div>
-                            )}
-
-                            {/* Presence Indicator */}
-                            <div className={`
-                                flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold transition-all
-                                ${isMyZone ? 'bg-amber-500 text-black shadow-lg translate-y-0' : 'bg-slate-800 text-slate-500 translate-y-4 opacity-0 group-hover:opacity-100 group-hover:translate-y-0'}
-                            `}>
-                                <Users size={12} />
-                                {zone.occupierIds?.length || 0}
-                                {isMyZone && <span className="ml-1 opacity-70">(DEG)</span>}
-                            </div>
-
-                            {/* Danger Pulse if Targeted */}
-                            {isTargeted && (
-                                <div className="absolute inset-0 border-2 border-red-500 rounded-xl animate-ping opacity-20 pointer-events-none" />
-                            )}
-                        </motion.div>
-                    );
-                })}
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
+
+            {/* SPACER FOR FLEX LAYOUT (To keep top/bottom aligned) */}
+            <div className="flex-1 invisible" />
 
             {/* --- LAYER 3: COMMAND DASHBOARD (Bottom) --- */}
             <div className="relative z-30 h-64 bg-slate-950/80 backdrop-blur-xl border-t border-white/10 flex items-stretch">
 
                 {/* LEFT: Stamina Orb & Control */}
-                <div className="w-56 border-r border-white/5 flex flex-col items-center justify-center gap-10 py-6 px-4 bg-black/40 relative">
+                <div className="w-52 border-r border-white/5 flex flex-col items-center justify-center p-4 bg-black/40 relative">
                     {/* The Orb */}
                     <div className="relative w-32 h-32 rounded-full border-4 border-slate-800 flex items-center justify-center bg-black shadow-[0_0_30px_rgba(0,0,0,0.8)]">
                         {/* Fill Animation */}
@@ -220,169 +236,86 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, messages = [], 
                             <span className="text-[11px] text-slate-500 font-black uppercase tracking-widest mt-1">Energi</span>
                         </div>
                     </div>
+                </div>
 
-                    {/* Hvil Button */}
-                    <div className="w-full flex flex-col items-center gap-2 group">
-                        <motion.button
-                            whileHover={{ scale: 1.05, backgroundColor: 'rgba(245,158,11,0.1)' }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'REST' })}
-                            className="w-full py-3 bg-slate-900/90 rounded-xl border border-amber-500/50 text-amber-500 shadow-2xl transition-all flex items-center justify-center gap-2"
-                        >
-                            <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" />
-                            <span className="text-[12px] font-black uppercase tracking-widest">Hvil (1 brød)</span>
-                        </motion.button>
-                        <div className="text-[10px] text-slate-600 font-black uppercase tracking-[0.2em] opacity-60">
-                            Rasjonsforbruk
+                {/* CENTER: Fixed Actions */}
+                <div className="flex-1 relative flex items-center justify-center gap-8">
+                    {/* Action 1: Sverdlyn (Light) */}
+                    <motion.button
+                        whileHover={{ y: -10, scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => stamina >= 1 && onAction({ type: 'SIEGE_ACTION', subType: 'PLAY_CARD', payload: { templateId: 'basic_attack' } })}
+                        className={`group relative w-40 h-52 rounded-2xl border-2 flex flex-col items-center justify-between p-4 transition-all ${stamina >= 1 ? 'bg-slate-900 border-amber-500/50 shadow-2xl' : 'opacity-40 grayscale cursor-not-allowed'}`}
+                    >
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-600 text-black px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">Lett Angrep</div>
+                        <Sword size={40} className="text-amber-500 mt-4 group-hover:rotate-12 transition-transform" />
+                        <div className="text-center">
+                            <div className="text-sm font-black text-white uppercase tracking-widest">SVERDLYN</div>
+                            <div className="text-[10px] text-slate-500 mt-1 uppercase">1 Energi | 1 Sverd</div>
+                        </div>
+                        <div className="w-full h-1 bg-amber-500/20 rounded-full overflow-hidden">
+                            <div className="h-full bg-amber-500 w-full" />
+                        </div>
+                    </motion.button>
+
+                    {/* Action 2: Tungt Slag (Heavy) */}
+                    <motion.button
+                        whileHover={{ y: -10, scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => stamina >= 3 && onAction({ type: 'SIEGE_ACTION', subType: 'PLAY_CARD', payload: { templateId: 'strong_attack' } })}
+                        className={`group relative w-44 h-56 rounded-2xl border-4 flex flex-col items-center justify-between p-5 transition-all ${stamina >= 3 ? 'bg-slate-900 border-red-500 shadow-[0_0_40px_rgba(220,38,38,0.2)]' : 'opacity-40 grayscale cursor-not-allowed'}`}
+                    >
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-1 rounded-full text-[11px] font-black uppercase tracking-widest">Heavy Strike</div>
+                        <Flame size={48} className="text-red-500 mt-2 animate-pulse" />
+                        <div className="text-center">
+                            <div className="text-lg font-black text-white uppercase tracking-tighter leading-tight">TUNGT SLAG</div>
+                            <div className="text-[11px] text-slate-500 mt-1 uppercase">3 Energi | 2 Sverd</div>
+                        </div>
+                        <div className="w-full h-1.5 bg-red-900/40 rounded-full overflow-hidden">
+                            <div className="h-full bg-red-600 w-full" />
+                        </div>
+                    </motion.button>
+
+                    {/* Action 3: Skjold (Defense) */}
+                    <motion.button
+                        whileHover={{ y: -10, scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => stamina >= 1 && onAction({ type: 'SIEGE_ACTION', subType: 'PLAY_CARD', payload: { templateId: 'defend' } })}
+                        className={`group relative w-40 h-52 rounded-2xl border-2 flex flex-col items-center justify-between p-4 transition-all ${stamina >= 1 ? 'bg-slate-900 border-blue-500/50 shadow-2xl' : 'opacity-40 grayscale cursor-not-allowed'}`}
+                    >
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">Forsvar</div>
+                        <Shield size={40} className="text-blue-400 mt-4 group-hover:scale-110 transition-transform" />
+                        <div className="text-center">
+                            <div className="text-sm font-black text-white uppercase tracking-widest">SKJOLDMUR</div>
+                            <div className="text-[10px] text-slate-500 mt-1 uppercase">1 Energi | 1 Rustning</div>
+                        </div>
+                        <div className="w-full h-1 bg-blue-500/20 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-400 w-full" />
+                        </div>
+                    </motion.button>
+                </div>
+
+                {/* RIGHT: Tactical Summary & Rest Action */}
+                <div className="w-72 border-l border-white/5 bg-black/40 flex flex-col justify-center">
+                    <div className="p-6 border-white/5 bg-slate-950/50">
+                        <div className="w-full flex flex-col items-center gap-4">
+                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1 flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                KOMMANDØR: {player.name}
+                            </div>
+
+                            <motion.button
+                                whileHover={{ scale: 1.02, backgroundColor: 'rgba(245,158,11,0.1)' }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'REST' })}
+                                className="w-full py-4 bg-slate-900 border border-amber-500 text-amber-500 rounded-lg font-black uppercase tracking-widest text-[11px] shadow-lg flex items-center justify-center gap-2"
+                            >
+                                <RefreshCw size={14} />
+                                SPISE BRØD
+                            </motion.button>
+                            <label className="text-[9px] text-slate-600 uppercase tracking-widest opacity-60 text-center">Bruker 1 brød for energi</label>
                         </div>
                     </div>
-                </div>
-
-                {/* CENTER: The Hand */}
-                <div className="flex-1 relative flex items-center justify-center">
-                    <div className="flex items-end justify-center -space-x-4 pb-4">
-                        <AnimatePresence>
-                            {myHand.map((cardItem, idx) => {
-                                const cardId = typeof cardItem === 'string' ? cardItem : cardItem.templateId;
-                                const def = CARD_DATABASE[cardId] || {};
-                                const cost = typeof cardItem !== 'string' ? cardItem.staminaCost : (def.staminaCost || 2);
-                                const canAfford = stamina >= cost;
-
-                                return (
-                                    <motion.div
-                                        key={typeof cardItem === 'object' ? cardItem.id : idx} // Stable key if possible
-                                        layout
-                                        initial={{ y: 200, opacity: 0, rotate: 0 }}
-                                        animate={{ y: 0, opacity: 1, rotate: (idx - (myHand.length - 1) / 2) * 5 }}
-                                        exit={{ y: 200, opacity: 0 }}
-                                        whileHover={{ y: -40, scale: 1.1, zIndex: 50, rotate: 0 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => canAfford && onAction({ type: 'SIEGE_ACTION', subType: 'PLAY_CARD', payload: { templateId: cardId } })}
-                                        className={`
-                                            relative w-32 h-48 rounded-xl border-2 cursor-pointer transition-colors duration-200 group
-                                            flex flex-col p-3 shadow-2xl backdrop-blur-md
-                                            ${canAfford
-                                                ? 'bg-gradient-to-br from-slate-800 to-black border-slate-700 hover:border-amber-400'
-                                                : 'bg-slate-900 border-red-900/50 opacity-60 grayscale cursor-not-allowed'}
-                                        `}
-                                    >
-                                        {/* Cost Badge */}
-                                        <div className={`
-                                            absolute -top-3 -right-3 w-8 h-8 rounded-full border-2 flex items-center justify-center z-20 shadow-lg font-black text-sm
-                                            ${canAfford ? 'bg-slate-900 border-amber-500 text-amber-400' : 'bg-slate-950 border-red-900 text-red-700'}
-                                        `}>
-                                            {cost}
-                                        </div>
-
-                                        {/* Redesigned Card Face */}
-                                        <div className="flex flex-col h-full">
-                                            {/* Header */}
-                                            <div className="text-[14px] font-black text-white uppercase tracking-wider mb-2 leading-tight border-b-2 border-white/10 pb-1">
-                                                {def.name || cardId.replace('_', ' ')}
-                                            </div>
-
-                                            {/* Icon Section */}
-                                            <div className="h-10 flex items-center justify-center opacity-80 group-hover:scale-110 transition-transform">
-                                                {getCardIcon(cardId)}
-                                            </div>
-
-                                            {/* Requirements & Stats */}
-                                            <div className="mt-2 flex flex-col gap-2">
-                                                {/* Weapon Cost */}
-                                                {def.weaponCost && (
-                                                    <div className="flex justify-between items-center bg-slate-400/10 px-3 py-1.5 rounded-lg border border-white/5">
-                                                        <span className="text-[10px] font-black text-slate-500 uppercase">Kostnad</span>
-                                                        <div className="flex items-center gap-1">
-                                                            {def.weaponCost.type === 'siege_sword' ? <Sword size={14} className="text-amber-500" /> : <Shield size={14} className="text-blue-500" />}
-                                                            <span className="text-[13px] font-black text-slate-200">{def.weaponCost.amount}</span>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Effect Stats */}
-                                                <div className="bg-black/60 rounded-lg p-2.5 flex flex-col gap-1.5 shadow-inner border border-white/5">
-                                                    {def.effectPayload?.damage && (
-                                                        <div className="flex justify-between items-center text-[12px] font-black">
-                                                            <span className="text-slate-500 uppercase tracking-tighter">Skade</span>
-                                                            <span className="text-red-500 text-lg">{def.effectPayload.damage}</span>
-                                                        </div>
-                                                    )}
-                                                    {def.effectPayload?.armor && (
-                                                        <div className="flex justify-between items-center text-[12px] font-black">
-                                                            <span className="text-slate-500 uppercase tracking-tighter">Verge</span>
-                                                            <span className="text-blue-400 text-lg">+{def.effectPayload.armor}</span>
-                                                        </div>
-                                                    )}
-                                                    {(def.effectPayload?.recoverStamina || def.effectPayload?.groupStamina) && (
-                                                        <div className="flex justify-between items-center text-[12px] font-black">
-                                                            <span className="text-slate-500 uppercase tracking-tighter">Energi</span>
-                                                            <span className="text-amber-400 text-lg">+{def.effectPayload.recoverStamina || def.effectPayload.groupStamina}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Description & Tags */}
-                                            <div className="flex-1 mt-3 text-[11px] text-slate-300 leading-snug font-medium italic overflow-hidden">
-                                                {def.description}
-                                            </div>
-
-                                            {def.tags && (
-                                                <div className="mt-3 flex gap-1.5">
-                                                    {def.tags.map(tag => (
-                                                        <span key={tag} className="text-[9px] font-black bg-white/10 text-slate-400 px-2 py-0.5 rounded border border-white/10 uppercase tracking-widest">
-                                                            {tag}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* HOVER TOOLTIP */}
-                                        <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-48 bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                                            <div className="text-xs font-bold text-white mb-1 border-b border-slate-700 pb-1">
-                                                {def.name || cardId}
-                                            </div>
-                                            <div className="text-[10px] text-slate-400 mb-2 italic">
-                                                {def.description || "Ingen beskrivelse."}
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-1 text-[10px] text-mono">
-                                                {def.effectPayload?.damage && (
-                                                    <div className="text-red-400">Skade: {def.effectPayload.damage}</div>
-                                                )}
-                                                {def.effectPayload?.armor && (
-                                                    <div className="text-blue-400">Rustning: {def.effectPayload.armor}</div>
-                                                )}
-                                                {def.effectPayload?.zoneMod && (
-                                                    <div className="text-purple-400">Effekt: {def.effectPayload.zoneMod}</div>
-                                                )}
-                                                <div className="text-slate-500">Cooldown: {(def.cooldown || 0) / 1000}s</div>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
-                        </AnimatePresence>
-                        {myHand.length === 0 && (
-                            <div className="flex flex-col items-center gap-2 z-50 pointer-events-auto">
-                                <div className="text-slate-500 text-sm font-mono">
-                                    Tom for kort.
-                                </div>
-                                <button
-                                    onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'DRAW_CARDS' })}
-                                    className="px-6 py-2 text-xs font-black bg-amber-500 text-black border-2 border-amber-400 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.6)] hover:scale-105 active:scale-95 transition-all uppercase tracking-widest flex items-center gap-2"
-                                >
-                                    <Zap size={14} className="fill-black" />
-                                    HENT FORSYNINGER
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* RIGHT: Battle Feed */}
-                <div className="w-64 border-l border-white/5 bg-black/20 p-4">
-                    <SiegeBattleFeed messages={messages} />
                 </div>
 
             </div>
