@@ -1,5 +1,6 @@
 import type { ActionContext } from '../../actionTypes';
 import type { ActiveSiege, SiegeParticipant, SiegeSide } from '../../../types/war';
+import { generateDeck } from './SiegeCourtyardHandler';
 
 // --- START SIEGE ---
 export const handleStartSiege = (ctx: ActionContext) => {
@@ -54,15 +55,7 @@ export const handleStartSiege = (ctx: ActionContext) => {
         maxHp: 100,
         name: actor.name,
         stats: { damageDealt: 0, damageTaken: 0, armorDonated: 0, ticksOnThrone: 0, cardsPlayed: 0 },
-        deck: { // Starter Deck
-            hand: [],
-            drawPile: ['basic_attack', 'basic_attack', 'defend'],
-            discardPile: [],
-            maxHandSize: 4,
-            stamina: 5,
-            maxStamina: 5,
-            lastStaminaRegen: Date.now()
-        }
+        deck: generateDeck(actor.role, actor.equipment)
     };
 
     const newSiege: ActiveSiege = {
@@ -119,15 +112,7 @@ export const handleJoinSiege = (ctx: ActionContext) => {
         maxHp: 100,
         name: actor.name,
         stats: { damageDealt: 0, damageTaken: 0, armorDonated: 0, ticksOnThrone: 0, cardsPlayed: 0 },
-        deck: { // Basic Deck template -> Later expand based on role
-            hand: [],
-            drawPile: ['basic_attack', 'basic_attack', 'defend'],
-            discardPile: [],
-            maxHandSize: 4,
-            stamina: 5,
-            maxStamina: 5,
-            lastStaminaRegen: Date.now()
-        }
+        deck: generateDeck(actor.role, actor.equipment)
     };
 
     if (side === 'DEFENDER') {
@@ -151,7 +136,7 @@ export const handleBreachAction = (ctx: ActionContext) => {
 
     // ATTACK GATE (Basic)
     if (action.subType === 'ATTACK_GATE') {
-        const weapon = action.payload?.weaponType || 'MELEE';
+
         let damage = 2; // Fists
 
         // Resource consumption logic could go here (Swords/Arrows)

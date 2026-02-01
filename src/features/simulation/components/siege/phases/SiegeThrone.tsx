@@ -1,7 +1,7 @@
 import React from 'react';
 import type { SimulationPlayer, ActiveSiege } from '../../../simulationTypes';
 import { motion } from 'framer-motion';
-import { Crown, Shield, Skull } from 'lucide-react';
+import { Crown, Shield } from 'lucide-react';
 
 interface Props {
     player: SimulationPlayer;

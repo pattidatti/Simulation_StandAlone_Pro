@@ -1,5 +1,4 @@
 import type { ActionContext } from '../../actionTypes';
-import type { ActiveSiege, SiegeZone } from '../../../types/war';
 
 export const handleThroneAction = (ctx: ActionContext) => {
     const { actor, room, action, localResult } = ctx;

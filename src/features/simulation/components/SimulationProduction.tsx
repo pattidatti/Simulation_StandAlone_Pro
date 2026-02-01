@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSimulation } from '../SimulationContext';
 import { REFINERY_RECIPES, CRAFTING_RECIPES, RESOURCE_DETAILS, ITEM_TEMPLATES, VILLAGE_BUILDINGS, REPAIR_CONFIG, SKILL_DETAILS, GAME_BALANCE } from '../constants';
-import type { SimulationPlayer, SimulationRoom, EquipmentSlot, EquipmentItem } from '../simulationTypes';
+import type { SimulationPlayer, SimulationRoom, EquipmentSlot } from '../simulationTypes';
 import { GameButton } from '../ui/GameButton';
 import { Info, Zap, TrendingUp, Package, Wrench } from 'lucide-react';
 import { checkActionRequirements } from '../utils/actionUtils';
