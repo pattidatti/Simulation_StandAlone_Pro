@@ -1461,14 +1461,10 @@ export const handleAbdicate = async (pin: string, playerId: string) => {
 };
 
 /* --- CHAT HANDLER --- */
-export const handleSendMessage = async (pin: string, playerId: string, content: string, channelId: string) => {
+export const handleSendMessage = async (pin: string, player: SimulationPlayer, content: string, channelId: string) => {
+    const playerId = player.id;
     const playerRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
     const channelRef = ref(db, `simulation_rooms/${pin}/channels/${channelId}/messages`);
-
-    // Pre-flight check
-    const playerSnap = await get(playerRef);
-    if (!playerSnap.exists()) return { success: false, error: "Spiller mangler" };
-    const player = playerSnap.val() as SimulationPlayer;
 
     let cost = 0;
 
@@ -1476,53 +1472,64 @@ export const handleSendMessage = async (pin: string, playerId: string, content: 
     if (player.role !== 'KING') {
         if (channelId === 'global') {
             cost = 2; // Town Crier Fee
-        } else if (channelId !== player.regionId && channelId !== 'diplomacy') {
-            // E.g. sending to another region channel? (Not possible via UI broadly, but DMs fall here)
-            // If it's a DM (contains user ID but isn't region/diplomacy/global)
+        } else if (channelId !== player.regionId && channelId !== 'diplomacy' && channelId !== 'feedback') {
             if (channelId.includes(playerId) && channelId.length > 20) {
                 cost = 5; // Messenger Fee
             }
         }
     }
 
+    if (channelId === 'feedback') cost = 0;
+
     if ((player.resources?.gold || 0) < cost) {
         return { success: false, error: `Trenger ${cost}g for å sende denne meldingen.` };
     }
 
-    let success = false;
-
     // 1. Deduct Gold (if any)
     if (cost > 0) {
-        await runTransaction(playerRef, (p: any) => {
-            if (!p) return;
-            if ((p.resources.gold || 0) < cost) return; // Re-check
-            p.resources.gold -= cost;
-            success = true;
-            return p;
-        });
-    } else {
-        success = true; // Free message
+        try {
+            await runTransaction(playerRef, (p: any) => {
+                if (!p) return;
+                if ((p.resources.gold || 0) < cost) return;
+                p.resources.gold -= cost;
+                return p;
+            });
+        } catch (e) {
+            return { success: false, error: "Transaksjon feilet." };
+        }
     }
-
-    if (!success) return { success: false, error: "Har ikke råd." };
 
     // 2. Push Message
     try {
         const newMessageRef = push(channelRef);
-        await update(newMessageRef, {
+        await set(newMessageRef, {
             id: newMessageRef.key,
             senderId: playerId,
             senderName: player.name,
             senderRole: player.role,
             content: content.trim(),
             timestamp: serverTimestamp(),
-            isPremiere: cost > 0 // Flag for UI to show "Paid Message" style
+            isPremiere: cost > 0
         });
+
+        // 3. Mirror to Global Feedback Log (Fire and forget)
+        if (channelId === 'feedback') {
+            const globalFeedbackRef = push(ref(db, `feedback_logs/messages`));
+            set(globalFeedbackRef, {
+                id: globalFeedbackRef.key,
+                roomId: pin,
+                senderId: playerId,
+                senderName: player.name,
+                senderRole: player.role,
+                content: content.trim(),
+                timestamp: serverTimestamp()
+            }).catch(() => { });
+        }
 
         return { success: true };
     } catch (e: any) {
         console.error("Chat Send Error:", e);
-        return { success: false, error: `Kunne ikke sende melding: ${e.message || 'Ukjent feil'}` };
+        return { success: false, error: "Sendefeil." };
     }
 };
 
