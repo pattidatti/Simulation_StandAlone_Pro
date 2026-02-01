@@ -6,7 +6,7 @@ import type { SimulationPlayer, SimulationMessage } from '../simulationTypes';
 export interface ChatChannel {
     id: string;
     name: string;
-    type: 'GLOBAL' | 'REGION' | 'DIPLOMACY' | 'DM';
+    type: 'GLOBAL' | 'REGION' | 'DIPLOMACY' | 'DM' | 'FEEDBACK';
     unreadCount: number;
     description?: string;
 }
@@ -69,6 +69,9 @@ export const useChat = (pin: string, player: SimulationPlayer | null) => {
             newChannels['diplomacy'] = { id: 'diplomacy', name: 'Rådet', type: 'DIPLOMACY', unreadCount: 0, description: 'Hemmelig kanal for ledere' };
         }
 
+        // Feedback (Public but logged)
+        newChannels['feedback'] = { id: 'feedback', name: 'Feedback', type: 'FEEDBACK', unreadCount: 0, description: 'Kommentarer? Bugs? Skriv her!' };
+
         setChannels(prev => {
             const merged = { ...newChannels };
             Object.keys(prev).forEach(k => {
@@ -99,9 +102,11 @@ export const useChat = (pin: string, player: SimulationPlayer | null) => {
                     [channelId]: msgs
                 }));
 
-                // Update unread count for this channel
+                // Update unread count for this channel (Exclude feedback)
                 const lastRead = lastReadTimestamps[channelId] || 0;
-                const newUnread = msgs.filter(m => (m.timestamp as number) > lastRead && m.senderId !== player.id).length;
+                const newUnread = channelId === 'feedback'
+                    ? 0
+                    : msgs.filter(m => (m.timestamp as number) > lastRead && m.senderId !== player.id).length;
 
                 setChannels(prev => {
                     if (prev[channelId] && prev[channelId].unreadCount === newUnread) return prev;

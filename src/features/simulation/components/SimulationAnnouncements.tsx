@@ -16,16 +16,16 @@ interface Announcement {
 const ANNOUNCEMENTS: Announcement[] = [
     {
         id: '1',
-        type: 'info',
+        type: 'Kommer snart',
         title: 'Neste Serveråpning',
-        content: 'Neste offisielle server åpner i vinterferien!',
+        content: 'Neste offisielle server åpner i vinterferien! Oppdatering til beleringssystemet og mer! Husk å lage profil oppe til høyre for å lagre karakteren din!',
         date: '2026-02-05'
     },
     {
         id: '2',
         type: 'update',
         title: 'V0.8.4 Oppdatering',
-        content: 'Vi har forbedret Siege-ytelsen og fikset bugs i Tavern-spillene.',
+        content: 'Saga-hjulet er balansert og terningene triller riktig.',
         date: '2026-02-01'
     },
     {
@@ -63,7 +63,7 @@ export const SimulationAnnouncements: React.FC = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.6 + index * 0.1 }}
                         whileHover={{ scale: 1.02 }}
-                        className="group relative bg-slate-950/40 backdrop-blur-md border border-white/10 rounded-2xl p-5 overflow-hidden transition-all duration-300 hover:border-white/20 hover:bg-slate-950/60"
+                        className="group relative bg-slate-950/40 backdrop-blur-md border border-white/10 rounded-2xl p-5 overflow-hidden transition-all duration-300 hover:border-white/20 hover:bg-slate-950/60 min-h-[160px]"
                     >
                         {/* Subtle Glow Effect */}
                         <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/0 via-white/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 blur transition-opacity" />
@@ -87,7 +87,7 @@ export const SimulationAnnouncements: React.FC = () => {
                                 {item.title}
                             </h4>
 
-                            <p className="text-xs text-white/60 leading-relaxed font-light line-clamp-2">
+                            <p className="text-xs text-white/60 leading-relaxed font-light">
                                 {item.content}
                             </p>
                         </div>

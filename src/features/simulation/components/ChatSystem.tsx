@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '../hooks/useChat';
 import { handleSendMessage } from '../globalActions';
 import type { SimulationPlayer } from '../simulationTypes';
-import { MessageSquare, Send, ChevronDown, Users, MapPin, Crown, Lock } from 'lucide-react';
+import { MessageSquare, Send, ChevronDown, Users, MapPin, Crown, Lock, Heart } from 'lucide-react';
 
 // Inline cn helper
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
@@ -52,14 +52,21 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({ pin, player, onOpenProfi
     const handleSend = async () => {
         if (!inputText.trim() || isSending) return;
         setIsSending(true);
+        console.log(`[ChatSystem] Sending to ${activeChannelId}: "${inputText}"`);
 
-        const result = await handleSendMessage(pin, player.id, inputText, activeChannelId);
-        if (result.success) {
-            setInputText('');
-        } else {
-            alert(result.error || "Feil ved sending.");
+        try {
+            const result = await handleSendMessage(pin, player, inputText, activeChannelId);
+            console.log(`[ChatSystem] Result:`, result);
+            if (result.success) {
+                setInputText('');
+            } else {
+                alert(result.error || "Feil ved sending.");
+            }
+        } catch (error) {
+            console.error(`[ChatSystem] Fatal error:`, error);
+        } finally {
+            setIsSending(false);
         }
-        setIsSending(false);
     };
 
     const getChannelIcon = (type: string) => {
@@ -68,9 +75,12 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({ pin, player, onOpenProfi
             case 'REGION': return <MapPin size={14} />;
             case 'DIPLOMACY': return <Crown size={14} className="text-amber-400" />;
             case 'DM': return <Lock size={14} />;
+            case 'FEEDBACK': return <Heart size={14} className="text-rose-400 animate-pulse" />;
             default: return <MessageSquare size={14} />;
         }
     };
+
+    const isFeedbackChannel = activeChannelId === 'feedback';
 
     if (!isOpen) {
         return (
@@ -112,7 +122,9 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({ pin, player, onOpenProfi
                         className={cn(
                             "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all relative",
                             activeChannelId === channel.id
-                                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20"
+                                ? (isFeedbackChannel
+                                    ? "bg-rose-600 text-white shadow-lg shadow-rose-500/20"
+                                    : "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20")
                                 : "bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                         )}
                     >
@@ -151,8 +163,8 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({ pin, player, onOpenProfi
                                 <div className={cn(
                                     "px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-sm break-words relative group",
                                     isMe
-                                        ? "bg-indigo-600 text-white rounded-tr-sm"
-                                        : "bg-slate-800 text-slate-200 rounded-tl-sm border border-slate-700/50"
+                                        ? (isFeedbackChannel ? "bg-rose-600 text-white rounded-tr-sm" : "bg-indigo-600 text-white rounded-tr-sm")
+                                        : (isFeedbackChannel ? "bg-rose-950/40 text-rose-100 rounded-tl-sm border border-rose-500/30" : "bg-slate-800 text-slate-200 rounded-tl-sm border border-slate-700/50")
                                 )}>
                                     {msg.content}
                                     {/* Role Badge if not me */}
@@ -176,19 +188,27 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({ pin, player, onOpenProfi
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                        placeholder={`Melding til #${channels[activeChannelId]?.name || 'kanal'}...`}
-                        className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all shadow-inner"
+                        placeholder={isFeedbackChannel ? "Hva kan vi gjøre bedre?" : `Melding til #${channels[activeChannelId]?.name || 'kanal'}...`}
+                        className={cn(
+                            "flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all shadow-inner",
+                            isFeedbackChannel ? "focus:ring-rose-500/50 focus:border-rose-500" : "focus:ring-indigo-500/50 focus:border-indigo-500"
+                        )}
                         disabled={isSending}
                     />
                     <button
                         onClick={handleSend}
                         disabled={!inputText.trim() || isSending}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-indigo-500/20 active:scale-95"
+                        className={cn(
+                            "text-white p-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg active:scale-95",
+                            isFeedbackChannel
+                                ? "bg-rose-600 hover:bg-rose-500 hover:shadow-rose-500/20"
+                                : "bg-indigo-600 hover:bg-indigo-500 hover:shadow-indigo-500/20"
+                        )}
                     >
                         {isSending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send size={16} />}
                     </button>
 
-                    {/* Cost Indicator */}
+                    {/* Cost Indicator (Exempt feedback) */}
                     {player.role !== 'KING' && activeChannelId === 'global' && (
                         <div className="absolute -top-6 right-2 text-[10px] text-amber-500 font-mono bg-amber-950/30 px-2 py-0.5 rounded border border-amber-900/50">
                             Kostnad: 2 Gull

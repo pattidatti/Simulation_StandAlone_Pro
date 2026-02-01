@@ -1461,14 +1461,13 @@ export const handleAbdicate = async (pin: string, playerId: string) => {
 };
 
 /* --- CHAT HANDLER --- */
-export const handleSendMessage = async (pin: string, playerId: string, content: string, channelId: string) => {
+export const handleSendMessage = async (pin: string, player: SimulationPlayer, content: string, channelId: string) => {
+    const playerId = player.id;
+    console.log(`[Chat] Sending message to ${channelId}...`);
     const playerRef = ref(db, `simulation_rooms/${pin}/players/${playerId}`);
     const channelRef = ref(db, `simulation_rooms/${pin}/channels/${channelId}/messages`);
 
-    // Pre-flight check
-    const playerSnap = await get(playerRef);
-    if (!playerSnap.exists()) return { success: false, error: "Spiller mangler" };
-    const player = playerSnap.val() as SimulationPlayer;
+    // No need for await get(playerRef) since we have player object
 
     let cost = 0;
 
@@ -1476,14 +1475,17 @@ export const handleSendMessage = async (pin: string, playerId: string, content: 
     if (player.role !== 'KING') {
         if (channelId === 'global') {
             cost = 2; // Town Crier Fee
-        } else if (channelId !== player.regionId && channelId !== 'diplomacy') {
+        } else if (channelId !== player.regionId && channelId !== 'diplomacy' && channelId !== 'feedback') {
             // E.g. sending to another region channel? (Not possible via UI broadly, but DMs fall here)
-            // If it's a DM (contains user ID but isn't region/diplomacy/global)
+            // If it's a DM (contains user ID but isn't region/diplomacy/global/feedback)
             if (channelId.includes(playerId) && channelId.length > 20) {
                 cost = 5; // Messenger Fee
             }
         }
     }
+
+    // Feedback is ALWAYS free
+    if (channelId === 'feedback') cost = 0;
 
     if ((player.resources?.gold || 0) < cost) {
         return { success: false, error: `Trenger ${cost}g for å sende denne meldingen.` };
@@ -1508,16 +1510,37 @@ export const handleSendMessage = async (pin: string, playerId: string, content: 
 
     // 2. Push Message
     try {
+        console.log(`[Chat] Pushing to room channel...`);
         const newMessageRef = push(channelRef);
-        await update(newMessageRef, {
+        await set(newMessageRef, {
             id: newMessageRef.key,
             senderId: playerId,
             senderName: player.name,
             senderRole: player.role,
             content: content.trim(),
             timestamp: serverTimestamp(),
-            isPremiere: cost > 0 // Flag for UI to show "Paid Message" style
+            isPremiere: cost > 0
         });
+        console.log(`[Chat] Room message sent.`);
+
+        // 3. Mirror to Global Feedback Log (Non-blocking)
+        if (channelId === 'feedback') {
+            console.log(`[Chat] Mirroring to feedback_logs...`);
+            try {
+                const globalFeedbackRef = push(ref(db, `feedback_logs/messages`));
+                set(globalFeedbackRef, {
+                    id: globalFeedbackRef.key,
+                    roomId: pin,
+                    senderId: playerId,
+                    senderName: player.name,
+                    senderRole: player.role,
+                    content: content.trim(),
+                    timestamp: serverTimestamp()
+                }).catch(err => console.warn("Global mirror log failed (likely permissions):", err));
+            } catch (err) {
+                console.warn("Global mirror push failed:", err);
+            }
+        }
 
         return { success: true };
     } catch (e: any) {
