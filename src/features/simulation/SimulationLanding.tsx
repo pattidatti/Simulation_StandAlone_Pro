@@ -4,6 +4,7 @@ import { useAudio } from './SimulationAudioContext';
 import { SimulationServerBrowser } from './SimulationServerBrowser';
 import { SimulationAuthModal } from './SimulationAuthModal';
 import { Crown, User } from 'lucide-react';
+import { SimulationAnnouncements } from './components/SimulationAnnouncements';
 import { useNavigate } from 'react-router-dom';
 import { ref, onValue } from 'firebase/database';
 import { simulationDb as db } from './simulationFirebase';
@@ -160,6 +161,9 @@ export const SimulationLanding: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Announcements Board */}
+                    <SimulationAnnouncements />
 
                 </main>
 
