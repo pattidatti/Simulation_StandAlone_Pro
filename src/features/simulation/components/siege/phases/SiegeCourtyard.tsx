@@ -29,7 +29,7 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
     const [, setTick] = useState(0);
 
     const myShield = s?.playerShields?.[player.id];
-    const shieldActive = myShield && myShield.expiresAt > Date.now();
+    const shieldActive = !!(myShield && myShield.expiresAt > Date.now());
     const shieldRemaining = shieldActive ? Math.max(0, (myShield.expiresAt - Date.now()) / 1000) : 0;
 
     const bossPhase = s?.bossAttackPhase || 'IDLE';
@@ -37,12 +37,25 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
     const isStrike = bossPhase === 'STRIKE';
 
     useEffect(() => {
-        // Tick every 100ms during active shield or windup for responsive UI
-        if (shieldActive || isWindup) {
-            const interval = setInterval(() => setTick(t => t + 1), 100);
+        // High frequency tick (50ms) during active shield, windup, or strike for precise UI
+        const isActiveTiming = shieldActive || isWindup || isStrike;
+        if (isActiveTiming) {
+            const interval = setInterval(() => setTick(t => t + 1), 50);
             return () => clearInterval(interval);
         }
-    }, [shieldActive, isWindup]);
+    }, [shieldActive, isWindup, isStrike]);
+
+    // Calculate Boss Attack Progress based on absolute timers
+    const now = Date.now();
+    let attackProgress = 0;
+    if (s && isWindup) {
+        // Windup is usually 2s
+        const total = 2000;
+        const elapsed = total - Math.max(0, s.bossAttackTimer - now);
+        attackProgress = (elapsed / total) * 100;
+    } else if (isStrike) {
+        attackProgress = 100;
+    }
 
     // --- F2: Boss dead — transition to Throne Room ---
     if (siege.phase === 'THRONE_ROOM') {
@@ -253,18 +266,17 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
                         </svg>
                     </motion.div>
 
-                    {/* WINDUP Countdown Bar */}
+                    {/* WINDUP Countdown Bar - SYNCHRONIZED */}
                     <AnimatePresence>
                         {isWindup && (
-                            <div className="absolute top-[50%] left-1/2 -translate-x-1/2 w-80 h-4 bg-black/90 border-2 border-red-500/50 rounded-full overflow-hidden shadow-[0_0_40px_rgba(220,38,38,0.5)] z-20 pointer-events-none">
+                            <div className="absolute top-[50%] left-1/2 -translate-x-1/2 w-80 h-5 bg-black/90 border-2 border-red-500/50 rounded-full overflow-hidden shadow-[0_0_40px_rgba(220,38,38,0.5)] z-20 pointer-events-none">
                                 <motion.div
                                     initial={{ width: 0 }}
-                                    animate={{ width: '100%' }}
-                                    transition={{ duration: 2, ease: "linear" }}
-                                    className="h-full bg-gradient-to-r from-red-900 via-red-600 to-red-400"
+                                    animate={{ width: `${attackProgress}%` }}
+                                    className={`h-full bg-gradient-to-r ${attackProgress > 80 ? 'from-red-600 via-red-400 to-white animate-pulse' : 'from-red-900 via-red-600 to-red-400'}`}
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center text-[8px] font-black text-white uppercase tracking-[0.4em] drop-shadow-lg">
-                                    ⚠️ AKTIVER SKJOLD NÅ!
+                                    {attackProgress > 80 ? '⚡ BLOKKER NÅ! ⚡' : '⚠️ FORBEREDER ANGREP'}
                                 </div>
                             </div>
                         )}
@@ -276,8 +288,11 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
             <div className="flex-1 invisible" />
 
             {/* --- LAYER 3: COMMAND DASHBOARD --- */}
-            <div className="relative z-30 h-64 bg-slate-950/80 backdrop-blur-xl border-t border-white/10 flex items-stretch">
-
+            <motion.div
+                animate={isStrike ? { x: [0, -5, 5, -5, 5, 0], y: [0, 5, -5, 5, -5, 0] } : {}}
+                transition={{ duration: 0.2 }}
+                className="relative z-30 h-64 bg-slate-950/80 backdrop-blur-xl border-t border-white/10 flex items-stretch"
+            >
                 {/* LEFT: Stamina Orb */}
                 <div className="w-52 border-r border-white/5 flex flex-col items-center justify-center p-4 bg-black/40 relative">
                     <div className="relative w-32 h-32 rounded-full border-4 border-slate-800 flex items-center justify-center bg-black shadow-[0_0_30px_rgba(0,0,0,0.8)]">
@@ -334,6 +349,21 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
                             </motion.div>
                         )}
                     </AnimatePresence>
+
+                    {/* PLAYER SIEGE HP BAR */}
+                    <div className="absolute -top-12 left-0 right-0 px-4">
+                        <div className="flex justify-between items-center mb-1">
+                            <span className="text-[9px] font-black text-red-500 uppercase tracking-widest">DIN HELSE</span>
+                            <span className="text-[10px] font-mono text-red-200">{participant?.hp || 100}/100</span>
+                        </div>
+                        <div className="h-2 w-full bg-black/60 rounded-full overflow-hidden border border-white/5">
+                            <motion.div
+                                initial={{ width: '100%' }}
+                                animate={{ width: `${participant?.hp || 100}%` }}
+                                className={`h-full ${(participant?.hp || 100) < 30 ? 'bg-red-500 animate-pulse' : 'bg-gradient-to-r from-red-800 to-red-500'}`}
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {/* CENTER: Fixed Actions */}
@@ -448,8 +478,7 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
                         </div>
                     </div>
                 </div>
-
-            </div>
+            </motion.div>
         </motion.div >
     );
 };

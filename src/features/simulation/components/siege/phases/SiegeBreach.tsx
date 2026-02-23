@@ -12,6 +12,24 @@ interface Props {
 const RAM_PLANKS_REQUIRED = 200;
 const RAM_IRON_REQUIRED = 50;
 
+interface FloatingText {
+    id: number;
+    text: string;
+    x: number;
+    y: number;
+}
+
+interface Splinter {
+    id: number;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    rotation: number;
+    vr: number;
+    size: number;
+}
+
 export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
     const s = siege.breachState;
     if (!s) return <div className="text-white">Loading Breach State...</div>;
@@ -52,6 +70,13 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
 
     // Force re-render for cooldown timers
     const [, setTick] = useState(0);
+    const [impactFlash, setImpactFlash] = useState(false);
+    const [cardFlash, setCardFlash] = useState(false);
+    const [gateKick, setGateKick] = useState(0);
+    const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
+    const [splinters, setSplinters] = useState<Splinter[]>([]);
+    const [prevHp, setPrevHp] = useState(s.gateHp);
+
     useEffect(() => {
         if (ramCooldownActive || oilOnCooldown) {
             const interval = setInterval(() => setTick(t => t + 1), 1000);
@@ -59,20 +84,103 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
         }
     }, [ramCooldownActive, oilOnCooldown]);
 
+    // Track HP changes for juice
+    useEffect(() => {
+        if (s.gateHp < prevHp) {
+            triggerJuice(prevHp - s.gateHp);
+            setPrevHp(s.gateHp);
+        }
+    }, [s.gateHp, prevHp]);
+
+    const triggerJuice = (dmg: number) => {
+        setImpactFlash(true);
+        setCardFlash(true);
+        setGateKick(prev => prev + 1);
+        setTimeout(() => {
+            setImpactFlash(false);
+            setCardFlash(false);
+        }, 100);
+
+        // Spawn floating text
+        const id = Date.now();
+        const texts = ["CRUNCH!", "BOOM!", "SKRÆLL!", "BRAK!", "KERR-RACK!"];
+        const randomText = dmg > 20 ? texts[Math.floor(Math.random() * texts.length)] : `-${dmg}`;
+
+        const newText: FloatingText = {
+            id,
+            text: randomText,
+            x: 50, // Centered X
+            y: 40 + Math.random() * 10  // Spawning around the center-upper part
+        };
+        setFloatingTexts(prev => [...prev, newText]);
+        setTimeout(() => setFloatingTexts(prev => prev.filter(t => t.id !== id)), 1000);
+
+        // Spawn Splinters
+        const newSplinters: Splinter[] = [...Array(8)].map((_, i) => ({
+            id: id + i,
+            x: 50,
+            y: 50,
+            vx: (Math.random() - 0.5) * 40,
+            vy: (Math.random() - 0.7) * 40,
+            rotation: Math.random() * 360,
+            vr: (Math.random() - 0.5) * 30,
+            size: Math.random() * 10 + 5
+        }));
+        setSplinters(prev => [...prev, ...newSplinters]);
+        setTimeout(() => setSplinters(prev => prev.filter(s => !newSplinters.find(ns => ns.id === s.id))), 1200);
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="w-full h-full flex flex-col items-center justify-center gap-6 p-4"
+            className="w-full h-full flex flex-col items-center justify-center gap-6 p-4 relative overflow-hidden"
         >
+            {/* Full Background War Embers */}
+            <div className="absolute inset-0 pointer-events-none z-0">
+                {[...Array(25)].map((_, i) => (
+                    <div
+                        key={i}
+                        className="absolute bg-amber-600 rounded-full blur-[1.5px] animate-war-ember"
+                        style={{
+                            width: Math.random() * 5 + 2,
+                            height: Math.random() * 5 + 2,
+                            left: `${Math.random() * 100}%`,
+                            bottom: '-20px',
+                            animationDelay: `${Math.random() * 8}s`,
+                            animationDuration: `${Math.random() * 4 + 6}s`,
+                            opacity: Math.random() * 0.4 + 0.1
+                        }}
+                    />
+                ))}
+            </div>
             {/* GATE VISUAL */}
             <div
                 className="relative w-[500px] h-[400px] group cursor-pointer"
                 onClick={() => isParticipant && !isDefender && onAction({ type: 'SIEGE_ACTION', subType: 'ATTACK_GATE' })}
             >
+                <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center">
+                    <AnimatePresence>
+                        {floatingTexts.map(t => (
+                            <motion.div
+                                key={t.id}
+                                initial={{ y: 0, opacity: 1, scale: 0.5 }}
+                                animate={{ y: -100, opacity: 0, scale: 2 }}
+                                exit={{ opacity: 0 }}
+                                className="font-black text-amber-500 text-5xl italic drop-shadow-[0_4px_12px_rgba(0,0,0,1)] whitespace-nowrap"
+                            >
+                                {t.text}
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </div>
+
                 {/* HP Bar - Moved inside and centered */}
-                <div className="absolute top-8 left-1/2 -translate-x-1/2 w-[80%] h-10 bg-black/80 rounded-xl overflow-hidden border-2 border-white/20 shadow-[0_0_30px_rgba(0,0,0,0.5)] z-20">
+                <motion.div
+                    animate={impactFlash ? { scale: [1, 1.05, 1], x: [0, -2, 2, 0] } : {}}
+                    className="absolute top-8 left-1/2 -translate-x-1/2 w-[80%] h-10 bg-black/80 rounded-xl overflow-hidden border-2 border-white/20 shadow-[0_0_30px_rgba(0,0,0,0.5)] z-20"
+                >
                     <motion.div
                         className={`h-full transition-colors duration-500 rounded-r-lg ${hpPct < 25 ? 'bg-gradient-to-r from-red-600 to-red-400' : hpPct < 50 ? 'bg-gradient-to-r from-orange-600 to-orange-400' : 'bg-gradient-to-r from-red-700 to-red-500'}`}
                         animate={{ width: `${hpPct}%` }}
@@ -89,17 +197,34 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
                             }>{s.gateCondition}</span>
                         </span>
                     </div>
-                </div>
+                </motion.div>
 
-                {/* The Gate */}
-                <div className={`w-full h-full border-8 border-stone-800 bg-stone-900 rounded-t-[40px] shadow-2xl flex items-center justify-center relative overflow-hidden transition-all duration-200 ${s.gateCondition === 'SHATTERED' ? 'brightness-50 border-red-900/50' :
-                    s.gateCondition === 'BROKEN' ? 'brightness-75' : ''
-                    }`}>
+                {/* The Gate Container for scale/kick */}
+                <motion.div
+                    key={gateKick}
+                    animate={gateKick > 0 ? { scale: [1, 1.05, 1], rotate: [0, -1, 1, 0] } : {}}
+                    transition={{ duration: 0.1 }}
+                    className={`w-full h-full border-8 border-stone-800 bg-stone-900 rounded-t-[40px] shadow-2xl flex items-center justify-center relative overflow-hidden transition-all duration-200 ${s.gateCondition === 'SHATTERED' ? 'brightness-50 border-red-900/50' :
+                        s.gateCondition === 'BROKEN' ? 'brightness-75' : ''
+                        }`}
+                >
                     <div className="absolute inset-0 grid grid-cols-6 gap-1.5 p-3">
                         {[...Array(6)].map((_, i) => (
                             <div key={i} className="bg-stone-800/80 h-full rounded shadow-inner border border-stone-700/30" />
                         ))}
                     </div>
+
+                    {/* Impact Flash Overlay */}
+                    <AnimatePresence>
+                        {impactFlash && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 0.4 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 bg-white z-40 pointer-events-none"
+                            />
+                        )}
+                    </AnimatePresence>
 
                     {/* Cracks */}
                     <AnimatePresence>
@@ -121,7 +246,7 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
                             </motion.div>
                         )}
                     </AnimatePresence>
-                </div>
+                </motion.div>
 
                 {/* Hover Hint */}
                 {isParticipant && !isDefender && (
@@ -155,11 +280,24 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
                     <div className="grid grid-cols-2 gap-4">
                         {/* SWORD ATTACK */}
                         {!isDefender && (
-                            <button
+                            <motion.button
+                                animate={cardFlash ? { scale: [1, 0.95, 1] } : {}}
                                 onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'ATTACK_GATE' })}
-                                className="p-8 rounded-3xl border transition-all duration-300 flex flex-col items-center justify-center gap-4
+                                className="p-8 rounded-3xl border transition-all duration-300 flex flex-col items-center justify-center gap-4 relative overflow-hidden
                                     bg-gradient-to-b from-red-950/70 to-red-950/40 border-red-500/40 hover:border-red-500/80 hover:shadow-[0_0_30px_rgba(220,38,38,0.3)] group/sword"
                             >
+                                {/* INTENSE FLASH OVERLAY */}
+                                <AnimatePresence>
+                                    {cardFlash && (
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="absolute inset-0 bg-white/80 z-10"
+                                        />
+                                    )}
+                                </AnimatePresence>
+
                                 <Sword className="text-red-400 w-16 h-16 group-hover/sword:scale-110 transition-transform duration-300" />
                                 <div className="flex flex-col items-center gap-1">
                                     <span className="text-2xl font-black text-red-300 uppercase tracking-widest">Sverdangrep</span>
@@ -169,7 +307,7 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
                                     <span className="text-xs font-black text-red-200 uppercase">Beleiringsvåpen:</span>
                                     <span className="text-lg font-black text-red-400">{player.resources?.siege_sword || 0}</span>
                                 </div>
-                            </button>
+                            </motion.button>
                         )}
 
                         {/* RAM PANEL */}
@@ -235,23 +373,36 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
                                 </div>
 
                                 {/* Activate RAM */}
-                                <button
+                                <motion.button
+                                    animate={cardFlash && ramReady && !ramCooldownActive ? { scale: [1, 0.95, 1] } : {}}
                                     onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'ACTIVATE_RAM' })}
                                     disabled={!ramReady || ramCooldownActive}
-                                    className={`w-full py-3 rounded-xl font-black uppercase text-sm tracking-wider transition-all duration-300 ${ramReady && !ramCooldownActive
+                                    className={`w-full py-3 rounded-xl font-black uppercase text-sm tracking-wider transition-all duration-300 relative overflow-hidden ${ramReady && !ramCooldownActive
                                         ? 'bg-amber-500 text-black border border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.4)] animate-pulse hover:bg-amber-400'
                                         : ramCooldownActive
                                             ? 'bg-slate-800 text-slate-500 border border-slate-700'
                                             : 'bg-slate-900 text-slate-600 border border-slate-800 cursor-not-allowed'
                                         }`}
                                 >
+                                    {/* INTENSE FLASH OVERLAY */}
+                                    <AnimatePresence>
+                                        {cardFlash && ramReady && !ramCooldownActive && (
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                className="absolute inset-0 bg-white/80 z-10"
+                                            />
+                                        )}
+                                    </AnimatePresence>
+
                                     {ramCooldownActive
                                         ? `⏳ Cooldown: ${ramCooldownRemaining}s`
                                         : ramReady
                                             ? '🔥 AKTIVER MURBREKKER! (500 dmg)'
                                             : 'Murbrekker — samler ressurser...'
                                     }
-                                </button>
+                                </motion.button>
                             </div>
                         )}
 
@@ -301,6 +452,45 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
                     )}
                 </div>
             )}
+
+            {/* Ambient War Embers and Screenshake keyframes */}
+            <style>{`
+                @keyframes war-ember {
+                    0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 0; }
+                    20% { opacity: 0.8; }
+                    80% { opacity: 0.4; }
+                    100% { transform: translateY(-500px) rotate(360deg) scale(0); opacity: 0; }
+                }
+                .animate-war-ember {
+                    animation: war-ember linear infinite;
+                }
+            `}</style>
+
+            {/* TOP LAYER EXPLOSION (Splinters) */}
+            <div className="absolute inset-0 z-[100] pointer-events-none">
+                <AnimatePresence>
+                    {splinters.map(sp => (
+                        <motion.div
+                            key={sp.id}
+                            initial={{ x: `${sp.x}%`, y: `${sp.y}%`, rotate: sp.rotation, opacity: 1, scale: 1 }}
+                            animate={{
+                                x: `${sp.x + sp.vx}%`,
+                                y: `${sp.y + sp.vy + 40}%`, // stronger gravity for top layer
+                                rotate: sp.rotation + sp.vr * 15,
+                                opacity: 0,
+                                scale: 0.3
+                            }}
+                            transition={{ duration: 1.2, ease: "circOut" }}
+                            className="absolute bg-[#4e342e] border border-[#261611] shadow-2xl"
+                            style={{
+                                width: sp.size,
+                                height: sp.size * 0.3,
+                                borderRadius: '1px'
+                            }}
+                        />
+                    ))}
+                </AnimatePresence>
+            </div>
         </motion.div>
     );
 };

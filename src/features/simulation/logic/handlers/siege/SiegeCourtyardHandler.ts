@@ -26,7 +26,7 @@ export const CARD_DATABASE: Record<string, Partial<TacticalCard> & { weaponCost?
         tags: ['DEFENSE'],
         staminaCost: 1,
         weaponCost: { type: 'siege_armor', amount: 1 },
-        effectPayload: { shieldDuration: 2000, blocksAttack: true }
+        effectPayload: { shieldDuration: 3000, blocksAttack: true }
     },
 };
 
@@ -71,13 +71,15 @@ const processBossAI = (siege: any, room: any, actor?: any, localResult?: any) =>
             cs.bossAttackTimer = now + 2000; // 2s windup
         } else if (cs.bossAttackPhase === 'WINDUP') {
             cs.bossAttackPhase = 'STRIKE';
-            cs.bossAttackTimer = now + 500; // Brief strike moment
+            cs.bossAttackTimer = now + 800; // Slightly longer strike for visibility
 
             // DEAL DAMAGE to all participants without active shields
-            const allParticipants = { ...siege.attackers || {}, ...siege.defenders || {} };
+            const attackers = siege.attackers || {};
+            const defenders = siege.defenders || {};
+            const allParticipants = { ...attackers, ...defenders };
             Object.entries(allParticipants).forEach(([id, p]: [string, any]) => {
                 const shield = cs.playerShields?.[id];
-                const isShielded = shield && shield.expiresAt > now;
+                const isShielded = shield && shield.expiresAt >= now;
                 if (!isShielded) {
                     p.hp = (p.hp || 100) - 30;
                     if (!p.stats) p.stats = { damageDealt: 0, damageTaken: 0, armorDonated: 0, ticksOnThrone: 0, cardsPlayed: 0 };
@@ -86,9 +88,13 @@ const processBossAI = (siege: any, room: any, actor?: any, localResult?: any) =>
                     // Deduct 10 armor if it's the current actor
                     if (actor && id === actor.id) {
                         const armorLoss = 10;
-                        const currentArmor = actor.resources?.siege_armor || 0;
+                        const resources = actor.resources || {};
+                        const currentArmor = resources.siege_armor || 0;
                         const actualLoss = Math.min(currentArmor, armorLoss);
-                        actor.resources.siege_armor = Math.max(0, currentArmor - actualLoss);
+
+                        if (actor.resources) {
+                            actor.resources.siege_armor = Math.max(0, currentArmor - actualLoss);
+                        }
 
                         if (localResult) {
                             localResult.message = (localResult.message || "") + " 💥 DU BLE TRUFFET! (-10 Rustning)";
@@ -102,8 +108,8 @@ const processBossAI = (siege: any, room: any, actor?: any, localResult?: any) =>
             // --- KO CHECK (F4) — remove players with HP <= 0 ---
             Object.entries(allParticipants).forEach(([id, p]: [string, any]) => {
                 if ((p.hp || 100) <= 0) {
-                    delete siege.attackers[id];
-                    delete siege.defenders[id];
+                    if (siege.attackers) delete siege.attackers[id];
+                    if (siege.defenders) delete siege.defenders[id];
 
                     // Apply 1hr siege ban debuff
                     const player = room?.players?.[id];
@@ -122,15 +128,15 @@ const processBossAI = (siege: any, room: any, actor?: any, localResult?: any) =>
             });
         } else if (cs.bossAttackPhase === 'STRIKE') {
             cs.bossAttackPhase = 'IDLE';
-            cs.bossAttackTimer = now + 3000; // 3s idle
+            cs.bossAttackTimer = now + 4000; // 4s idle cycle
         }
     }
 
     // Clean expired shields
     const shields = cs.playerShields || {};
     Object.keys(shields).forEach(id => {
-        if (cs.playerShields[id] && cs.playerShields[id].expiresAt <= now) {
-            delete cs.playerShields[id];
+        if (shields[id] && shields[id].expiresAt <= now) {
+            if (cs.playerShields) delete cs.playerShields[id];
         }
     });
 }
@@ -142,7 +148,9 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
     if (!siege) return false;
 
     // Helper: Get Participant
-    const participant = (siege.attackers || {} as any)[actor.id] || (siege.defenders || {} as any)[actor.id];
+    const attackers = siege.attackers || {};
+    const defenders = siege.defenders || {};
+    const participant = (attackers as any)[actor.id] || (defenders as any)[actor.id];
     if (!participant) {
         localResult.message = "Du deltar ikke i slaget.";
         return false;
@@ -154,6 +162,10 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
 
         if (participant.deck) {
             participant.deck.stamina = participant.deck.maxStamina;
+        }
+
+        if (!participant.hp) {
+            participant.hp = 100;
         }
 
         if (!participant.zone) {
@@ -186,7 +198,8 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
         }
 
         // Add to occupier list if not there
-        const currentZone = siege.courtyardState.zones[participant.zone || 'VANGUARD'];
+        const zones = siege.courtyardState.zones || {};
+        const currentZone = zones[participant.zone || 'VANGUARD'];
         if (currentZone && !currentZone.occupierIds.includes(actor.id)) {
             currentZone.occupierIds.push(actor.id);
         }
@@ -197,16 +210,11 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
 
     if (!siege || !siege.courtyardState) return false;
 
-    // --- BOSS AI TICK (runs on every action) ---
-    processBossAI(siege, room, actor, localResult);
-
     // --- TICK (F1: noop for timeout enforcement from SiegeContainer) ---
     if (action.subType === 'TICK') {
+        processBossAI(siege, room, actor, localResult);
         return true;
-    }
-
-    // MOVE (DISABLED)
-    if (action.subType === 'MOVE_ZONE') {
+    } else if (action.subType === 'MOVE_ZONE') {
         localResult.message = "Du er låst i kamp med bossen!";
         return false;
     }
@@ -222,7 +230,7 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
         // --- SHIELD BLOCK CHECK: Can't attack while shield is active ---
         if (cardDef.tags?.includes('MELEE') || cardDef.tags?.includes('HEAVY')) {
             const shield = cs.playerShields?.[actor.id];
-            if (shield && shield.expiresAt > Date.now()) {
+            if (shield && shield.expiresAt >= Date.now()) {
                 localResult.message = "⛔ Du kan ikke angripe mens skjoldet er oppe!";
                 return false;
             }
@@ -325,6 +333,9 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
             return false;
         }
     }
+
+    // --- BOSS AI TICK (runs AFTER player action to prevent race conditions) ---
+    processBossAI(siege, room, actor, localResult);
 
     return false;
 };

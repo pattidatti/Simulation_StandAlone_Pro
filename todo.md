@@ -9,6 +9,8 @@
 - [] Finpusse mekanismene for å bli baron og konge. Minigamet med siege er dårlig optimalisert, har dårlig feedback og ikke en god grafikk. 
 - [ ] Fikse UI på ragdoll er en del overlapp. 
 - [ ] Plynding i siege må ta fra baronen/kongens skattekammer, ikke genere ny penger!
+- [ ] når man blir slått ut i beleiring og får debuff, så kan man likevel joine.  
+
 ## Medium Priority
 - [x] En konge som blir kastet fra posisjonen sin, blir ikke tildelt regionen han kom fra. 
 - [ ] Merchant marked må ha scrollbar for dem som har liten skjerm, deler av vinduet forsvinner. 

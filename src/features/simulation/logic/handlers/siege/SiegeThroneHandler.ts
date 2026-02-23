@@ -27,7 +27,7 @@ export const handleThroneAction = (ctx: ActionContext) => {
 
         const toRemove: string[] = [];
 
-        const occupiers = throne.occupiers || {};
+        const occupiers = (throne.occupiers || {}) as any;
         Object.values(occupiers).forEach((occ: any) => {
             // Legitimacy-based drain: higher legitimacy = slower drain (up to 50% reduction)
             const legitModifier = (occ.legitimacySnapshot || 0) / 100;
@@ -58,7 +58,8 @@ export const handleThroneAction = (ctx: ActionContext) => {
                     .reduce((sum: number, p: any) => sum + (p.stats?.damageDealt || 0), 0);
 
                 if (totalDmg > 0) {
-                    Object.entries(allParticipants || {}).forEach(([id, p]: [string, any]) => {
+                    const participants = allParticipants || {};
+                    Object.entries(participants).forEach(([id, p]: [string, any]) => {
                         const share = (p.stats?.damageDealt || 0) / totalDmg;
                         const goldReward = Math.floor(share * REWARD_POOL);
                         if (goldReward > 0) {
@@ -77,7 +78,7 @@ export const handleThroneAction = (ctx: ActionContext) => {
 
         // Process ejections
         toRemove.forEach(id => {
-            delete throne.occupiers[id];
+            if (throne.occupiers) delete throne.occupiers[id];
         });
 
         return true;
@@ -204,7 +205,7 @@ export const handleThroneAction = (ctx: ActionContext) => {
 
         // Check if ejected
         if (target.armor <= 0) {
-            delete throne.occupiers[targetId];
+            if (throne.occupiers) delete throne.occupiers[targetId];
             localResult.message += ` 💀 ${target.name} ble kastet av tronen!`;
         }
 
