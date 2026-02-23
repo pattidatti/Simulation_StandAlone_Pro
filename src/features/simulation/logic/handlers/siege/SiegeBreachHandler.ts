@@ -336,7 +336,8 @@ export const handleBreachAction = (ctx: ActionContext) => {
         localResult.utbytte.push({ resource: 'wood', amount: -OIL_WOOD_COST });
 
         // Find random attacker with siege_armor
-        const attackerIds = Object.keys(siege.attackers);
+        const attackers = siege.attackers || {};
+        const attackerIds = Object.keys(attackers);
         const targets = attackerIds.filter(id => {
             const p = (room.players as any)?.[id];
             return p && (p.resources?.siege_armor || 0) > 0;

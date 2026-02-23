@@ -353,11 +353,16 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
                     >
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-600 text-black px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">Lett Angrep</div>
                         <Sword size={40} className="text-amber-500 mt-4 group-hover:rotate-12 transition-transform" />
-                        <div className="text-center">
-                            <div className="text-sm font-black text-white uppercase tracking-widest">SVERDLYN</div>
-                            <div className="text-[10px] text-slate-500 mt-1 uppercase">1 Energi | 1 Sverd</div>
+                        <div className="text-center flex flex-col gap-1 px-2">
+                            <div className="text-sm font-black text-white uppercase tracking-widest leading-tight">SVERDLYN</div>
+                            <div className="text-[11px] text-slate-300 font-medium leading-relaxed">Et raskt hogg.</div>
+                            <div className="text-[10px] text-amber-400/80 font-black uppercase tracking-wider mt-1">1 Energi | 1 Sverd</div>
                         </div>
-                        <div className="w-full h-1 bg-amber-500/20 rounded-full overflow-hidden">
+                        <div className="mt-1 px-3 py-1 bg-amber-950/40 rounded-lg border border-amber-500/20 flex items-center gap-2">
+                            <span className="text-[9px] font-bold text-amber-500/60 uppercase">Eier:</span>
+                            <span className="text-xs font-black text-amber-400">{player.resources?.siege_sword || 0}</span>
+                        </div>
+                        <div className="w-full h-1 bg-amber-500/20 rounded-full overflow-hidden mt-2">
                             <div className="h-full bg-amber-500 w-full" />
                         </div>
                     </motion.button>
@@ -377,11 +382,16 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
                     >
                         <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-1 rounded-full text-[11px] font-black uppercase tracking-widest">Heavy Strike</div>
                         <Flame size={48} className="text-red-500 mt-2 animate-pulse" />
-                        <div className="text-center">
+                        <div className="text-center flex flex-col gap-1 px-2">
                             <div className="text-lg font-black text-white uppercase tracking-tighter leading-tight">TUNGT SLAG</div>
-                            <div className="text-[11px] text-slate-500 mt-1 uppercase">3 Energi | 2 Sverd</div>
+                            <div className="text-xs text-slate-300 font-medium leading-relaxed">Knusende slag.</div>
+                            <div className="text-[10px] text-red-400/80 font-black uppercase tracking-wider mt-1">3 Energi | 2 Sverd</div>
                         </div>
-                        <div className="w-full h-1.5 bg-red-900/40 rounded-full overflow-hidden">
+                        <div className="mt-1 px-3 py-1 bg-red-950/40 rounded-lg border border-red-500/20 flex items-center gap-2">
+                            <span className="text-[9px] font-bold text-red-500/60 uppercase">Eier:</span>
+                            <span className="text-xs font-black text-red-400">{player.resources?.siege_sword || 0}</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-red-900/40 rounded-full overflow-hidden mt-2">
                             <div className="h-full bg-red-600 w-full" />
                         </div>
                     </motion.button>
@@ -401,11 +411,16 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
                             {shieldActive ? '🛡️ AKTIV' : 'Forsvar'}
                         </div>
                         <Shield size={40} className={`mt-4 transition-transform ${shieldActive ? 'text-blue-300 scale-110' : 'text-blue-400 group-hover:scale-110'}`} />
-                        <div className="text-center">
+                        <div className="text-center flex flex-col gap-1 px-2">
                             <div className="text-sm font-black text-white uppercase tracking-widest">SKJOLDMUR</div>
-                            <div className="text-[10px] text-slate-500 mt-1 uppercase">1 Energi | 1 Rustning | 2s</div>
+                            <div className="text-[11px] text-slate-300 font-medium leading-relaxed">Blokkerer angrep.</div>
+                            <div className="text-[10px] text-blue-400/80 font-black uppercase tracking-wider mt-1">1 Energi | 1 Rustning</div>
                         </div>
-                        <div className="w-full h-1 bg-blue-500/20 rounded-full overflow-hidden">
+                        <div className="mt-1 px-3 py-1 bg-blue-950/40 rounded-lg border border-blue-500/20 flex items-center gap-2">
+                            <span className="text-[9px] font-bold text-blue-500/60 uppercase">Eier:</span>
+                            <span className="text-xs font-black text-blue-400">{player.resources?.siege_armor || 0}</span>
+                        </div>
+                        <div className="w-full h-1 bg-blue-500/20 rounded-full overflow-hidden mt-2">
                             <div className="h-full bg-blue-400 w-full" />
                         </div>
                     </motion.button>

@@ -14,7 +14,7 @@
 - [ ] Merchant marked må ha scrollbar for dem som har liten skjerm, deler av vinduet forsvinner. 
 - [ ] Vindu for å bli kjøpmann må være bedre tilpasset skjermstørrelsen. 
 - [ ] Øke ressurskrav for å lage items og oppgradere bygninger. 
-- [ ] Må kunne lage brannbomber hos apoteket som brukes i fase 1: porten i siege. 
+- [ ] Må kunne lage brannbomber hos apoteket i Tier 3 som brukes i fase 1: porten i siege. 
 ## Low Priority
 
 

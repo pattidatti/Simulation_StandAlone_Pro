@@ -179,10 +179,9 @@ export const SimulationHierarchy: React.FC<SimulationHierarchyProps> = React.mem
                                                     </div>
                                                 )}
                                             </div>
-
                                             {/* Baron Action: War Room OR Siege Defense */}
                                             {baron && currentPlayer.id === baron.id && (
-                                                <div className="px-4 pb-4 space-y-2">
+                                                <div className="px-1 pb-4 space-y-2">
                                                     {/* War Room Access */}
                                                     <button
                                                         onClick={(e) => {
@@ -209,6 +208,43 @@ export const SimulationHierarchy: React.FC<SimulationHierarchyProps> = React.mem
                                                 </div>
                                             )}
 
+                                            {/* Siege Actions Logic for OTHERS */}
+                                            {baron && rId === currentPlayer.regionId && currentPlayer.id !== (baron?.id) && (
+                                                <div className="px-1 pb-4">
+                                                    {regions?.[rId]?.activeSiege ? (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setViewingRegionId(rId);
+                                                                setActiveTab('SIEGE');
+                                                            }}
+                                                            className="w-full py-2 bg-red-600 hover:bg-red-500 border border-red-400 rounded-lg text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 animate-pulse"
+                                                        >
+                                                            <span>🔥</span> Gå til Slagmarken
+                                                        </button>
+                                                    ) : (
+                                                        <div className="space-y-2">
+                                                            <button
+                                                                disabled={Object.values(currentPlayer.resources || {}).reduce((sum, val) => (sum as number) + (val as number), 0) < 500}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const swords = currentPlayer.resources?.siege_sword || 0;
+                                                                    if (swords < 500) {
+                                                                        alert(`Du mangler beleiringssverd! Du har ${swords}, men trenger 500 for å starte en beleiring.`);
+                                                                        return;
+                                                                    }
+                                                                    onAction({ type: 'START_SIEGE', payload: { targetRegionId: rId } });
+                                                                }}
+                                                                className={`w-full py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${(currentPlayer.resources?.siege_sword || 0) >= 500 ? 'bg-stone-700/50 hover:bg-stone-600/50 border border-stone-500/30 text-stone-300' : 'bg-slate-900/50 border border-white/5 text-slate-600 cursor-not-allowed'}`}
+                                                            >
+                                                                <span>⚔️</span> Start Beleiring
+                                                            </button>
+                                                            <p className="text-[9px] text-center text-slate-500 font-bold uppercase tracking-tight">Krav: 500 Beleiringssverd</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             <div className="space-y-3">
                                                 <div className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 border-b border-white/5 pb-1">Underståtte</div>
                                                 {Object.values(players || {}).filter(p => (p.role === 'PEASANT' || p.role === 'SOLDIER') && p.regionId === rId).map(subject => (
@@ -231,43 +267,6 @@ export const SimulationHierarchy: React.FC<SimulationHierarchyProps> = React.mem
                                                     <div className="text-xs text-slate-600 italic text-center py-4">Ingen undersåtter ennå...</div>
                                                 )}
                                             </div>
-
-                                            {/* Siege Actions Logic for OTHERS */}
-                                            {rId === currentPlayer.regionId && currentPlayer.id !== (baron?.id) && (
-                                                <div className="px-4 pb-4 mt-4 border-t border-white/5 pt-4">
-                                                    {regions?.[rId]?.activeSiege ? (
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setViewingRegionId(rId);
-                                                                setActiveTab('SIEGE');
-                                                            }}
-                                                            className="w-full py-2 bg-red-600 hover:bg-red-500 border border-red-400 rounded-lg text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 animate-pulse"
-                                                        >
-                                                            <span>🔥</span> Gå til Slagmarken
-                                                        </button>
-                                                    ) : (
-                                                        <div className="space-y-2">
-                                                            <button
-                                                                disabled={Object.values(currentPlayer.resources || {}).reduce((sum, val) => (sum as number) + (val as number), 0) < 500} // This is a rough check, handleStartSiege does the strict check
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    const swords = currentPlayer.resources?.siege_sword || 0;
-                                                                    if (swords < 500) {
-                                                                        alert(`Du mangler beleiringssverd! Du har ${swords}, men trenger 500 for å starte en beleiring.`);
-                                                                        return;
-                                                                    }
-                                                                    onAction({ type: 'START_SIEGE', payload: { targetRegionId: rId } });
-                                                                }}
-                                                                className={`w-full py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${(currentPlayer.resources?.siege_sword || 0) >= 500 ? 'bg-stone-700/50 hover:bg-stone-600/50 border border-stone-500/30 text-stone-300' : 'bg-slate-900/50 border border-white/5 text-slate-600 cursor-not-allowed'}`}
-                                                            >
-                                                                <span>⚔️</span> Start Beleiring
-                                                            </button>
-                                                            <p className="text-[9px] text-center text-slate-500 font-bold uppercase tracking-tight">Krav: 500 Beleiringssverd</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
 
                                         </div>
                                     </div>

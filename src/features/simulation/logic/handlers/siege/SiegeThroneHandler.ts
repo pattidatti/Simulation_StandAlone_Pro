@@ -27,7 +27,8 @@ export const handleThroneAction = (ctx: ActionContext) => {
 
         const toRemove: string[] = [];
 
-        Object.values(throne.occupiers).forEach(occ => {
+        const occupiers = throne.occupiers || {};
+        Object.values(occupiers).forEach((occ: any) => {
             // Legitimacy-based drain: higher legitimacy = slower drain (up to 50% reduction)
             const legitModifier = (occ.legitimacySnapshot || 0) / 100;
             const drainRate = BASE_DRAIN_RATE * (1 - (legitModifier * 0.5));
@@ -52,12 +53,12 @@ export const handleThroneAction = (ctx: ActionContext) => {
 
                 // --- REWARD DISTRIBUTION ---
                 const REWARD_POOL = 2000;
-                const allParticipants = { ...siege.attackers, ...siege.defenders };
+                const allParticipants = { ...siege.attackers || {}, ...siege.defenders || {} };
                 const totalDmg = Object.values(allParticipants)
                     .reduce((sum: number, p: any) => sum + (p.stats?.damageDealt || 0), 0);
 
                 if (totalDmg > 0) {
-                    Object.entries(allParticipants).forEach(([id, p]: [string, any]) => {
+                    Object.entries(allParticipants || {}).forEach(([id, p]: [string, any]) => {
                         const share = (p.stats?.damageDealt || 0) / totalDmg;
                         const goldReward = Math.floor(share * REWARD_POOL);
                         if (goldReward > 0) {
