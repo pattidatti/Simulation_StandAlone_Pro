@@ -3,7 +3,6 @@ import type { ActiveSiege, SiegeParticipant, SiegeSide } from '../../../types/wa
 import { generateDeck } from './SiegeCourtyardHandler';
 
 // --- CONSTANTS ---
-const MAX_SIEGE_DURATION = 10 * 60 * 1000; // 10 minutes
 const RAM_PLANKS_REQUIRED = 200;
 const RAM_IRON_REQUIRED = 50;
 const RAM_DAMAGE = 500;
@@ -123,6 +122,16 @@ export const handleJoinSiege = (ctx: ActionContext) => {
         return false;
     }
 
+    // F4: Siege ban check
+    const hasBan = (actor.activeBuffs || []).some(
+        (b: any) => b.type === 'DEBUFF' && b.label?.includes('beleiring') && b.expiresAt > Date.now()
+    );
+    if (hasBan) {
+        localResult.success = false;
+        localResult.message = "💀 Du er utslått og kan ikke joine beleiringer ennå! Vent til debuff-en utløper.";
+        return false;
+    }
+
     const side = action.payload?.side as SiegeSide;
     const newParticipant: SiegeParticipant = {
         side: side,
@@ -172,12 +181,8 @@ export const handleBreachAction = (ctx: ActionContext) => {
     if (!siege || siege.phase !== 'BREACH' || !siege.breachState) return false;
     const bs = siege.breachState;
 
-    // --- TIMEOUT CHECK ---
-    if (Date.now() - siege.startedAt > MAX_SIEGE_DURATION) {
-        delete room.regions[regionId].activeSiege;
-        localResult.message = "⏰ Beleiringen mislyktes! Forsvarerne holder stand.";
-        return true;
-    }
+    // --- TICK (F1: noop for timeout — router handles it) ---
+    if (action.subType === 'TICK') return true;
 
     // --- ATTACK GATE (Sword / Fists) ---
     if (action.subType === 'ATTACK_GATE') {
@@ -225,6 +230,12 @@ export const handleBreachAction = (ctx: ActionContext) => {
         }
 
         // Deduct & contribute
+        if (!actor.resources) {
+            localResult.success = false;
+            localResult.message = "Fant ikke spillerens ressurser!";
+            return false;
+        }
+
         if (planks > 0) {
             actor.resources.plank -= planks;
             bs.ramPool.planks += planks;
@@ -237,6 +248,7 @@ export const handleBreachAction = (ctx: ActionContext) => {
         }
 
         // Track contributors
+        if (!bs.ramPool.contributors) bs.ramPool.contributors = {};
         if (!bs.ramPool.contributors[actor.id]) bs.ramPool.contributors[actor.id] = { planks: 0, iron: 0 };
         bs.ramPool.contributors[actor.id].planks += planks;
         bs.ramPool.contributors[actor.id].iron += iron;
@@ -304,6 +316,7 @@ export const handleBreachAction = (ctx: ActionContext) => {
         }
 
         const now = Date.now();
+        if (!bs.oilState.playerCooldowns) bs.oilState.playerCooldowns = {};
         const playerCooldown = bs.oilState.playerCooldowns[actor.id] || 0;
         if (now < playerCooldown) {
             const remaining = Math.ceil((playerCooldown - now) / 1000);

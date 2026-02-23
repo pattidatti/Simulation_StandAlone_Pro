@@ -55,15 +55,15 @@ export const SiegeHUD: React.FC<Props> = ({ siege }) => {
             <motion.div
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className={`flex items-center gap-2 px-5 py-2 rounded-full border font-mono text-xs font-bold transition-all duration-500 ${isCritical
-                    ? 'bg-red-900/80 border-red-500/50 text-red-300 animate-pulse shadow-[0_0_20px_rgba(220,38,38,0.4)]'
+                className={`flex items-center gap-3 px-8 py-4 rounded-2xl border font-mono text-4xl font-black transition-all duration-500 shadow-2xl ${isCritical
+                    ? 'bg-red-600 border-white/20 text-white animate-pulse shadow-[0_0_40px_rgba(220,38,38,0.6)]'
                     : isUrgent
-                        ? 'bg-red-950/60 border-red-500/30 text-red-400'
-                        : 'bg-black/40 border-white/5 text-slate-400'
+                        ? 'bg-red-900/90 border-red-500/40 text-white'
+                        : 'bg-black/60 border-white/10 text-white'
                     }`}
             >
-                {isUrgent ? <AlertTriangle size={12} className="text-red-400" /> : <Clock size={12} />}
-                <span className="tracking-wider">
+                {isUrgent ? <AlertTriangle size={32} className="text-white drop-shadow-md" /> : <Clock size={32} className="text-white drop-shadow-md" />}
+                <span className="tracking-tighter drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]">
                     {remaining <= 0
                         ? 'TID UTE!'
                         : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`

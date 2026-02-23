@@ -28,22 +28,6 @@ export const CARD_DATABASE: Record<string, Partial<TacticalCard> & { weaponCost?
         weaponCost: { type: 'siege_armor', amount: 1 },
         effectPayload: { shieldDuration: 2000, blocksAttack: true }
     },
-    'rally': {
-        name: 'Rop om Samling',
-        description: 'Inspirer dine allierte til å kjempe videre.',
-        tags: ['SUPPORT', 'BUFF'],
-        staminaCost: 5,
-        cooldown: 15000,
-        effectPayload: { groupStamina: 10 }
-    },
-    'harvest': {
-        name: 'Rasjoner',
-        description: 'Spis dine rasjoner for å gjenvinne energi.',
-        tags: ['SUPPORT'],
-        staminaCost: 0,
-        cooldown: 5000,
-        effectPayload: { recoverStamina: 5 }
-    }
 };
 
 export const generateDeck = (_role: Role, _equipment: any): PlayerDeck => {
@@ -74,7 +58,7 @@ export const generateDeck = (_role: Role, _equipment: any): PlayerDeck => {
 };
 
 // --- BOSS AI TICK (runs on every action) ---
-const processBossAI = (siege: any) => {
+const processBossAI = (siege: any, room: any) => {
     const cs = siege.courtyardState;
     if (!cs) return;
 
@@ -98,6 +82,28 @@ const processBossAI = (siege: any) => {
                     p.hp = (p.hp || 100) - 30;
                     if (!p.stats) p.stats = { damageDealt: 0, damageTaken: 0, armorDonated: 0, ticksOnThrone: 0, cardsPlayed: 0 };
                     p.stats.damageTaken += 30;
+                }
+            });
+
+            // --- KO CHECK (F4) — remove players with HP <= 0 ---
+            Object.entries(allParticipants).forEach(([id, p]: [string, any]) => {
+                if ((p.hp || 100) <= 0) {
+                    delete siege.attackers[id];
+                    delete siege.defenders[id];
+
+                    // Apply 1hr siege ban debuff
+                    const player = room?.players?.[id];
+                    if (player) {
+                        if (!player.activeBuffs) player.activeBuffs = [];
+                        player.activeBuffs.push({
+                            id: `siege_ban_${now}_${id}`,
+                            type: 'DEBUFF',
+                            value: 0,
+                            label: '💀 Slått ut av beleiring',
+                            description: 'Du ble beseiret i kamp. Kan ikke joine beleiringer i 1 time.',
+                            expiresAt: now + 3600000
+                        });
+                    }
                 }
             });
         } else if (cs.bossAttackPhase === 'STRIKE') {
@@ -179,7 +185,12 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
     if (!siege || !siege.courtyardState) return false;
 
     // --- BOSS AI TICK (runs on every action) ---
-    processBossAI(siege);
+    processBossAI(siege, room);
+
+    // --- TICK (F1: noop for timeout enforcement from SiegeContainer) ---
+    if (action.subType === 'TICK') {
+        return true;
+    }
 
     // MOVE (DISABLED)
     if (action.subType === 'MOVE_ZONE') {
@@ -241,15 +252,7 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
             msg += ` +${cardDef.effectPayload.recoverStamina} Energi.`;
         }
 
-        // Group Recovery
-        if (cardDef.effectPayload?.groupStamina) {
-            Object.values(siege.attackers).forEach((p: any) => {
-                if (p.zone === participant.zone && p.deck) {
-                    p.deck.stamina = Math.min(p.deck.maxStamina, p.deck.stamina + (cardDef.effectPayload?.groupStamina || 0));
-                }
-            });
-            msg += " Styrket moralen til dine allierte!";
-        }
+
 
         // Apply Damage to Boss
         if (damage > 0) {

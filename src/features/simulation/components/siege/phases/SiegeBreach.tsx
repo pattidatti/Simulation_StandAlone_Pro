@@ -16,6 +16,23 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
     const s = siege.breachState;
     if (!s) return <div className="text-white">Loading Breach State...</div>;
 
+    // F2: Gate destroyed — show transition button
+    if (s.gateHp <= 0 || siege.phase !== 'BREACH') {
+        return (
+            <div className="flex flex-col items-center justify-center h-full gap-6">
+                <div className="text-6xl animate-bounce">⚔️</div>
+                <h2 className="text-3xl font-black text-amber-500 uppercase tracking-wider">PORTEN ER KNUST!</h2>
+                <p className="text-slate-400 text-sm">Forsvarerne trekker seg tilbake. Borggården venter.</p>
+                <button
+                    onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'INIT_COURTYARD' })}
+                    className="px-10 py-4 bg-amber-600 hover:bg-amber-500 text-black font-black text-lg rounded-full shadow-[0_0_30px_rgba(245,158,11,0.4)] transition-all hover:scale-105 active:scale-95"
+                >
+                    Gå videre til Borggården →
+                </button>
+            </div>
+        );
+    }
+
     const isParticipant = !!(siege.attackers || {})[player.id] || !!(siege.defenders || {})[player.id];
     const isDefender = !!(siege.defenders || {})[player.id];
     const hpPct = (s.gateHp / s.maxGateHp) * 100;
@@ -51,28 +68,31 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
         >
             {/* GATE VISUAL */}
             <div
-                className="relative w-96 h-72 group cursor-pointer"
+                className="relative w-[500px] h-[400px] group cursor-pointer"
                 onClick={() => isParticipant && !isDefender && onAction({ type: 'SIEGE_ACTION', subType: 'ATTACK_GATE' })}
             >
-                {/* HP Bar */}
-                <div className="absolute -top-10 left-0 right-0 h-3 bg-slate-900/80 rounded-full overflow-hidden border border-white/5">
+                {/* HP Bar - Moved inside and centered */}
+                <div className="absolute top-8 left-1/2 -translate-x-1/2 w-[80%] h-10 bg-black/80 rounded-xl overflow-hidden border-2 border-white/20 shadow-[0_0_30px_rgba(0,0,0,0.5)] z-20">
                     <motion.div
-                        className={`h-full transition-colors duration-500 ${hpPct < 25 ? 'bg-red-500' : hpPct < 50 ? 'bg-orange-500' : 'bg-red-600'}`}
+                        className={`h-full transition-colors duration-500 rounded-r-lg ${hpPct < 25 ? 'bg-gradient-to-r from-red-600 to-red-400' : hpPct < 50 ? 'bg-gradient-to-r from-orange-600 to-orange-400' : 'bg-gradient-to-r from-red-700 to-red-500'}`}
                         animate={{ width: `${hpPct}%` }}
                         transition={{ type: 'spring', stiffness: 120, damping: 20 }}
                     />
-                </div>
-                <div className="absolute -top-6 w-full text-center text-red-400 font-mono text-[11px] font-bold tracking-wider">
-                    PORTEN: {s.gateHp} / {s.maxGateHp} HP — <span className={
-                        s.gateCondition === 'SHATTERED' ? 'text-red-300' :
-                            s.gateCondition === 'BROKEN' ? 'text-orange-400' :
-                                s.gateCondition === 'CRACKED' ? 'text-yellow-400' :
-                                    'text-green-400'
-                    }>{s.gateCondition}</span>
+                    {/* Centered Status Text */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
+                        <span className="text-white font-black text-lg tracking-tight uppercase drop-shadow-[0_2px_2px_rgba(0,0,0,1)] whitespace-nowrap">
+                            PORTEN: {s.gateHp} / {s.maxGateHp} HP — <span className={
+                                s.gateCondition === 'SHATTERED' ? 'text-red-300' :
+                                    s.gateCondition === 'BROKEN' ? 'text-orange-300' :
+                                        s.gateCondition === 'CRACKED' ? 'text-yellow-300' :
+                                            'text-green-300'
+                            }>{s.gateCondition}</span>
+                        </span>
+                    </div>
                 </div>
 
                 {/* The Gate */}
-                <div className={`w-full h-full border-8 border-stone-700 bg-stone-900 rounded-t-[50%] shadow-2xl flex items-center justify-center relative overflow-hidden transition-all duration-200 ${s.gateCondition === 'SHATTERED' ? 'brightness-50 border-red-900/50' :
+                <div className={`w-full h-full border-8 border-stone-800 bg-stone-900 rounded-t-[40px] shadow-2xl flex items-center justify-center relative overflow-hidden transition-all duration-200 ${s.gateCondition === 'SHATTERED' ? 'brightness-50 border-red-900/50' :
                     s.gateCondition === 'BROKEN' ? 'brightness-75' : ''
                     }`}>
                     <div className="absolute inset-0 grid grid-cols-6 gap-1.5 p-3">
@@ -86,16 +106,16 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
                         {s.gateCondition !== 'PRISTINE' && (
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.5 }}
-                                animate={{ opacity: 0.7, scale: 1 }}
-                                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
                             >
-                                <svg viewBox="0 0 200 200" className="w-48 h-48 opacity-60">
-                                    <path d="M100,20 L95,80 L70,90 L85,120 L60,180" stroke="hsl(0,0%,20%)" strokeWidth="3" fill="none" />
+                                <svg viewBox="0 0 200 200" className="w-64 h-64 opacity-80">
+                                    <path d="M100,20 L95,80 L70,90 L85,120 L60,180" stroke="hsl(0,0%,15%)" strokeWidth="4" fill="none" />
                                     {s.gateCondition !== 'CRACKED' && (
-                                        <path d="M120,30 L130,100 L150,110 L140,160" stroke="hsl(0,0%,20%)" strokeWidth="2.5" fill="none" />
+                                        <path d="M120,30 L130,100 L150,110 L140,160" stroke="hsl(0,0%,15%)" strokeWidth="3" fill="none" />
                                     )}
                                     {s.gateCondition === 'SHATTERED' && (
-                                        <path d="M50,50 L80,60 L90,100 L100,140 L80,180" stroke="hsl(0,0%,15%)" strokeWidth="4" fill="none" />
+                                        <path d="M50,50 L80,60 L90,100 L100,140 L80,180" stroke="hsl(0,0%,10%)" strokeWidth="5" fill="none" />
                                     )}
                                 </svg>
                             </motion.div>
@@ -105,8 +125,8 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
 
                 {/* Hover Hint */}
                 {isParticipant && !isDefender && (
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm rounded-t-[50%]">
-                        <span className="text-white font-black uppercase text-2xl tracking-widest">KNUS!</span>
+                    <div className="absolute inset-0 z-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm rounded-t-[40px]">
+                        <span className="text-white font-black uppercase text-3xl tracking-[0.2em] drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]">KNUS!</span>
                     </div>
                 )}
             </div>
@@ -137,46 +157,52 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
                         {!isDefender && (
                             <button
                                 onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'ATTACK_GATE' })}
-                                className="p-5 rounded-2xl border transition-all duration-200 flex flex-col items-center gap-3
-                                    bg-gradient-to-b from-red-950/60 to-red-950/30 border-red-500/30 hover:border-red-500/60 hover:shadow-[0_0_20px_rgba(220,38,38,0.2)]"
+                                className="p-8 rounded-3xl border transition-all duration-300 flex flex-col items-center justify-center gap-4
+                                    bg-gradient-to-b from-red-950/70 to-red-950/40 border-red-500/40 hover:border-red-500/80 hover:shadow-[0_0_30px_rgba(220,38,38,0.3)] group/sword"
                             >
-                                <Sword className="text-red-400 w-8 h-8" />
-                                <span className="text-sm font-black text-red-300 uppercase tracking-wider">Sverdangrep</span>
-                                <span className="text-[10px] text-red-400/60 font-mono">25 dmg / 1 sverd | 2 dmg neve</span>
+                                <Sword className="text-red-400 w-16 h-16 group-hover/sword:scale-110 transition-transform duration-300" />
+                                <div className="flex flex-col items-center gap-1">
+                                    <span className="text-2xl font-black text-red-300 uppercase tracking-widest">Sverdangrep</span>
+                                    <span className="text-sm text-red-400/90 font-mono font-bold">25 dmg/sverd | 2 dmg neve</span>
+                                </div>
+                                <div className="mt-2 px-4 py-2 bg-red-900/40 rounded-full border border-red-500/20 flex items-center gap-2">
+                                    <span className="text-xs font-black text-red-200 uppercase">Beleiringsvåpen:</span>
+                                    <span className="text-lg font-black text-red-400">{player.resources?.siege_sword || 0}</span>
+                                </div>
                             </button>
                         )}
 
                         {/* RAM PANEL */}
                         {!isDefender && (
                             <div className="p-5 rounded-2xl border border-amber-500/20 bg-gradient-to-b from-amber-950/40 to-amber-950/20 flex flex-col gap-3">
-                                <div className="flex items-center gap-2">
-                                    <Hammer className="text-amber-400 w-5 h-5" />
-                                    <span className="text-sm font-black text-amber-300 uppercase tracking-wider">Murbrekker</span>
+                                <div className="flex items-center gap-3">
+                                    <Hammer className="text-amber-400 w-6 h-6" />
+                                    <span className="text-lg font-black text-amber-300 uppercase tracking-wider">Murbrekker</span>
                                 </div>
 
                                 {/* Progress Bars */}
-                                <div className="space-y-2">
+                                <div className="space-y-4 py-2">
                                     <div>
-                                        <div className="flex justify-between text-[10px] font-bold mb-1">
-                                            <span className="text-amber-300/60">PLANKER</span>
-                                            <span className="text-amber-200 font-mono">{s.ramPool?.planks || 0}/{RAM_PLANKS_REQUIRED}</span>
+                                        <div className="flex justify-between text-xs font-black mb-1.5 px-1">
+                                            <span className="text-amber-300/80 uppercase tracking-wider">PLANKER</span>
+                                            <span className="text-amber-200 font-mono text-sm">{s.ramPool?.planks || 0}/{RAM_PLANKS_REQUIRED}</span>
                                         </div>
-                                        <div className="h-2 bg-black/50 rounded-full overflow-hidden border border-amber-500/10">
+                                        <div className="h-2.5 bg-black/60 rounded-full overflow-hidden border border-amber-500/20 shadow-inner">
                                             <motion.div
-                                                className="h-full bg-amber-600 rounded-full"
+                                                className="h-full bg-gradient-to-r from-amber-700 to-amber-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.3)]"
                                                 animate={{ width: `${ramPlanksPct}%` }}
                                                 transition={{ type: 'spring', stiffness: 100 }}
                                             />
                                         </div>
                                     </div>
                                     <div>
-                                        <div className="flex justify-between text-[10px] font-bold mb-1">
-                                            <span className="text-amber-300/60">JERNBARRER</span>
-                                            <span className="text-amber-200 font-mono">{s.ramPool?.iron || 0}/{RAM_IRON_REQUIRED}</span>
+                                        <div className="flex justify-between text-xs font-black mb-1.5 px-1">
+                                            <span className="text-amber-300/80 uppercase tracking-wider">JERNBARRER</span>
+                                            <span className="text-amber-200 font-mono text-sm">{s.ramPool?.iron || 0}/{RAM_IRON_REQUIRED}</span>
                                         </div>
-                                        <div className="h-2 bg-black/50 rounded-full overflow-hidden border border-amber-500/10">
+                                        <div className="h-2.5 bg-black/60 rounded-full overflow-hidden border border-amber-500/20 shadow-inner">
                                             <motion.div
-                                                className="h-full bg-amber-500 rounded-full"
+                                                className="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full shadow-[0_0_10px_rgba(251,191,36,0.3)]"
                                                 animate={{ width: `${ramIronPct}%` }}
                                                 transition={{ type: 'spring', stiffness: 100 }}
                                             />
@@ -185,24 +211,24 @@ export const SiegeBreach: React.FC<Props> = ({ player, siege, onAction }) => {
                                 </div>
 
                                 {/* Contribute Buttons */}
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-3 mt-1">
                                     <button
                                         onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'CONTRIBUTE_RAM', payload: { planks: 10, iron: 0 } })}
                                         disabled={(player.resources?.plank || 0) < 10}
-                                        className="px-3 py-2 text-[10px] font-bold uppercase rounded-lg transition-all
-                                            bg-amber-900/40 border border-amber-500/20 text-amber-300
-                                            hover:bg-amber-800/50 hover:border-amber-500/40
-                                            disabled:opacity-30 disabled:cursor-not-allowed"
+                                        className="px-4 py-4 text-sm font-black uppercase rounded-xl transition-all
+                                            bg-amber-900/50 border border-amber-500/30 text-amber-200
+                                            hover:bg-amber-800/70 hover:border-amber-500/60 hover:scale-[1.02] active:scale-[0.98]
+                                            disabled:opacity-20 disabled:cursor-not-allowed disabled:grayscale"
                                     >
                                         +10 Planker
                                     </button>
                                     <button
                                         onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'CONTRIBUTE_RAM', payload: { planks: 0, iron: 5 } })}
                                         disabled={(player.resources?.iron_ingot || 0) < 5}
-                                        className="px-3 py-2 text-[10px] font-bold uppercase rounded-lg transition-all
-                                            bg-amber-900/40 border border-amber-500/20 text-amber-300
-                                            hover:bg-amber-800/50 hover:border-amber-500/40
-                                            disabled:opacity-30 disabled:cursor-not-allowed"
+                                        className="px-4 py-4 text-sm font-black uppercase rounded-xl transition-all
+                                            bg-amber-900/50 border border-amber-500/30 text-amber-200
+                                            hover:bg-amber-800/70 hover:border-amber-500/60 hover:scale-[1.02] active:scale-[0.98]
+                                            disabled:opacity-20 disabled:cursor-not-allowed disabled:grayscale"
                                     >
                                         +5 Jernbarrer
                                     </button>

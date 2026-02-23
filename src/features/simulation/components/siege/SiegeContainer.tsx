@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import type { SimulationPlayer, ActiveSiege } from '../../simulationTypes';
 import { AnimatePresence } from 'framer-motion';
 
@@ -7,18 +7,24 @@ import { SiegeBreach } from './phases/SiegeBreach';
 import { SiegeCourtyard } from './phases/SiegeCourtyard';
 import { SiegeThrone } from './phases/SiegeThrone';
 import { SiegeHUD } from './SiegeHUD';
-import { SiegeWarLog } from './SiegeWarLog';
 
 interface SiegeContainerProps {
     player: SimulationPlayer;
     siege: ActiveSiege;
     regionId: string;
     onAction: (action: any) => void;
-    messages?: any[];
 }
 
-export const SiegeContainer: React.FC<SiegeContainerProps> = ({ player, siege, regionId, onAction, messages = [] }) => {
+export const SiegeContainer: React.FC<SiegeContainerProps> = ({ player, siege, regionId, onAction }) => {
     const [shakeClass, setShakeClass] = useState('');
+
+    // F1: Global tick — keeps boss AI alive + enforces timeout via router
+    useEffect(() => {
+        const interval = setInterval(() => {
+            onAction({ type: 'SIEGE_ACTION', subType: 'TICK', targetRegionId: regionId });
+        }, 2000);
+        return () => clearInterval(interval);
+    }, [onAction, regionId]);
 
     // Screenshake trigger — child components call this via enhanced onAction
     const triggerShake = useCallback((intensity: 'light' | 'medium' | 'heavy' = 'medium') => {
@@ -87,8 +93,6 @@ export const SiegeContainer: React.FC<SiegeContainerProps> = ({ player, siege, r
                     </AnimatePresence>
                 </div>
 
-                {/* WAR LOG */}
-                {siege.phase !== 'COURTYARD' && <SiegeWarLog messages={messages} />}
 
             </div>
 

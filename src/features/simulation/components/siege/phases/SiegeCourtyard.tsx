@@ -44,15 +44,34 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
         }
     }, [shieldActive, isWindup]);
 
-    // --- ERROR STATE ---
+    // --- F2: Boss dead — transition to Throne Room ---
+    if (siege.phase === 'THRONE_ROOM') {
+        return (
+            <div className="flex flex-col items-center justify-center h-full gap-6">
+                <div className="text-6xl animate-bounce">👑</div>
+                <h2 className="text-3xl font-black text-amber-500 uppercase tracking-wider">GARNISONSSJEFEN ER FALT!</h2>
+                <p className="text-slate-400 text-sm">Veien til tronen er åpen. Krev din rett!</p>
+                <button
+                    onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'CLAIM_THRONE' })}
+                    className="px-10 py-4 bg-purple-600 hover:bg-purple-500 text-white font-black text-lg rounded-full shadow-[0_0_30px_rgba(147,51,234,0.4)] transition-all hover:scale-105 active:scale-95"
+                >
+                    Gå videre til Tronsalen →
+                </button>
+            </div>
+        );
+    }
+
+    // --- INIT STATE (no courtyard data yet) ---
     if (!s) return (
         <div className="flex flex-col items-center justify-center h-full gap-6 bg-slate-950/50 backdrop-blur-md">
-            <div className="text-xl font-black text-amber-500 uppercase tracking-tighter animate-pulse">Data Synkronisering Påkrevd</div>
+            <div className="text-6xl">⚔️</div>
+            <h2 className="text-xl font-black text-amber-500 uppercase tracking-tighter">Borggården venter</h2>
+            <p className="text-slate-400 text-sm text-center max-w-md">Gjør deg klar til kamp mot garnisonssjefen. Trykk for å entre borggården.</p>
             <button
                 onClick={() => onAction({ type: 'SIEGE_ACTION', subType: 'INIT_COURTYARD' })}
                 className="px-10 py-4 bg-amber-600 hover:bg-amber-500 text-black font-black text-lg rounded-full shadow-[0_0_30px_rgba(245,158,11,0.4)] transition-all hover:scale-105 active:scale-95"
             >
-                OPPDATER STRIDSDATA
+                Entre Borggården
             </button>
         </div>
     );
@@ -325,10 +344,10 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
                         whileTap={canAttack ? { scale: 0.95 } : {}}
                         onClick={() => canAttack && stamina >= 1 && onAction({ type: 'SIEGE_ACTION', subType: 'PLAY_CARD', payload: { templateId: 'basic_attack' } })}
                         className={`group relative w-40 h-52 rounded-2xl border-2 flex flex-col items-center justify-between p-4 transition-all duration-200 ${!canAttack
-                                ? 'opacity-30 grayscale cursor-not-allowed border-slate-800'
-                                : stamina >= 1
-                                    ? 'bg-slate-900 border-amber-500/50 shadow-2xl'
-                                    : 'opacity-40 grayscale cursor-not-allowed'
+                            ? 'opacity-30 grayscale cursor-not-allowed border-slate-800'
+                            : stamina >= 1
+                                ? 'bg-slate-900 border-amber-500/50 shadow-2xl'
+                                : 'opacity-40 grayscale cursor-not-allowed'
                             }`}
                         style={!canAttack ? { pointerEvents: 'none' as const } : {}}
                     >
@@ -349,10 +368,10 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
                         whileTap={canAttack ? { scale: 0.95 } : {}}
                         onClick={() => canAttack && stamina >= 3 && onAction({ type: 'SIEGE_ACTION', subType: 'PLAY_CARD', payload: { templateId: 'strong_attack' } })}
                         className={`group relative w-44 h-56 rounded-2xl border-4 flex flex-col items-center justify-between p-5 transition-all duration-200 ${!canAttack
-                                ? 'opacity-30 grayscale cursor-not-allowed border-slate-800'
-                                : stamina >= 3
-                                    ? 'bg-slate-900 border-red-500 shadow-[0_0_40px_rgba(220,38,38,0.2)]'
-                                    : 'opacity-40 grayscale cursor-not-allowed'
+                            ? 'opacity-30 grayscale cursor-not-allowed border-slate-800'
+                            : stamina >= 3
+                                ? 'bg-slate-900 border-red-500 shadow-[0_0_40px_rgba(220,38,38,0.2)]'
+                                : 'opacity-40 grayscale cursor-not-allowed'
                             }`}
                         style={!canAttack ? { pointerEvents: 'none' as const } : {}}
                     >
@@ -373,8 +392,8 @@ export const SiegeCourtyard: React.FC<Props> = ({ player, siege, onAction }) => 
                         whileTap={{ scale: 0.95 }}
                         onClick={() => stamina >= 1 && onAction({ type: 'SIEGE_ACTION', subType: 'PLAY_CARD', payload: { templateId: 'defend' } })}
                         className={`group relative w-40 h-52 rounded-2xl border-2 flex flex-col items-center justify-between p-4 transition-all ${stamina >= 1
-                                ? `bg-slate-900 shadow-2xl ${shieldActive ? 'border-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : 'border-blue-500/50'}`
-                                : 'opacity-40 grayscale cursor-not-allowed'
+                            ? `bg-slate-900 shadow-2xl ${shieldActive ? 'border-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : 'border-blue-500/50'}`
+                            : 'opacity-40 grayscale cursor-not-allowed'
                             }`}
                     >
                         <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${shieldActive ? 'bg-blue-400 text-black animate-pulse' : 'bg-blue-600 text-white'

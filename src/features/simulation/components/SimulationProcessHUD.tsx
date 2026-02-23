@@ -12,7 +12,7 @@ interface SimulationProcessHUDProps {
 export const SimulationProcessHUD: React.FC<SimulationProcessHUDProps> = ({ player, room }) => {
     const [currentTime, setCurrentTime] = useState(Date.now());
     // Removed useSimulation() destructuring for room as it doesn't exist
-    const { handleAction } = useSimulationActions(room?.pin, player, room?.world || null, () => { }, () => { }, () => { }, null);
+    const { handleAction } = useSimulationActions(room?.pin, player, room?.world || null, () => { }, () => { }, () => { }, null, null, () => { });
 
     // Track local events for processes (CROW / WEED)
     // Key: processId, Value: { type: 'CROW' | 'WEED', expiresAt: number }
@@ -108,16 +108,23 @@ export const SimulationProcessHUD: React.FC<SimulationProcessHUDProps> = ({ play
             {/* BUFFS */}
             {activeBuffs.map(buff => {
                 const timeLeft = Math.max(0, buff.expiresAt - currentTimeCtx);
+                const isDebuff = buff.type === 'DEBUFF';
                 return (
                     <div
                         key={buff.id}
-                        className="group bg-indigo-900/90 backdrop-blur-md border border-indigo-500/30 rounded-xl p-3 shadow-xl pointer-events-auto flex items-center gap-4 transition-all hover:bg-indigo-900/100 hover:scale-105 animate-in slide-in-from-right-4 duration-300 relative"
+                        className={`group backdrop-blur-md rounded-xl p-3 shadow-xl pointer-events-auto flex items-center gap-4 transition-all hover:scale-105 animate-in slide-in-from-right-4 duration-300 relative ${isDebuff
+                            ? 'bg-red-900/90 border border-red-500/30 hover:bg-red-900/100'
+                            : 'bg-indigo-900/90 border border-indigo-500/30 hover:bg-indigo-900/100'
+                            }`}
                     >
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center border bg-indigo-500/20 border-indigo-500 text-indigo-300">
-                            <span className="text-xl">⚡</span>
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${isDebuff
+                            ? 'bg-red-500/20 border-red-500 text-red-300'
+                            : 'bg-indigo-500/20 border-indigo-500 text-indigo-300'
+                            }`}>
+                            <span className="text-xl">{isDebuff ? '💀' : '⚡'}</span>
                         </div>
                         <div className="flex flex-col min-w-[120px]">
-                            <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                            <span className={`text-xs font-bold uppercase tracking-wider ${isDebuff ? 'text-red-300' : 'text-indigo-300'}`}>
                                 {buff.label}
                             </span>
                             <div className="flex items-center gap-2">
@@ -129,8 +136,9 @@ export const SimulationProcessHUD: React.FC<SimulationProcessHUDProps> = ({ play
 
                         {/* Tooltip on Hover */}
                         {buff.description && (
-                            <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 w-48 bg-slate-900/95 border border-indigo-500/30 p-3 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none translate-x-2 group-hover:translate-x-0">
-                                <p className="text-[10px] text-indigo-100 leading-tight">
+                            <div className={`absolute right-full top-1/2 -translate-y-1/2 mr-3 w-48 bg-slate-900/95 border p-3 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none translate-x-2 group-hover:translate-x-0 ${isDebuff ? 'border-red-500/30' : 'border-indigo-500/30'
+                                }`}>
+                                <p className={`text-[10px] leading-tight ${isDebuff ? 'text-red-100' : 'text-indigo-100'}`}>
                                     {buff.description}
                                 </p>
                             </div>

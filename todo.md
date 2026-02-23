@@ -1,8 +1,8 @@
 # Project To-Do List
 
 ## High Priority
-- [] På main branch: Legge til feedback knapp inne i chatten som sender rett til serveren slik at jeg kan hente ut data. 
-- [ ] På forsiden, legge til en pen, passende vindu for å skrive beskejder til spillerne; Ny sesong kommer med updates x y z osv.  
+- [x] På main branch: Legge til feedback knapp inne i chatten som sender rett til serveren slik at jeg kan hente ut data. 
+- [x] På forsiden, legge til en pen, passende vindu for å skrive beskejder til spillerne; Ny sesong kommer med updates x y z osv.  
 - [x] Fikse soga-hjulet. Det har ALTFOR høy vinnersjanse, skaper hyperinflasjon. Må justere ned sjansen og oppdatere grafikk på hjulet for å gjenspeile det. 
 - [x] Fjerne frie menn som "region". Vi har bare øst, vest og hovedstad. Sørge for at en konge som blir avsatt eller bytter rolle, blir tildelt vest eller øst random. 
 - [] Finne nye goldsinks, itemsinks og ressourcesinks. 
@@ -14,6 +14,7 @@
 - [ ] Merchant marked må ha scrollbar for dem som har liten skjerm, deler av vinduet forsvinner. 
 - [ ] Vindu for å bli kjøpmann må være bedre tilpasset skjermstørrelsen. 
 - [ ] Øke ressurskrav for å lage items og oppgradere bygninger. 
+- [ ] Må kunne lage brannbomber hos apoteket som brukes i fase 1: porten i siege. 
 ## Low Priority
 
 
