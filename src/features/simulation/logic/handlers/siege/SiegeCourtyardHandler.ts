@@ -2,7 +2,7 @@ import type { ActionContext } from '../../actionTypes';
 import type { TacticalCard, PlayerDeck } from '../../../types/war';
 import type { Role } from '../../../types/base';
 
-// --- CARD DEFINITIONS (embedded for now, should move to data later) ---
+// --- CARD DEFINITIONS ---
 export const CARD_DATABASE: Record<string, Partial<TacticalCard> & { weaponCost?: { type: 'siege_sword' | 'siege_armor', amount: number } }> = {
     'basic_attack': {
         name: 'Sverdlyn (Lett)',
@@ -22,11 +22,11 @@ export const CARD_DATABASE: Record<string, Partial<TacticalCard> & { weaponCost?
     },
     'defend': {
         name: 'Skjoldmur (Forsvar)',
-        description: 'Blokkerer neste angrep fra bossen.',
+        description: 'Aktiverer skjold i 2 sekunder. Blokkerer angrep, men du kan ikke angripe.',
         tags: ['DEFENSE'],
         staminaCost: 1,
         weaponCost: { type: 'siege_armor', amount: 1 },
-        effectPayload: { armor: 100 } // Logic: Full protection for next hit
+        effectPayload: { shieldDuration: 2000, blocksAttack: true }
     },
     'rally': {
         name: 'Rop om Samling',
@@ -36,19 +36,11 @@ export const CARD_DATABASE: Record<string, Partial<TacticalCard> & { weaponCost?
         cooldown: 15000,
         effectPayload: { groupStamina: 10 }
     },
-    'scavenge': {
-        name: 'Plyndre',
-        description: 'Let etter forsyninger for å gjenvinne energi.',
-        tags: ['SUPPORT'],
-        staminaCost: 2,
-        cooldown: 5000,
-        effectPayload: { recoverStamina: 3 }
-    },
     'harvest': {
         name: 'Rasjoner',
         description: 'Spis dine rasjoner for å gjenvinne energi.',
         tags: ['SUPPORT'],
-        staminaCost: 0, // No cost to eat
+        staminaCost: 0,
         cooldown: 5000,
         effectPayload: { recoverStamina: 5 }
     }
@@ -60,7 +52,7 @@ export const generateDeck = (_role: Role, _equipment: any): PlayerDeck => {
     const hand: TacticalCard[] = fixedTemplates.map(id => {
         const template = CARD_DATABASE[id];
         return {
-            id: id, // Template ID as instance ID for stability
+            id: id,
             templateId: id,
             name: template?.name || 'Unknown',
             description: template?.description || '',
@@ -81,6 +73,49 @@ export const generateDeck = (_role: Role, _equipment: any): PlayerDeck => {
     };
 };
 
+// --- BOSS AI TICK (runs on every action) ---
+const processBossAI = (siege: any) => {
+    const cs = siege.courtyardState;
+    if (!cs) return;
+
+    const now = Date.now();
+
+    // Phase transition based on timer
+    if (now >= cs.bossAttackTimer) {
+        if (cs.bossAttackPhase === 'IDLE') {
+            cs.bossAttackPhase = 'WINDUP';
+            cs.bossAttackTimer = now + 2000; // 2s windup
+        } else if (cs.bossAttackPhase === 'WINDUP') {
+            cs.bossAttackPhase = 'STRIKE';
+            cs.bossAttackTimer = now + 500; // Brief strike moment
+
+            // DEAL DAMAGE to all participants without active shields
+            const allParticipants = { ...siege.attackers, ...siege.defenders };
+            Object.entries(allParticipants).forEach(([id, p]: [string, any]) => {
+                const shield = cs.playerShields?.[id];
+                const isShielded = shield && shield.expiresAt > now;
+                if (!isShielded) {
+                    p.hp = (p.hp || 100) - 30;
+                    if (!p.stats) p.stats = { damageDealt: 0, damageTaken: 0, armorDonated: 0, ticksOnThrone: 0, cardsPlayed: 0 };
+                    p.stats.damageTaken += 30;
+                }
+            });
+        } else if (cs.bossAttackPhase === 'STRIKE') {
+            cs.bossAttackPhase = 'IDLE';
+            cs.bossAttackTimer = now + 3000; // 3s idle
+        }
+    }
+
+    // Clean expired shields
+    if (cs.playerShields) {
+        Object.keys(cs.playerShields).forEach(id => {
+            if (cs.playerShields[id].expiresAt <= now) {
+                delete cs.playerShields[id];
+            }
+        });
+    }
+};
+
 export const handleCourtyardAction = (ctx: ActionContext) => {
     const { actor, room, action, localResult } = ctx;
     const regionId = action.payload?.targetRegionId || actor.regionId;
@@ -94,25 +129,26 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
         return false;
     }
 
-    // 0. INIT (Legacy Fix / Refresh)
+    // 0. INIT_COURTYARD
     if (action.subType === 'INIT_COURTYARD') {
-        // Force refresh participant deck to apply new role-based logic
         participant.deck = generateDeck(actor.role, actor.equipment);
 
-        // Safety: Initial Stamina Refill on Sync
         if (participant.deck) {
             participant.deck.stamina = participant.deck.maxStamina;
         }
 
-        // Ensure zone assignment
         if (!participant.zone) {
             participant.zone = 'VANGUARD';
         }
 
         if (!siege.courtyardState) {
+            const garrisonArmor = room.regions[regionId]?.garrison?.armor || 0;
+            const baseBossHp = 50000;
+            const extraBossHp = garrisonArmor * 20;
+
             siege.courtyardState = {
-                bossHp: 50000,
-                maxBossHp: 50000,
+                bossHp: baseBossHp + extraBossHp,
+                maxBossHp: baseBossHp + extraBossHp,
                 bossStance: 'DEFENSIVE',
                 bossTargetZone: 'VANGUARD',
                 nextBossActionAt: Date.now() + 5000,
@@ -121,7 +157,10 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
                     FLANK_LEFT: { id: 'FLANK_LEFT', occupierIds: [], modifiers: [] },
                     FLANK_RIGHT: { id: 'FLANK_RIGHT', occupierIds: [], modifiers: [] },
                     REARGUARD: { id: 'REARGUARD', occupierIds: [], modifiers: [] }
-                }
+                },
+                bossAttackPhase: 'IDLE',
+                bossAttackTimer: Date.now() + 3000,
+                playerShields: {}
             };
             localResult.message = "Initialiserte Borggård og oppdaterte kortstokk.";
             return true;
@@ -139,18 +178,31 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
 
     if (!siege || !siege.courtyardState) return false;
 
-    // 2. MOVE (DISABLED in V9)
+    // --- BOSS AI TICK (runs on every action) ---
+    processBossAI(siege);
+
+    // MOVE (DISABLED)
     if (action.subType === 'MOVE_ZONE') {
         localResult.message = "Du er låst i kamp med bossen!";
         return false;
     }
 
-    // 2. PLAY CARD
+    // PLAY CARD
     if (action.subType === 'PLAY_CARD') {
-        const templateId = action.payload?.templateId; // Fallback
-
+        const templateId = action.payload?.templateId;
         const cardDef = CARD_DATABASE[templateId];
         if (!cardDef) return false;
+
+        const cs = siege.courtyardState;
+
+        // --- SHIELD BLOCK CHECK: Can't attack while shield is active ---
+        if (cardDef.tags?.includes('MELEE') || cardDef.tags?.includes('HEAVY')) {
+            const shield = cs.playerShields?.[actor.id];
+            if (shield && shield.expiresAt > Date.now()) {
+                localResult.message = "⛔ Du kan ikke angripe mens skjoldet er oppe!";
+                return false;
+            }
+        }
 
         // Weapon Check & Cost
         if (cardDef.weaponCost) {
@@ -160,7 +212,6 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
                 localResult.message = `Mangler ${cardDef.weaponCost.type === 'siege_sword' ? 'beleiringssverd' : 'beleiringsrustning'}!`;
                 return false;
             }
-            // Deduct
             (actor.resources as any)[cardDef.weaponCost.type] -= cardDef.weaponCost.amount;
         }
 
@@ -169,20 +220,17 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
             participant.deck.stamina -= (cardDef.staminaCost || 0);
         }
 
-        // Logic: EFFECTS & COMBOS
-        // In Duel Mode (V9), there are no zones. Targeting is global.
         let damage = cardDef.effectPayload?.damage || 0;
         let msg = `Brukte ${cardDef.name}!`;
 
-        // NO CARD CONSUMPTION (Streamlined V9)
-
-        // Handle Defense Buff specifically
-        if (cardDef.tags?.includes('DEFENSE')) {
-            participant.shieldActive = true;
-            msg = "SKJOLDMUR AKTIV! Du er beskyttet mot neste angrep.";
+        // --- SHIELD ACTIVATION (2s timed) ---
+        if (cardDef.effectPayload?.shieldDuration) {
+            if (!cs.playerShields) cs.playerShields = {};
+            cs.playerShields[actor.id] = {
+                expiresAt: Date.now() + cardDef.effectPayload.shieldDuration
+            };
+            msg = "🛡️ SKJOLDMUR AKTIV! (2s) Du er beskyttet — men kan ikke angripe.";
         }
-
-        // COMBO LOGIC: Removed in Duel Mode (V9) for simplicity.
 
         // Stamina Recovery
         if (cardDef.effectPayload?.recoverStamina && participant.deck) {
@@ -205,19 +253,17 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
 
         // Apply Damage to Boss
         if (damage > 0) {
-            siege.courtyardState.bossHp -= damage;
+            cs.bossHp -= damage;
 
-            // Legacy Migration: Ensure stats object exists
             if (!participant.stats) {
                 participant.stats = { damageDealt: 0, damageTaken: 0, armorDonated: 0, ticksOnThrone: 0, cardsPlayed: 0 };
             }
-
             participant.stats.damageDealt += damage;
             participant.stats.cardsPlayed = (participant.stats.cardsPlayed || 0) + 1;
         }
 
         // VICTORY CHECK
-        if (siege.courtyardState.bossHp <= 0) {
+        if (cs.bossHp <= 0) {
             siege.phase = 'THRONE_ROOM';
             siege.throneState = {
                 mode: 'PVP',
@@ -225,24 +271,24 @@ export const handleCourtyardAction = (ctx: ActionContext) => {
                 plundered: false,
                 bossHp: 50000,
                 maxBossHp: 50000,
-                defendingPlayerId: regionId === 'capital' ? undefined : room.regions[regionId].rulerId, // If capital, no single ruler maybe?
+                defendingPlayerId: regionId === 'capital' ? undefined : room.regions[regionId]?.rulerId,
                 occupiers: {},
                 lastTick: Date.now()
             };
-            msg += " GARNISONSSJEFEN FALT! Mot tronsalen!";
+            msg += " ⚔️ GARNISONSSJEFEN FALT! Mot tronsalen!";
         }
 
         localResult.message = msg;
         return true;
     }
 
-    // 3. DRAW CARDS (DISABLED in V8)
+    // DRAW CARDS (DISABLED)
     if (action.subType === 'DRAW_CARDS') {
         localResult.message = "Forsyninger er alltid klare.";
         return false;
     }
 
-    // 4. REST (Recover Stamina)
+    // REST (Recover Stamina)
     if (action.subType === 'REST') {
         if (participant.deck) {
             const BREAD_COST = 1;

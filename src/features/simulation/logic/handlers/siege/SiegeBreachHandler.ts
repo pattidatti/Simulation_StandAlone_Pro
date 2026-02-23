@@ -2,6 +2,17 @@ import type { ActionContext } from '../../actionTypes';
 import type { ActiveSiege, SiegeParticipant, SiegeSide } from '../../../types/war';
 import { generateDeck } from './SiegeCourtyardHandler';
 
+// --- CONSTANTS ---
+const MAX_SIEGE_DURATION = 10 * 60 * 1000; // 10 minutes
+const RAM_PLANKS_REQUIRED = 200;
+const RAM_IRON_REQUIRED = 50;
+const RAM_DAMAGE = 500;
+const RAM_COOLDOWN = 10000; // 10s
+const OIL_WOOD_COST = 20;
+const OIL_ARMOR_DESTROYED = 5;
+const OIL_MAX_USES = 3;
+const OIL_COOLDOWN = 30000; // 30s
+
 // --- START SIEGE ---
 export const handleStartSiege = (ctx: ActionContext) => {
     const { actor, room, localResult, action } = ctx;
@@ -44,10 +55,9 @@ export const handleStartSiege = (ctx: ActionContext) => {
         return false;
     }
 
-    // 3. Initialize Siege (New Structure)
+    // 3. Initialize Siege
     const fortHP = region.fortification?.hp || 1000;
 
-    // Initial Participant (The Starter)
     const starter: SiegeParticipant = {
         side: 'ATTACKER',
         zone: 'VANGUARD',
@@ -68,7 +78,18 @@ export const handleStartSiege = (ctx: ActionContext) => {
             gateHp: fortHP,
             maxGateHp: fortHP,
             gateCondition: 'PRISTINE',
-            activeWeapons: {}
+            activeWeapons: {},
+            ramPool: {
+                planks: 0,
+                iron: 0,
+                ready: false,
+                cooldownUntil: 0,
+                contributors: {}
+            },
+            oilState: {
+                usesRemaining: OIL_MAX_USES,
+                playerCooldowns: {}
+            }
         }
     };
 
@@ -89,13 +110,11 @@ export const handleJoinSiege = (ctx: ActionContext) => {
 
     const siege = room.regions[regionId].activeSiege!;
 
-    // Check Membership
     if (siege.attackers[actor.id] || siege.defenders[actor.id]) {
         localResult.message = "Du deltar allerede.";
         return false;
     }
 
-    // Eligibility: Resident or Noble
     const isResident = actor.regionId === regionId;
     const isNoble = ['BARON', 'KING'].includes(actor.role);
     if (!isResident && !isNoble) {
@@ -107,7 +126,7 @@ export const handleJoinSiege = (ctx: ActionContext) => {
     const side = action.payload?.side as SiegeSide;
     const newParticipant: SiegeParticipant = {
         side: side,
-        zone: 'VANGUARD', // Default zone
+        zone: 'VANGUARD',
         hp: 100,
         maxHp: 100,
         name: actor.name,
@@ -126,54 +145,206 @@ export const handleJoinSiege = (ctx: ActionContext) => {
     return true;
 };
 
+// --- Helper: Update gate condition ---
+const updateGateCondition = (bs: NonNullable<ActiveSiege['breachState']>) => {
+    const hpPct = bs.gateHp / bs.maxGateHp;
+    if (hpPct < 0.25) bs.gateCondition = 'SHATTERED';
+    else if (hpPct < 0.5) bs.gateCondition = 'BROKEN';
+    else if (hpPct < 0.75) bs.gateCondition = 'CRACKED';
+    else bs.gateCondition = 'PRISTINE';
+};
+
+// --- Helper: Check phase transition ---
+const checkPhaseTransition = (siege: ActiveSiege, localResult: any) => {
+    if (siege.breachState && siege.breachState.gateHp <= 0) {
+        siege.phase = 'COURTYARD';
+        // Courtyard init happens via INIT_COURTYARD in SiegeCourtyardHandler (Risiko R2 fix)
+        localResult.message = "⚔️ PORTEN ER KNUST! Storm borggården!";
+    }
+};
+
 // --- PHASE 1: BREACH ---
 export const handleBreachAction = (ctx: ActionContext) => {
     const { actor, room, action, localResult } = ctx;
     const regionId = action.payload?.targetRegionId || actor.regionId;
-    const siege = room.regions[regionId].activeSiege;
+    const siege = room.regions[regionId]?.activeSiege;
 
     if (!siege || siege.phase !== 'BREACH' || !siege.breachState) return false;
+    const bs = siege.breachState;
 
-    // ATTACK GATE (Basic)
+    // --- TIMEOUT CHECK ---
+    if (Date.now() - siege.startedAt > MAX_SIEGE_DURATION) {
+        delete room.regions[regionId].activeSiege;
+        localResult.message = "⏰ Beleiringen mislyktes! Forsvarerne holder stand.";
+        return true;
+    }
+
+    // --- ATTACK GATE (Sword / Fists) ---
     if (action.subType === 'ATTACK_GATE') {
-
         let damage = 2; // Fists
 
-        // Resource consumption logic could go here (Swords/Arrows)
-        if (actor.resources.siege_sword > 0) {
+        if ((actor.resources.siege_sword || 0) > 0) {
             damage = 25;
             actor.resources.siege_sword -= 1;
             localResult.utbytte.push({ resource: 'siege_sword', amount: -1 });
         }
 
-        siege.breachState.gateHp = Math.max(0, siege.breachState.gateHp - damage);
+        bs.gateHp = Math.max(0, bs.gateHp - damage);
+        updateGateCondition(bs);
 
-        // Visual Feedback based on HP %
-        const hpPct = siege.breachState.gateHp / siege.breachState.maxGateHp;
-        if (hpPct < 0.25) siege.breachState.gateCondition = 'SHATTERED';
-        else if (hpPct < 0.5) siege.breachState.gateCondition = 'BROKEN';
-        else if (hpPct < 0.75) siege.breachState.gateCondition = 'CRACKED';
-
-        localResult.message = `Angrep porten! (-${damage} HP). Tilstand: ${siege.breachState.gateCondition}`;
-
-        // Phase Transition
-        if (siege.breachState.gateHp <= 0) {
-            siege.phase = 'COURTYARD';
-            siege.courtyardState = {
-                bossHp: 10000, // Default, logic to scale this is in CourtyardHandler init
-                maxBossHp: 10000,
-                bossStance: 'DEFENSIVE',
-                bossTargetZone: 'VANGUARD',
-                nextBossActionAt: Date.now() + 5000,
-                zones: {
-                    VANGUARD: { id: 'VANGUARD', occupierIds: [], modifiers: [] },
-                    FLANK_LEFT: { id: 'FLANK_LEFT', occupierIds: [], modifiers: [] },
-                    FLANK_RIGHT: { id: 'FLANK_RIGHT', occupierIds: [], modifiers: [] },
-                    REARGUARD: { id: 'REARGUARD', occupierIds: [], modifiers: [] }
-                }
-            };
-            localResult.message = "PORTEN ER KNUST! Storm borggården!";
+        // Track stats
+        const participant = siege.attackers[actor.id] || siege.defenders[actor.id];
+        if (participant) {
+            participant.stats.damageDealt += damage;
         }
+
+        localResult.message = `🗡️ Angrep porten! (-${damage} HP). Tilstand: ${bs.gateCondition}`;
+        checkPhaseTransition(siege, localResult);
+        return true;
+    }
+
+    // --- CONTRIBUTE TO RAM ---
+    if (action.subType === 'CONTRIBUTE_RAM') {
+        const planks = Math.max(0, action.payload?.planks || 0);
+        const iron = Math.max(0, action.payload?.iron || 0);
+
+        if (planks === 0 && iron === 0) {
+            localResult.message = "Du må bidra med noe!";
+            return false;
+        }
+
+        if (planks > 0 && (actor.resources.plank || 0) < planks) {
+            localResult.success = false;
+            localResult.message = `Ikke nok planker! (Har: ${actor.resources.plank || 0})`;
+            return false;
+        }
+        if (iron > 0 && (actor.resources.iron_ingot || 0) < iron) {
+            localResult.success = false;
+            localResult.message = `Ikke nok jernbarrer! (Har: ${actor.resources.iron_ingot || 0})`;
+            return false;
+        }
+
+        // Deduct & contribute
+        if (planks > 0) {
+            actor.resources.plank -= planks;
+            bs.ramPool.planks += planks;
+            localResult.utbytte.push({ resource: 'plank', amount: -planks });
+        }
+        if (iron > 0) {
+            actor.resources.iron_ingot -= iron;
+            bs.ramPool.iron += iron;
+            localResult.utbytte.push({ resource: 'iron_ingot', amount: -iron });
+        }
+
+        // Track contributors
+        if (!bs.ramPool.contributors[actor.id]) bs.ramPool.contributors[actor.id] = { planks: 0, iron: 0 };
+        bs.ramPool.contributors[actor.id].planks += planks;
+        bs.ramPool.contributors[actor.id].iron += iron;
+
+        // Check readiness
+        bs.ramPool.ready = bs.ramPool.planks >= RAM_PLANKS_REQUIRED && bs.ramPool.iron >= RAM_IRON_REQUIRED;
+
+        const statusPlanks = `${bs.ramPool.planks}/${RAM_PLANKS_REQUIRED}`;
+        const statusIron = `${bs.ramPool.iron}/${RAM_IRON_REQUIRED}`;
+        localResult.message = `🔨 Bidro til murbrekker! Planker: ${statusPlanks}, Jern: ${statusIron}.${bs.ramPool.ready ? ' MURBREKKER KLAR!' : ''}`;
+        return true;
+    }
+
+    // --- ACTIVATE RAM ---
+    if (action.subType === 'ACTIVATE_RAM') {
+        if (!bs.ramPool.ready) {
+            localResult.success = false;
+            localResult.message = `Murbrekker ikke klar! (Planker: ${bs.ramPool.planks}/${RAM_PLANKS_REQUIRED}, Jern: ${bs.ramPool.iron}/${RAM_IRON_REQUIRED})`;
+            return false;
+        }
+
+        const now = Date.now();
+        if (now < bs.ramPool.cooldownUntil) {
+            const remaining = Math.ceil((bs.ramPool.cooldownUntil - now) / 1000);
+            localResult.success = false;
+            localResult.message = `Murbrekker på cooldown! (${remaining}s gjenstår)`;
+            return false;
+        }
+
+        // IMPACT
+        bs.gateHp = Math.max(0, bs.gateHp - RAM_DAMAGE);
+        updateGateCondition(bs);
+
+        // Reset pool
+        bs.ramPool = {
+            planks: 0,
+            iron: 0,
+            ready: false,
+            cooldownUntil: now + RAM_COOLDOWN,
+            contributors: {}
+        };
+
+        // Track stats for all participants
+        const participant = siege.attackers[actor.id] || siege.defenders[actor.id];
+        if (participant) participant.stats.damageDealt += RAM_DAMAGE;
+
+        localResult.message = `🔨💥 MURBREKKER! Massiv skade på porten! (-${RAM_DAMAGE} HP). Tilstand: ${bs.gateCondition}`;
+        checkPhaseTransition(siege, localResult);
+        return true;
+    }
+
+    // --- BOILING OIL (Defenders only) ---
+    if (action.subType === 'BOILING_OIL') {
+        const isDefender = !!siege.defenders[actor.id];
+        if (!isDefender) {
+            localResult.success = false;
+            localResult.message = "Bare forsvarere kan bruke kokende olje!";
+            return false;
+        }
+
+        if (bs.oilState.usesRemaining <= 0) {
+            localResult.success = false;
+            localResult.message = "Ingen olje gjenstår denne beleiringen!";
+            return false;
+        }
+
+        const now = Date.now();
+        const playerCooldown = bs.oilState.playerCooldowns[actor.id] || 0;
+        if (now < playerCooldown) {
+            const remaining = Math.ceil((playerCooldown - now) / 1000);
+            localResult.success = false;
+            localResult.message = `Kokende olje på cooldown! (${remaining}s)`;
+            return false;
+        }
+
+        if ((actor.resources.wood || 0) < OIL_WOOD_COST) {
+            localResult.success = false;
+            localResult.message = `Trenger ${OIL_WOOD_COST} ved for kokende olje! (Har: ${actor.resources.wood || 0})`;
+            return false;
+        }
+
+        // Deduct wood
+        actor.resources.wood -= OIL_WOOD_COST;
+        localResult.utbytte.push({ resource: 'wood', amount: -OIL_WOOD_COST });
+
+        // Find random attacker with siege_armor
+        const attackerIds = Object.keys(siege.attackers);
+        const targets = attackerIds.filter(id => {
+            const p = (room.players as any)?.[id];
+            return p && (p.resources?.siege_armor || 0) > 0;
+        });
+
+        if (targets.length === 0) {
+            bs.oilState.usesRemaining -= 1;
+            bs.oilState.playerCooldowns[actor.id] = now + OIL_COOLDOWN;
+            localResult.message = `🫗 Kokende olje helles ned, men ingen angripere hadde rustning å ødelegge! (${bs.oilState.usesRemaining}/${OIL_MAX_USES} gjenstår)`;
+            return true;
+        }
+
+        const targetId = targets[Math.floor(Math.random() * targets.length)];
+        const target = (room.players as any)[targetId];
+        const destroyed = Math.min(OIL_ARMOR_DESTROYED, target.resources.siege_armor || 0);
+        target.resources.siege_armor -= destroyed;
+
+        bs.oilState.usesRemaining -= 1;
+        bs.oilState.playerCooldowns[actor.id] = now + OIL_COOLDOWN;
+
+        localResult.message = `🫗 Kokende olje! Ødela ${destroyed} beleiringsrustning hos ${target.name}! (${bs.oilState.usesRemaining}/${OIL_MAX_USES} gjenstår)`;
         return true;
     }
 

@@ -33,11 +33,26 @@ export interface PlayerDeck {
 // --- BREACH PHASE SPECIFIC ---
 export type BreachWeapon = 'RAM' | 'LADDER' | 'CATAPULT';
 
+export interface RamPool {
+    planks: number;
+    iron: number;
+    ready: boolean;
+    cooldownUntil: number;
+    contributors: Record<string, { planks: number, iron: number }>;
+}
+
+export interface OilState {
+    usesRemaining: number;
+    playerCooldowns: Record<string, number>;
+}
+
 export interface BreachData {
     gateHp: number;
     maxGateHp: number;
     gateCondition: 'PRISTINE' | 'CRACKED' | 'BROKEN' | 'SHATTERED';
     activeWeapons: Record<string, { type: BreachWeapon, hp: number, ownerId: string }>;
+    ramPool: RamPool;
+    oilState: OilState;
 }
 
 // --- COURTYARD PHASE SPECIFIC ---
@@ -54,6 +69,9 @@ export interface CourtyardData {
     bossTargetZone: SiegeZone | null;
     nextBossActionAt: number;
     zones: Record<SiegeZone, CourtyardZoneState>;
+    bossAttackPhase: 'IDLE' | 'WINDUP' | 'STRIKE';
+    bossAttackTimer: number;
+    playerShields: Record<string, { expiresAt: number }>;
 }
 
 // --- THRONE PHASE SPECIFIC ---
@@ -82,6 +100,7 @@ export interface Garrison {
     swords: number;
     armor: number;
     morale: number;
+    lastDonationDuringSiege?: number;
 }
 
 export interface Fortification {
